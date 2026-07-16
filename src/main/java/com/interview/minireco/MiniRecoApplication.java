@@ -3,6 +3,7 @@ package com.interview.minireco;
 import com.interview.minireco.degradation.DegradationManager;
 import com.interview.minireco.http.DegradationHttpHandler;
 import com.interview.minireco.http.RecommendHttpHandler;
+import com.interview.minireco.http.RecommendProtoHttpHandler;
 import com.interview.minireco.http.ResilienceHttpHandler;
 import com.interview.minireco.http.RolloutHttpHandler;
 import com.interview.minireco.migration.ComparisonRegistry;
@@ -38,6 +39,7 @@ public class MiniRecoApplication {
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/recommend", new RecommendHttpHandler(recommendService));
+        server.createContext("/recommend-pb", new RecommendProtoHttpHandler(recommendService));
         server.createContext("/health", exchange -> {
             String body = JsonUtil.mapToJson(Map.of(
                     "status", "UP",
@@ -67,6 +69,7 @@ public class MiniRecoApplication {
 
         System.out.printf("MiniReco service started on port %d%n", port);
         System.out.printf("Try: http://localhost:%d/recommend?userId=123&scene=mall&limit=10%n", port);
+        System.out.printf("Protobuf: http://localhost:%d/recommend-pb?userId=123&scene=mall&limit=10%n", port);
         System.out.printf("Metrics: http://localhost:%d/metrics%n", port);
         System.out.printf("Alerts: http://localhost:%d/alerts%n", port);
         System.out.printf("Degradation: http://localhost:%d/degradation%n", port);

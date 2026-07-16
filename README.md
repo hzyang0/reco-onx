@@ -221,3 +221,27 @@ V12 保留 legacy 顺序召回和 new 并行召回两条链路，新增：
 ```text
 docs/13-v12-shadow-rollout.md
 ```
+
+## V13：真实 Protobuf 与统一内部 Item
+
+V13 增加商品、直播、广告三套真实下游协议，并通过 Adapter 收敛为接入层统一 `InternalItemPb`：
+
+- Maven 自动调用 `protoc` 生成类型安全的 Java 类；
+- 不同 ID、分数和属性语义在各自防腐层内完成转换；
+- repeated 属性列表转为 map，重复 key 使用最后值；
+- 内部 PB 再转换为领域 `Item`，核心算子不依赖外部协议；
+- 新增 `/recommend-pb` 二进制接口和上游 PB；
+- 覆盖未知字段、协议演进和二进制 round-trip 测试；
+- 使用 fat JAR 确保 Protobuf 运行依赖可直接部署。
+
+一条命令完成代码生成、单测、打包、启动、请求和解码：
+
+```powershell
+.\scripts\run-protobuf-demo.ps1
+```
+
+学习文档：
+
+```text
+docs/14-v13-protobuf-adapters.md
+```

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package mini_reco.internal;
+
+option java_package = "com.interview.minireco.proto.internal";
+option java_multiple_files = true;
+option java_outer_classname = "InternalRecoProto";
+
+enum InternalItemTypePb {
+  ITEM_TYPE_UNSPECIFIED = 0;
+  GOODS = 1;
+  LIVE = 2;
+  AD = 3;
+  FALLBACK = 4;
+}
+
+message InternalItemPb {
+  int64 item_id = 1;
+  string title = 2;
+  string source = 3;
+  string category = 4;
+  double score = 5;
+  map<string, string> attrs = 6;
+  InternalItemTypePb item_type = 7;
+}
+
+message InternalRecallResultPb {
+  repeated InternalItemPb items = 1;
+}

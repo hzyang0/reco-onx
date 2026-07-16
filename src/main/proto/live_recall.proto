@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package mini_reco.live;
+
+option java_package = "com.interview.minireco.proto.live";
+option java_multiple_files = true;
+option java_outer_classname = "LiveRecallProto";
+
+message LiveFeaturePb {
+  string feature_key = 1;
+  string feature_value = 2;
+}
+
+message LiveRecallItemPb {
+  int64 room_id = 1;
+  int64 product_id = 2;
+  string room_title = 3;
+  string product_category = 4;
+  float prediction_score = 5;
+  repeated LiveFeaturePb features = 6;
+}
+
+message LiveRecallResponsePb {
+  repeated LiveRecallItemPb items = 1;
+}

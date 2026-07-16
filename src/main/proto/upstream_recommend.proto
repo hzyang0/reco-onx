@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package mini_reco.upstream;
+
+option java_package = "com.interview.minireco.proto.upstream";
+option java_multiple_files = true;
+option java_outer_classname = "UpstreamRecommendProto";
+
+message UpstreamRecommendItemPb {
+  int64 id = 1;
+  string display_title = 2;
+  string item_type = 3;
+  double rank_score = 4;
+  map<string, string> attributes = 5;
+}
+
+message UpstreamRecommendResponsePb {
+  string request_id = 1;
+  int64 user_id = 2;
+  string scene = 3;
+  int64 cost_ms = 4;
+  repeated UpstreamRecommendItemPb items = 5;
+}
