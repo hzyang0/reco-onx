@@ -23,7 +23,7 @@ public class PostProcessOperator implements Operator {
                 : context.getFilteredItems();
         List<Item> result = new ArrayList<>(baseItems);
         int index = 0;
-        while (result.size() < context.getLimit()) {
+        while (result.size() < context.getEffectiveLimit()) {
             Item fallback = new Item(90_000L + index, "Fallback hot item-" + index, "fallback", "hot", 0.30);
             fallback.putAttr(AttrName.PRICE, String.valueOf(19 + index));
             fallback.putAttr(AttrName.STOCK, "999");
@@ -31,6 +31,9 @@ public class PostProcessOperator implements Operator {
             fallback.putAttr(AttrName.RECALL_REASON, "fallback");
             result.add(fallback);
             index++;
+        }
+        if (result.size() > context.getEffectiveLimit()) {
+            result = new ArrayList<>(result.subList(0, context.getEffectiveLimit()));
         }
         context.setFinalItems(result);
         context.putDebug("returnedItemCount", result.size());

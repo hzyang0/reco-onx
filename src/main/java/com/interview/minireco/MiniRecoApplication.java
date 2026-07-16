@@ -1,5 +1,7 @@
 package com.interview.minireco;
 
+import com.interview.minireco.degradation.DegradationManager;
+import com.interview.minireco.http.DegradationHttpHandler;
 import com.interview.minireco.http.RecommendHttpHandler;
 import com.interview.minireco.observability.AlertManager;
 import com.interview.minireco.observability.MetricsRegistry;
@@ -22,6 +24,7 @@ public class MiniRecoApplication {
         RecommendService recommendService = DemoWiring.createRecommendService();
         MetricsRegistry metricsRegistry = MetricsRegistry.global();
         AlertManager alertManager = new AlertManager(metricsRegistry);
+        DegradationManager degradationManager = DegradationManager.global();
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/recommend", new RecommendHttpHandler(recommendService));
@@ -43,6 +46,7 @@ public class MiniRecoApplication {
         server.createContext("/alerts", exchange ->
                 writeJson(exchange, JsonUtil.mapToJson(alertManager.snapshot()))
         );
+        server.createContext("/degradation", new DegradationHttpHandler(degradationManager));
         server.setExecutor(Executors.newFixedThreadPool(16));
         server.start();
 
@@ -50,6 +54,7 @@ public class MiniRecoApplication {
         System.out.printf("Try: http://localhost:%d/recommend?userId=123&scene=mall&limit=10%n", port);
         System.out.printf("Metrics: http://localhost:%d/metrics%n", port);
         System.out.printf("Alerts: http://localhost:%d/alerts%n", port);
+        System.out.printf("Degradation: http://localhost:%d/degradation%n", port);
     }
 
     private static int resolvePort(String[] args) {

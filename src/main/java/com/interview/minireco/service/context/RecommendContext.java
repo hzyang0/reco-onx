@@ -1,5 +1,6 @@
 package com.interview.minireco.service.context;
 
+import com.interview.minireco.degradation.DegradationDecision;
 import com.interview.minireco.domain.Address;
 import com.interview.minireco.domain.Item;
 import com.interview.minireco.domain.RecommendRequest;
@@ -20,6 +21,7 @@ public class RecommendContext {
     private List<Item> filteredItems = List.of();
     private List<Item> rankedItems = List.of();
     private List<Item> finalItems = List.of();
+    private DegradationDecision degradationDecision;
     private final Map<String, Long> stageCostMs = new LinkedHashMap<>();
     private final Map<String, Object> debug = new LinkedHashMap<>();
 
@@ -46,6 +48,21 @@ public class RecommendContext {
 
     public int getLimit() {
         return request.getLimit();
+    }
+
+    public int getEffectiveLimit() {
+        return getDegradationDecision().getEffectiveLimit();
+    }
+
+    public DegradationDecision getDegradationDecision() {
+        if (degradationDecision == null) {
+            return DegradationDecision.none(-1, request.getLimit());
+        }
+        return degradationDecision;
+    }
+
+    public void setDegradationDecision(DegradationDecision degradationDecision) {
+        this.degradationDecision = degradationDecision;
     }
 
     public UserFeature getUserFeature() {

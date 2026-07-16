@@ -26,7 +26,7 @@ public class MixRankOperator implements Operator {
         List<Item> candidates = context.getFilteredItems().isEmpty()
                 ? context.getRecalledItems()
                 : context.getFilteredItems();
-        List<Item> rankedItems = mixRankService.rank(candidates, context, context.getLimit());
+        List<Item> rankedItems = mixRankService.rank(candidates, context, context.getEffectiveLimit());
         context.setRankedItems(rankedItems);
     }
 }

@@ -1,5 +1,6 @@
 package com.interview.minireco.service;
 
+import com.interview.minireco.degradation.DegradationManager;
 import com.interview.minireco.service.downstream.RecallService;
 import com.interview.minireco.service.downstream.impl.AdRecallService;
 import com.interview.minireco.service.downstream.impl.DemoAbService;
@@ -14,6 +15,7 @@ import com.interview.minireco.service.operator.OperatorConfig;
 import com.interview.minireco.service.operator.graph.DagGraph;
 import com.interview.minireco.service.operator.graph.DagNode;
 import com.interview.minireco.service.operator.graph.ParallelDagOperatorExecutor;
+import com.interview.minireco.service.operator.impl.DegradationOperator;
 import com.interview.minireco.service.operator.impl.FilterOperator;
 import com.interview.minireco.service.operator.impl.MixRankOperator;
 import com.interview.minireco.service.operator.impl.OnlineFeatureOperator;
@@ -41,6 +43,7 @@ public final class DemoWiring {
         );
 
         Operator prepareOperator = new PrepareOperator(userFeatureService, abService, addressService);
+        Operator degradationOperator = new DegradationOperator(DegradationManager.global());
         Operator recallOperator = new RecallOperator(recallServices);
         Operator onlineFeatureOperator = new OnlineFeatureOperator(onlineFeatureService);
         Operator filterOperator = new FilterOperator();
@@ -49,6 +52,7 @@ public final class DemoWiring {
 
         List<OperatorConfig> configs = List.of(
                 OperatorConfig.enabled(PrepareOperator.NAME),
+                OperatorConfig.enabled(DegradationOperator.NAME),
                 OperatorConfig.enabled(RecallOperator.NAME),
                 OperatorConfig.enabled(OnlineFeatureOperator.NAME),
                 OperatorConfig.enabled(FilterOperator.NAME),
@@ -58,7 +62,8 @@ public final class DemoWiring {
 
         DagGraph graph = new DagGraph(List.of(
                 DagNode.of(prepareOperator),
-                DagNode.of(recallOperator, PrepareOperator.NAME),
+                DagNode.of(degradationOperator, PrepareOperator.NAME),
+                DagNode.of(recallOperator, DegradationOperator.NAME),
                 DagNode.of(onlineFeatureOperator, RecallOperator.NAME),
                 DagNode.of(mixRankOperator, RecallOperator.NAME),
                 DagNode.of(filterOperator, OnlineFeatureOperator.NAME, MixRankOperator.NAME),

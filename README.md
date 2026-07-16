@@ -108,3 +108,27 @@ V7 学习文档见：
 ```text
 docs/08-v7-observability.md
 ```
+
+## V8：U 分层动态降级
+
+V8 新增了 `DegradationManager`、`DegradationOperator` 和 `/degradation` 端点，用来模拟大促/高峰期的动态降级能力。
+
+核心效果：
+
+- `LIGHT`：对 bucket 80-99 的用户跳过 `ad` 召回，返回上限最多 8 个。
+- `HEAVY`：对 bucket 50-99 的用户跳过 `ad`、`live` 召回，返回上限最多 6 个。
+- 降级决策会写入 `RecommendContext`，并出现在 `/recommend` 返回的 `debug.degradation` 中。
+
+学习文档：
+
+```text
+docs/09-v8-degradation.md
+```
+
+运行时查看/切换：
+
+```powershell
+Invoke-RestMethod "http://localhost:8080/degradation"
+Invoke-RestMethod "http://localhost:8080/degradation?level=HEAVY"
+Invoke-RestMethod "http://localhost:8080/recommend?userId=185&scene=mall&limit=10"
+```
