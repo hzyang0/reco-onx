@@ -1,5 +1,6 @@
 package com.interview.minireco.service.downstream.impl;
 
+import com.interview.minireco.domain.AttrName;
 import com.interview.minireco.domain.Item;
 import com.interview.minireco.domain.UserFeature;
 import com.interview.minireco.service.context.RecommendContext;
@@ -24,7 +25,7 @@ public class GoodsRecallService implements RecallService {
         for (int i = 0; i < 12; i++) {
             long id = 10_000L + feature.getUserId() % 1000 * 100 + i;
             Item item = new Item(id, "商品-" + category + "-" + i, source(), category, 0.60 + i * 0.01);
-            item.putAttr("recall_reason", "preferred_category");
+            item.putAttr(AttrName.RECALL_REASON, "preferred_category");
             items.add(item);
         }
         return items;

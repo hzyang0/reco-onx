@@ -1,5 +1,6 @@
 package com.interview.minireco.service.downstream.impl;
 
+import com.interview.minireco.domain.AttrName;
 import com.interview.minireco.domain.Item;
 import com.interview.minireco.domain.UserFeature;
 import com.interview.minireco.service.context.RecommendContext;
@@ -23,7 +24,7 @@ public class AdRecallService implements RecallService {
         for (int i = 0; i < 5; i++) {
             long id = 30_000L + feature.getUserId() % 1000 * 100 + i;
             Item item = new Item(id, "广告商品-" + i, source(), "digital", 0.48 + i * 0.02);
-            item.putAttr("recall_reason", "commercial");
+            item.putAttr(AttrName.RECALL_REASON, "commercial");
             items.add(item);
         }
         return items;

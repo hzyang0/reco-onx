@@ -1,6 +1,7 @@
 package com.interview.minireco.service;
 
 import com.interview.minireco.domain.Address;
+import com.interview.minireco.domain.AttrName;
 import com.interview.minireco.domain.Item;
 import com.interview.minireco.domain.RecommendRequest;
 import com.interview.minireco.domain.RecommendResponse;
@@ -112,10 +113,10 @@ public class RecommendService {
     private List<Item> filterValidItems(List<Item> items) {
         List<Item> result = new ArrayList<>();
         for (Item item : items) {
-            int stock = item.findAttr("stock")
+            int stock = item.findAttr(AttrName.STOCK)
                     .map(Integer::parseInt)
                     .orElse(0);
-            String status = item.findAttr("status")
+            String status = item.findAttr(AttrName.STATUS)
                     .orElse("UNKNOWN");
 
             if (stock > 0 && "ONLINE".equals(status)) {
@@ -130,10 +131,10 @@ public class RecommendService {
         int index = 0;
         while (result.size() < limit) {
             Item fallback = new Item(90_000L + index, "Fallback hot item-" + index, "fallback", "hot", 0.30);
-            fallback.putAttr("price", String.valueOf(19 + index));
-            fallback.putAttr("stock", "999");
-            fallback.putAttr("status", "ONLINE");
-            fallback.putAttr("recall_reason", "fallback");
+            fallback.putAttr(AttrName.PRICE, String.valueOf(19 + index));
+            fallback.putAttr(AttrName.STOCK, "999");
+            fallback.putAttr(AttrName.STATUS, "ONLINE");
+            fallback.putAttr(AttrName.RECALL_REASON, "fallback");
             result.add(fallback);
             index++;
         }

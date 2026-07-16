@@ -1,7 +1,8 @@
 package com.interview.minireco.domain;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Optional;
 
 public class Item {
@@ -10,7 +11,7 @@ public class Item {
     private final String source;
     private final String category;
     private double score;
-    private final List<ItemAttr> attrs = new ArrayList<>();
+    private final Map<AttrName, ItemAttr> attrs = new EnumMap<>(AttrName.class);
 
     public Item(long itemId, String title, String source, String category, double score) {
         this.itemId = itemId;
@@ -44,26 +45,21 @@ public class Item {
         this.score = score;
     }
 
-    public List<ItemAttr> getAttrs() {
-        return attrs;
+    public Map<AttrName, ItemAttr> getAttrs() {
+        return Collections.unmodifiableMap(attrs);
     }
 
-    public void putAttr(String name, String value) {
-        for (ItemAttr attr : attrs) {
-            if (attr.getName().equals(name)) {
-                attr.setValue(value);
-                return;
-            }
+    public void putAttr(AttrName name, String value) {
+        ItemAttr existing = attrs.get(name);
+        if (existing != null) {
+            existing.setValue(value);
+            return;
         }
-        attrs.add(new ItemAttr(name, value));
+        attrs.put(name, new ItemAttr(name, value));
     }
 
-    public Optional<String> findAttr(String name) {
-        for (ItemAttr attr : attrs) {
-            if (attr.getName().equals(name)) {
-                return Optional.ofNullable(attr.getValue());
-            }
-        }
-        return Optional.empty();
+    public Optional<String> findAttr(AttrName name) {
+        return Optional.ofNullable(attrs.get(name))
+                .map(ItemAttr::getValue);
     }
 }

@@ -1,5 +1,6 @@
 package com.interview.minireco.service;
 
+import com.interview.minireco.domain.AttrName;
 import com.interview.minireco.domain.Address;
 import com.interview.minireco.domain.Item;
 import com.interview.minireco.domain.RecommendRequest;
@@ -64,9 +65,9 @@ class RecommendServiceTest {
         doAnswer(invocation -> {
             List<Item> items = invocation.getArgument(0);
             for (Item item : items) {
-                item.putAttr("stock", "10");
-                item.putAttr("status", "ONLINE");
-                item.putAttr("price", "99");
+                item.putAttr(AttrName.STOCK, "10");
+                item.putAttr(AttrName.STATUS, "ONLINE");
+                item.putAttr(AttrName.PRICE, "99");
             }
             return null;
         }).when(onlineFeatureService).fillOnlineFeatures(anyList());
@@ -87,6 +88,7 @@ class RecommendServiceTest {
 
         assertEquals(2, response.getItems().size());
         assertEquals("Phone case", response.getItems().get(0).getTitle());
+        assertEquals("10", response.getItems().get(0).findAttr(AttrName.STOCK).orElseThrow());
         assertEquals(2, response.getDebug().get("returnedItemCount"));
     }
 

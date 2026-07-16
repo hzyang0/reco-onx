@@ -67,9 +67,16 @@ HTTP 请求
 
 - V1：完成可运行的推荐接入层链路。
 - V2：已将运行态大 Map 重构为强类型 `RecommendContext`。
+- V3：已将 item attr 从 `List<ItemAttr>` 重构为 `Map<AttrName, ItemAttr>`。
 
 V2 学习文档见：
 
 ```text
 docs/03-v2-context-refactor.md
+```
+
+V3 学习文档见：
+
+```text
+docs/04-v3-item-attr-map.md
 ```

@@ -1,15 +1,15 @@
 package com.interview.minireco.domain;
 
 public class ItemAttr {
-    private final String name;
+    private final AttrName name;
     private String value;
 
-    public ItemAttr(String name, String value) {
+    public ItemAttr(AttrName name, String value) {
         this.name = name;
         this.value = value;
     }
 
-    public String getName() {
+    public AttrName getName() {
         return name;
     }
 

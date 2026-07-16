@@ -1,5 +1,6 @@
 package com.interview.minireco.util;
 
+import com.interview.minireco.domain.AttrName;
 import com.interview.minireco.domain.Item;
 import com.interview.minireco.domain.ItemAttr;
 import com.interview.minireco.domain.RecommendResponse;
@@ -66,13 +67,15 @@ public final class JsonUtil {
         return json.toString();
     }
 
-    private static String attrsToJson(List<ItemAttr> attrs) {
+    private static String attrsToJson(Map<AttrName, ItemAttr> attrs) {
         StringBuilder json = new StringBuilder();
         json.append("{");
-        for (int i = 0; i < attrs.size(); i++) {
-            ItemAttr attr = attrs.get(i);
-            appendField(json, attr.getName(), attr.getValue());
-            if (i < attrs.size() - 1) {
+        Iterator<Map.Entry<AttrName, ItemAttr>> iterator = attrs.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<AttrName, ItemAttr> entry = iterator.next();
+            ItemAttr attr = entry.getValue();
+            appendField(json, entry.getKey().key(), attr.getValue());
+            if (iterator.hasNext()) {
                 json.append(",");
             }
         }

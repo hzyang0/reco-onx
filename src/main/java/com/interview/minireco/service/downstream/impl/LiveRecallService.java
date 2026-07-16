@@ -1,5 +1,6 @@
 package com.interview.minireco.service.downstream.impl;
 
+import com.interview.minireco.domain.AttrName;
 import com.interview.minireco.domain.Item;
 import com.interview.minireco.domain.UserFeature;
 import com.interview.minireco.service.context.RecommendContext;
@@ -24,7 +25,7 @@ public class LiveRecallService implements RecallService {
             long id = 20_000L + feature.getUserId() % 1000 * 100 + i;
             String category = i % 2 == 0 ? feature.getPreferredCategory() : "fashion";
             Item item = new Item(id, "直播间-" + category + "-" + i, source(), category, 0.52 + i * 0.015);
-            item.putAttr("recall_reason", "live_hot");
+            item.putAttr(AttrName.RECALL_REASON, "live_hot");
             items.add(item);
         }
         return items;
