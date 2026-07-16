@@ -1,6 +1,7 @@
 package com.interview.minireco;
 
 import com.interview.minireco.degradation.DegradationManager;
+import com.interview.minireco.grpc.client.RecallTransportFactory;
 import com.interview.minireco.http.DegradationHttpHandler;
 import com.interview.minireco.http.RecommendHttpHandler;
 import com.interview.minireco.http.RecommendProtoHttpHandler;
@@ -10,6 +11,7 @@ import com.interview.minireco.migration.ComparisonRegistry;
 import com.interview.minireco.migration.RolloutManager;
 import com.interview.minireco.observability.AlertManager;
 import com.interview.minireco.observability.MetricsRegistry;
+import com.interview.minireco.proto.ProtoRuntimeWarmup;
 import com.interview.minireco.resilience.FaultInjectionManager;
 import com.interview.minireco.resilience.ResilienceRegistry;
 import com.interview.minireco.service.DemoWiring;
@@ -28,6 +30,7 @@ import java.util.concurrent.Executors;
 public class MiniRecoApplication {
     public static void main(String[] args) throws IOException {
         int port = resolvePort(args);
+        ProtoRuntimeWarmup.initialize();
         RecommendationFacade recommendService = DemoWiring.createRoutedRecommendService();
         MetricsRegistry metricsRegistry = MetricsRegistry.global();
         AlertManager alertManager = new AlertManager(metricsRegistry);
@@ -44,6 +47,7 @@ public class MiniRecoApplication {
             String body = JsonUtil.mapToJson(Map.of(
                     "status", "UP",
                     "service", "mini-reco-access-layer",
+                    "recallTransport", RecallTransportFactory.snapshot(),
                     "time", Instant.now().toString()
             ));
             byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
@@ -68,6 +72,7 @@ public class MiniRecoApplication {
         server.start();
 
         System.out.printf("MiniReco service started on port %d%n", port);
+        System.out.printf("Recall transport: %s%n", RecallTransportFactory.snapshot());
         System.out.printf("Try: http://localhost:%d/recommend?userId=123&scene=mall&limit=10%n", port);
         System.out.printf("Protobuf: http://localhost:%d/recommend-pb?userId=123&scene=mall&limit=10%n", port);
         System.out.printf("Metrics: http://localhost:%d/metrics%n", port);

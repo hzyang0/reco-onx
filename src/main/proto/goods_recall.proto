@@ -22,3 +22,13 @@ message GoodsRecallItemPb {
 message GoodsRecallResponsePb {
   repeated GoodsRecallItemPb items = 1;
 }
+
+message GoodsRecallRequestPb {
+  int64 user_id = 1;
+  string preferred_category = 2;
+  string scene = 3;
+}
+
+service GoodsRecallRpc {
+  rpc Recall(GoodsRecallRequestPb) returns (GoodsRecallResponsePb);
+}

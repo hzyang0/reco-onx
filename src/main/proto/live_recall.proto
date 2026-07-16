@@ -23,3 +23,13 @@ message LiveRecallItemPb {
 message LiveRecallResponsePb {
   repeated LiveRecallItemPb items = 1;
 }
+
+message LiveRecallRequestPb {
+  int64 user_id = 1;
+  string preferred_category = 2;
+  string scene = 3;
+}
+
+service LiveRecallRpc {
+  rpc Recall(LiveRecallRequestPb) returns (LiveRecallResponsePb);
+}

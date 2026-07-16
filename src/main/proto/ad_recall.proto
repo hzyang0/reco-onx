@@ -23,3 +23,13 @@ message AdRecallItemPb {
 message AdRecallResponsePb {
   repeated AdRecallItemPb items = 1;
 }
+
+message AdRecallRequestPb {
+  int64 user_id = 1;
+  string preferred_category = 2;
+  string scene = 3;
+}
+
+service AdRecallRpc {
+  rpc Recall(AdRecallRequestPb) returns (AdRecallResponsePb);
+}
