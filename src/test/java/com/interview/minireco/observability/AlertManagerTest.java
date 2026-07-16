@@ -23,4 +23,20 @@ class AlertManagerTest {
         Map<String, Object> alert = (Map<String, Object>) alerts.get(0);
         assertEquals("operator_cost_too_high", alert.get("rule"));
     }
+
+    @Test
+    void shouldCreateAlertWhenDownstreamUsesFallback() {
+        MetricsRegistry registry = new MetricsRegistry();
+        registry.increment("downstream.fallback", Map.of("source", "live", "reason", "timeout"));
+
+        AlertManager alertManager = new AlertManager(registry);
+
+        @SuppressWarnings("unchecked")
+        List<Object> alerts = (List<Object>) alertManager.snapshot().get("alerts");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> alert = (Map<String, Object>) alerts.get(0);
+
+        assertEquals(1, alerts.size());
+        assertEquals("downstream_fallback_happened", alert.get("rule"));
+    }
 }

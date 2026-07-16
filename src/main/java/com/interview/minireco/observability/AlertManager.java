@@ -47,6 +47,13 @@ public class AlertManager {
                         "metric", sample.toMap()
                 ));
             }
+            if ("downstream.fallback".equals(sample.getName()) && sample.getCount() > 0) {
+                alerts.add(Map.of(
+                        "level", "WARN",
+                        "rule", "downstream_fallback_happened",
+                        "metric", sample.toMap()
+                ));
+            }
         }
         return Map.of("alerts", alerts);
     }

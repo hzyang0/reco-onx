@@ -1,6 +1,11 @@
 package com.interview.minireco.service;
 
 import com.interview.minireco.degradation.DegradationManager;
+import com.interview.minireco.resilience.FaultInjectingRecallService;
+import com.interview.minireco.resilience.FaultInjectionManager;
+import com.interview.minireco.resilience.ResilienceConfig;
+import com.interview.minireco.resilience.ResilienceRegistry;
+import com.interview.minireco.resilience.ResilientRecallService;
 import com.interview.minireco.service.downstream.RecallService;
 import com.interview.minireco.service.downstream.impl.AdRecallService;
 import com.interview.minireco.service.downstream.impl.DemoAbService;
@@ -36,11 +41,19 @@ public final class DemoWiring {
         DemoOnlineFeatureService onlineFeatureService = new DemoOnlineFeatureService();
         DemoMixRankService mixRankService = new DemoMixRankService();
 
-        List<RecallService> recallServices = List.of(
+        List<RecallService> rawRecallServices = List.of(
                 new GoodsRecallService(),
                 new LiveRecallService(),
                 new AdRecallService()
         );
+        FaultInjectionManager faultInjectionManager = FaultInjectionManager.global();
+        ResilienceRegistry resilienceRegistry = ResilienceRegistry.global();
+        ResilienceConfig resilienceConfig = ResilienceConfig.recallDefaults();
+        List<RecallService> recallServices = rawRecallServices.stream()
+                .map(service -> new FaultInjectingRecallService(service, faultInjectionManager))
+                .map(service -> new ResilientRecallService(service, resilienceConfig))
+                .map(resilienceRegistry::register)
+                .toList();
 
         Operator prepareOperator = new PrepareOperator(userFeatureService, abService, addressService);
         Operator degradationOperator = new DegradationOperator(DegradationManager.global());

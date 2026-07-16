@@ -3,8 +3,11 @@ package com.interview.minireco;
 import com.interview.minireco.degradation.DegradationManager;
 import com.interview.minireco.http.DegradationHttpHandler;
 import com.interview.minireco.http.RecommendHttpHandler;
+import com.interview.minireco.http.ResilienceHttpHandler;
 import com.interview.minireco.observability.AlertManager;
 import com.interview.minireco.observability.MetricsRegistry;
+import com.interview.minireco.resilience.FaultInjectionManager;
+import com.interview.minireco.resilience.ResilienceRegistry;
 import com.interview.minireco.service.DemoWiring;
 import com.interview.minireco.service.RecommendService;
 import com.interview.minireco.util.JsonUtil;
@@ -25,6 +28,8 @@ public class MiniRecoApplication {
         MetricsRegistry metricsRegistry = MetricsRegistry.global();
         AlertManager alertManager = new AlertManager(metricsRegistry);
         DegradationManager degradationManager = DegradationManager.global();
+        ResilienceRegistry resilienceRegistry = ResilienceRegistry.global();
+        FaultInjectionManager faultInjectionManager = FaultInjectionManager.global();
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/recommend", new RecommendHttpHandler(recommendService));
@@ -47,6 +52,10 @@ public class MiniRecoApplication {
                 writeJson(exchange, JsonUtil.mapToJson(alertManager.snapshot()))
         );
         server.createContext("/degradation", new DegradationHttpHandler(degradationManager));
+        server.createContext(
+                "/resilience",
+                new ResilienceHttpHandler(resilienceRegistry, faultInjectionManager)
+        );
         server.setExecutor(Executors.newFixedThreadPool(16));
         server.start();
 
@@ -55,6 +64,7 @@ public class MiniRecoApplication {
         System.out.printf("Metrics: http://localhost:%d/metrics%n", port);
         System.out.printf("Alerts: http://localhost:%d/alerts%n", port);
         System.out.printf("Degradation: http://localhost:%d/degradation%n", port);
+        System.out.printf("Resilience: http://localhost:%d/resilience%n", port);
     }
 
     private static int resolvePort(String[] args) {

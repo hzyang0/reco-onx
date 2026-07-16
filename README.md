@@ -154,3 +154,26 @@ target/degradation-benchmark.csv
 ```text
 docs/10-v9-degradation-benchmark.md
 ```
+
+## V10：下游稳定性治理
+
+V10 为商品、直播和广告召回统一增加：
+
+- 80ms 单次超时；
+- 最多一次有限重试；
+- CLOSED、OPEN、HALF_OPEN 三态熔断器；
+- 每个召回源独立的有界线程池；
+- 弱依赖失败后的空结果兜底；
+- 故障注入、指标和告警。
+
+一条命令观察直播召回从超时重试到熔断：
+
+```powershell
+.\scripts\run-resilience-demo.ps1
+```
+
+学习文档：
+
+```text
+docs/11-v10-resilience.md
+```

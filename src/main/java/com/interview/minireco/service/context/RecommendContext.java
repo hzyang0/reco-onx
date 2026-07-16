@@ -24,6 +24,7 @@ public class RecommendContext {
     private DegradationDecision degradationDecision;
     private final Map<String, Long> stageCostMs = new LinkedHashMap<>();
     private final Map<String, Object> debug = new LinkedHashMap<>();
+    private final Map<String, Object> resilienceDebug = new LinkedHashMap<>();
 
     public RecommendContext(String requestId, RecommendRequest request) {
         this.requestId = requestId;
@@ -133,9 +134,16 @@ public class RecommendContext {
         debug.put(key, value);
     }
 
+    public synchronized void putResilienceDebug(String source, Object value) {
+        resilienceDebug.put(source, value);
+    }
+
     public synchronized Map<String, Object> buildDebugSnapshot() {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.putAll(debug);
+        if (!resilienceDebug.isEmpty()) {
+            snapshot.put("resilience", new LinkedHashMap<>(resilienceDebug));
+        }
         snapshot.put("stageCostMs", new LinkedHashMap<>(stageCostMs));
         return snapshot;
     }
