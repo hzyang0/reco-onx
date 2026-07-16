@@ -112,9 +112,23 @@ public final class JsonUtil {
             json.append(value);
         } else if (value instanceof Map<?, ?> nestedMap) {
             json.append(mapToJson(nestedMap));
+        } else if (value instanceof Iterable<?> iterable) {
+            appendIterable(json, iterable);
         } else {
             json.append("\"").append(escape(String.valueOf(value))).append("\"");
         }
+    }
+
+    private static void appendIterable(StringBuilder json, Iterable<?> iterable) {
+        json.append("[");
+        Iterator<?> iterator = iterable.iterator();
+        while (iterator.hasNext()) {
+            appendValue(json, iterator.next());
+            if (iterator.hasNext()) {
+                json.append(",");
+            }
+        }
+        json.append("]");
     }
 
     private static double round(double value) {

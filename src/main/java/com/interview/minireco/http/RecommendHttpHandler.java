@@ -2,6 +2,7 @@ package com.interview.minireco.http;
 
 import com.interview.minireco.domain.RecommendRequest;
 import com.interview.minireco.domain.RecommendResponse;
+import com.interview.minireco.observability.MetricsRegistry;
 import com.interview.minireco.service.RecommendService;
 import com.interview.minireco.util.JsonUtil;
 import com.sun.net.httpserver.HttpExchange;
@@ -13,14 +14,21 @@ import java.util.Map;
 
 public class RecommendHttpHandler implements HttpHandler {
     private final RecommendService recommendService;
+    private final MetricsRegistry metricsRegistry;
 
     public RecommendHttpHandler(RecommendService recommendService) {
+        this(recommendService, MetricsRegistry.global());
+    }
+
+    public RecommendHttpHandler(RecommendService recommendService, MetricsRegistry metricsRegistry) {
         this.recommendService = recommendService;
+        this.metricsRegistry = metricsRegistry;
     }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+            metricsRegistry.increment("request.rejected", Map.of("reason", "method_not_allowed"));
             writeJson(exchange, 405, JsonUtil.errorToJson("method not allowed"));
             return;
         }

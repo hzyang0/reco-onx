@@ -1,6 +1,8 @@
 package com.interview.minireco.service.operator.graph;
 
 import com.interview.minireco.service.context.RecommendContext;
+import com.interview.minireco.observability.MetricsRegistry;
+import com.interview.minireco.observability.StructuredLogger;
 import com.interview.minireco.service.operator.ExecutionEngine;
 import com.interview.minireco.service.operator.OperatorConfig;
 
@@ -12,11 +14,19 @@ import java.util.Map;
 import java.util.Queue;
 
 public class DagOperatorExecutor implements ExecutionEngine {
+    private static final StructuredLogger LOGGER = StructuredLogger.getLogger(DagOperatorExecutor.class);
+
     private final List<DagNode> executionOrder;
     private final Map<String, OperatorConfig> configByName;
+    private final MetricsRegistry metricsRegistry;
 
     public DagOperatorExecutor(DagGraph graph, List<OperatorConfig> configs) {
+        this(graph, configs, MetricsRegistry.global());
+    }
+
+    public DagOperatorExecutor(DagGraph graph, List<OperatorConfig> configs, MetricsRegistry metricsRegistry) {
         this.executionOrder = topologicalSort(graph);
+        this.metricsRegistry = metricsRegistry;
         this.configByName = new LinkedHashMap<>();
         for (OperatorConfig config : configs) {
             this.configByName.put(config.getName(), config);
@@ -30,12 +40,26 @@ public class DagOperatorExecutor implements ExecutionEngine {
             if (!config.isEnabled()) {
                 context.addStageCostMs(node.name(), 0);
                 context.putDebug(node.name() + "Skipped", true);
+                metricsRegistry.increment("operator.skipped", Map.of("operator", node.name()));
                 continue;
             }
 
             long start = System.nanoTime();
-            node.operator().execute(context);
-            context.addStageCostMs(node.name(), toMs(System.nanoTime() - start));
+            try {
+                node.operator().execute(context);
+                long costMs = toMs(System.nanoTime() - start);
+                context.addStageCostMs(node.name(), costMs);
+                metricsRegistry.recordTimer("operator.cost", Map.of("operator", node.name(), "status", "success"), costMs);
+                metricsRegistry.increment("operator.success", Map.of("operator", node.name()));
+                LOGGER.debug(context.getRequestId(), "operator_success", () -> Map.of("operator", node.name(), "costMs", costMs));
+            } catch (RuntimeException e) {
+                long costMs = toMs(System.nanoTime() - start);
+                context.addStageCostMs(node.name(), costMs);
+                metricsRegistry.recordTimer("operator.cost", Map.of("operator", node.name(), "status", "error"), costMs);
+                metricsRegistry.increment("operator.error", Map.of("operator", node.name()));
+                LOGGER.error(context.getRequestId(), "operator_error", () -> Map.of("operator", node.name(), "costMs", costMs), e);
+                throw e;
+            }
         }
     }
 

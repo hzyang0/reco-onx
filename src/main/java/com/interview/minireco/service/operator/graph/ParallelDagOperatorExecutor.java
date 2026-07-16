@@ -1,6 +1,8 @@
 package com.interview.minireco.service.operator.graph;
 
 import com.interview.minireco.service.context.RecommendContext;
+import com.interview.minireco.observability.MetricsRegistry;
+import com.interview.minireco.observability.StructuredLogger;
 import com.interview.minireco.service.operator.ExecutionEngine;
 import com.interview.minireco.service.operator.OperatorConfig;
 
@@ -20,16 +22,29 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ParallelDagOperatorExecutor implements ExecutionEngine {
+    private static final StructuredLogger LOGGER = StructuredLogger.getLogger(ParallelDagOperatorExecutor.class);
+
     private final DagGraph graph;
     private final Map<String, OperatorConfig> configByName;
     private final ExecutorService executorService;
+    private final MetricsRegistry metricsRegistry;
 
     public ParallelDagOperatorExecutor(DagGraph graph, List<OperatorConfig> configs, int parallelism) {
+        this(graph, configs, parallelism, MetricsRegistry.global());
+    }
+
+    public ParallelDagOperatorExecutor(
+            DagGraph graph,
+            List<OperatorConfig> configs,
+            int parallelism,
+            MetricsRegistry metricsRegistry
+    ) {
         if (parallelism <= 0) {
             throw new IllegalArgumentException("parallelism must be positive");
         }
         this.graph = graph;
         validateAcyclic(graph);
+        this.metricsRegistry = metricsRegistry;
         this.configByName = new LinkedHashMap<>();
         for (OperatorConfig config : configs) {
             this.configByName.put(config.getName(), config);
@@ -94,12 +109,26 @@ public class ParallelDagOperatorExecutor implements ExecutionEngine {
             if (!config.isEnabled()) {
                 context.addStageCostMs(node.name(), 0);
                 context.putDebug(node.name() + "Skipped", true);
+                metricsRegistry.increment("operator.skipped", Map.of("operator", node.name()));
                 return node.name();
             }
 
             long start = System.nanoTime();
-            node.operator().execute(context);
-            context.addStageCostMs(node.name(), toMs(System.nanoTime() - start));
+            try {
+                node.operator().execute(context);
+                long costMs = toMs(System.nanoTime() - start);
+                context.addStageCostMs(node.name(), costMs);
+                metricsRegistry.recordTimer("operator.cost", Map.of("operator", node.name(), "status", "success"), costMs);
+                metricsRegistry.increment("operator.success", Map.of("operator", node.name()));
+                LOGGER.debug(context.getRequestId(), "operator_success", () -> Map.of("operator", node.name(), "costMs", costMs));
+            } catch (RuntimeException e) {
+                long costMs = toMs(System.nanoTime() - start);
+                context.addStageCostMs(node.name(), costMs);
+                metricsRegistry.recordTimer("operator.cost", Map.of("operator", node.name(), "status", "error"), costMs);
+                metricsRegistry.increment("operator.error", Map.of("operator", node.name()));
+                LOGGER.error(context.getRequestId(), "operator_error", () -> Map.of("operator", node.name(), "costMs", costMs), e);
+                throw e;
+            }
             return node.name();
         });
     }

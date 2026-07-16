@@ -71,6 +71,7 @@ HTTP 请求
 - V4：已拆分阶段算子，并新增 `OperatorExecutor` 执行框架。
 - V5：已引入 DAG 图模型和 `DagOperatorExecutor` 拓扑执行器。
 - V6：已引入 `ParallelDagOperatorExecutor`，并将 `onlineFeature` 与 `mixRank` 并行执行。
+- V7：已新增结构化日志、算子级指标、请求级指标、基础告警和 `/metrics`、`/alerts` 端点。
 
 V2 学习文档见：
 
@@ -100,4 +101,10 @@ V6 学习文档见：
 
 ```text
 docs/07-v6-parallel-dag.md
+```
+
+V7 学习文档见：
+
+```text
+docs/08-v7-observability.md
 ```
