@@ -18,7 +18,15 @@ public record RecallFanoutConfig(
     }
 
     public static RecallFanoutConfig defaults() {
-        return new RecallFanoutConfig(120, 12, 100);
+        return new RecallFanoutConfig(envLong("RECALL_FANOUT_TIMEOUT_MS", 120), 12, 100);
+    }
+
+    private static long envLong(String name, long defaultValue) {
+        String raw = System.getenv(name);
+        if (raw == null || raw.isBlank()) { return defaultValue; }
+        long value = Long.parseLong(raw);
+        if (value <= 0) { throw new IllegalArgumentException(name + " must be positive"); }
+        return value;
     }
 
     public Map<String, Object> toMap() {

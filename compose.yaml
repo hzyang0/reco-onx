@@ -1,7 +1,7 @@
-name: mini-reco-v19
+name: mini-reco-v20
 
 x-app: &app
-  image: mini-reco-access-layer:v19
+  image: mini-reco-access-layer:v20
   build:
     context: .
     args:
@@ -21,7 +21,7 @@ x-otel: &otel
   OTEL_METRICS_EXPORTER: none
   OTEL_LOGS_EXPORTER: none
   OTEL_BSP_SCHEDULE_DELAY: "200"
-  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v19
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v20
 
 services:
   redis:
@@ -198,7 +198,9 @@ services:
       GRPC_GOODS_TARGET: goods:19001
       GRPC_LIVE_TARGET: live:19002
       GRPC_AD_TARGET: ad:19003
-      GRPC_DEADLINE_MS: "70"
+      GRPC_DEADLINE_MS: ${GRPC_DEADLINE_MS:-70}
+      RECALL_TIMEOUT_MS: ${RECALL_TIMEOUT_MS:-80}
+      RECALL_FANOUT_TIMEOUT_MS: ${RECALL_FANOUT_TIMEOUT_MS:-120}
       CONFIG_CENTER_URL: ${CONFIG_CENTER_URL:-}
       CONFIG_POLL_INTERVAL_MS: "500"
       CONFIG_STALE_AFTER_MS: "3000"

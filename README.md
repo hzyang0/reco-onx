@@ -403,3 +403,27 @@ V19 在准备阶段加入真实 Redis cache-aside 用户特征缓存：
 ```text
 docs/20-v19-redis-cache.md
 ```
+
+## V20：容量压测、SLO 与最终工程验收
+
+V20 为完整工程补齐可重复的性能与质量验收：
+
+- 自带 Java 闭环并发压测器，无需额外安装 k6；
+- warm-up 后执行 1/2/4/8 并发容量阶梯；
+- 同时统计 QPS、成功率、FALLBACK 率、P50/P95/P99/Max；
+- SLO 同时约束成功率、长尾延迟和推荐质量，而非只认 HTTP 200；
+- gRPC、韧性包装和 fan-out 三层 deadline 支持独立配置；
+- 自动生成 JSON、CSV、Markdown 容量报告；
+- 用 P95≤1ms 证明失败门禁有效，再注入 live 故障并验证恢复。
+
+本机最终实测的最大通过并发为 2：约 9.33 QPS、P95 270ms、成功率 100%、兜底率 1.32%。并发 4 虽达到约 13.19 QPS，但兜底率约 50.46%，被质量门禁判为不可用容量。
+
+```powershell
+.\scripts\run-capacity-test.ps1
+```
+
+学习文档与完整结果解释：
+
+```text
+docs/21-v20-capacity-slo.md
+```

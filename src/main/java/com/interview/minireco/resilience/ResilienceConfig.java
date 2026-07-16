@@ -27,7 +27,15 @@ public record ResilienceConfig(
     }
 
     public static ResilienceConfig recallDefaults() {
-        return new ResilienceConfig(80, 1, 2, 3_000, 2, 8);
+        return new ResilienceConfig(envLong("RECALL_TIMEOUT_MS", 80), 1, 2, 3_000, 2, 8);
+    }
+
+    private static long envLong(String name, long defaultValue) {
+        String raw = System.getenv(name);
+        if (raw == null || raw.isBlank()) { return defaultValue; }
+        long value = Long.parseLong(raw);
+        if (value <= 0) { throw new IllegalArgumentException(name + " must be positive"); }
+        return value;
     }
 
     public Map<String, Object> toMap() {
