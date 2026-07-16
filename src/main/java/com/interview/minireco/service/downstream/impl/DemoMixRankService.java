@@ -2,6 +2,7 @@ package com.interview.minireco.service.downstream.impl;
 
 import com.interview.minireco.domain.Item;
 import com.interview.minireco.domain.UserFeature;
+import com.interview.minireco.service.context.RecommendContext;
 import com.interview.minireco.service.downstream.MixRankService;
 import com.interview.minireco.util.SimulatedLatency;
 
@@ -11,11 +12,10 @@ import java.util.Map;
 
 public class DemoMixRankService implements MixRankService {
     @Override
-    public List<Item> rank(List<Item> items, Map<String, Object> context, int limit) {
+    public List<Item> rank(List<Item> items, RecommendContext context, int limit) {
         SimulatedLatency.sleepMs(120);
-        UserFeature feature = (UserFeature) context.get("user_feature");
-        @SuppressWarnings("unchecked")
-        Map<String, String> abParams = (Map<String, String>) context.get("ab_params");
+        UserFeature feature = context.getUserFeature();
+        Map<String, String> abParams = context.getAbParams();
 
         for (Item item : items) {
             double score = item.getScore();
