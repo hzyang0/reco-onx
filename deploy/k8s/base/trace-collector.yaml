@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trace-collector
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trace-collector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: trace-collector
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: trace-collector
+          image: mini-reco-access-layer:v17
+          imagePullPolicy: IfNotPresent
+          args:
+            - -cp
+            - /app/app.jar
+            - com.interview.minireco.telemetry.collector.TraceCollectorApplication
+            - "4317"
+            - "16686"
+          ports:
+            - name: otlp
+              containerPort: 4317
+            - name: query
+              containerPort: 16686
+          startupProbe:
+            httpGet:
+              path: /health
+              port: query
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: query
+            periodSeconds: 3
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: query
+            periodSeconds: 10
+            timeoutSeconds: 2
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trace-collector
+spec:
+  selector:
+    app.kubernetes.io/name: trace-collector
+  ports:
+    - name: otlp
+      port: 4317
+      targetPort: otlp
+    - name: query
+      port: 16686
+      targetPort: query

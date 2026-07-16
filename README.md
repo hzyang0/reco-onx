@@ -334,3 +334,26 @@ Prometheus：`http://localhost:19090`
 ```text
 docs/17-v16-prometheus-grafana.md
 ```
+
+## V17：Kubernetes 生产化部署与滚动验收
+
+V17 把 V16 的五个应用容器迁移为真正的 Kubernetes 工作负载：
+
+- 使用 Kustomize 管理 base 与本地 kind overlay；
+- Deployment + Service 提供自愈、滚动更新和稳定 DNS 服务发现；
+- 网关使用 HTTP 探针，召回服务使用原生 gRPC startup/readiness/liveness 探针；
+- 配置 requests/limits、HPA、PDB、优雅终止和零不可用滚动策略；
+- 以非 root、只读根文件系统、seccomp 和最小 capabilities 运行；
+- 自动缩容 live，真实验收 25 → 17 → 25 的降级恢复，再滚动重启 gateway。
+
+一条命令完成测试、构建、建集群、部署、故障注入、恢复和清理：
+
+```powershell
+.\scripts\run-kubernetes-demo.ps1
+```
+
+学习文档：
+
+```text
+docs/18-v17-kubernetes.md
+```

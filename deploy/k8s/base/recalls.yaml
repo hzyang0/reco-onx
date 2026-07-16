@@ -1,0 +1,293 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goods
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: goods
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: goods
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: goods
+          image: mini-reco-access-layer:v17
+          imagePullPolicy: IfNotPresent
+          args: ["-cp", "/app/app.jar", "com.interview.minireco.grpc.server.DownstreamGrpcApplication", "goods", "19001", "19101"]
+          envFrom:
+            - configMapRef:
+                name: mini-reco-config
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: mini-reco-goods
+          ports:
+            - name: grpc
+              containerPort: 19001
+            - name: metrics
+              containerPort: 19101
+          startupProbe:
+            grpc:
+              port: 19001
+              service: mini_reco.goods.GoodsRecallRpc
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:
+            grpc:
+              port: 19001
+              service: mini_reco.goods.GoodsRecallRpc
+            periodSeconds: 3
+            timeoutSeconds: 2
+          livenessProbe:
+            grpc:
+              port: 19001
+              service: mini_reco.goods.GoodsRecallRpc
+            periodSeconds: 10
+            timeoutSeconds: 2
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: goods
+  labels:
+    monitoring: prometheus
+spec:
+  selector:
+    app.kubernetes.io/name: goods
+  ports:
+    - name: grpc
+      port: 19001
+      targetPort: grpc
+    - name: metrics
+      port: 19101
+      targetPort: metrics
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: live
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: live
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: live
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: live
+          image: mini-reco-access-layer:v17
+          imagePullPolicy: IfNotPresent
+          args: ["-cp", "/app/app.jar", "com.interview.minireco.grpc.server.DownstreamGrpcApplication", "live", "19002", "19102"]
+          envFrom:
+            - configMapRef:
+                name: mini-reco-config
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: mini-reco-live
+          ports:
+            - name: grpc
+              containerPort: 19002
+            - name: metrics
+              containerPort: 19102
+          startupProbe:
+            grpc:
+              port: 19002
+              service: mini_reco.live.LiveRecallRpc
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:
+            grpc:
+              port: 19002
+              service: mini_reco.live.LiveRecallRpc
+            periodSeconds: 3
+            timeoutSeconds: 2
+          livenessProbe:
+            grpc:
+              port: 19002
+              service: mini_reco.live.LiveRecallRpc
+            periodSeconds: 10
+            timeoutSeconds: 2
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: live
+  labels:
+    monitoring: prometheus
+spec:
+  selector:
+    app.kubernetes.io/name: live
+  ports:
+    - name: grpc
+      port: 19002
+      targetPort: grpc
+    - name: metrics
+      port: 19102
+      targetPort: metrics
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ad
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ad
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ad
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ad
+          image: mini-reco-access-layer:v17
+          imagePullPolicy: IfNotPresent
+          args: ["-cp", "/app/app.jar", "com.interview.minireco.grpc.server.DownstreamGrpcApplication", "ad", "19003", "19103"]
+          envFrom:
+            - configMapRef:
+                name: mini-reco-config
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: mini-reco-ad
+          ports:
+            - name: grpc
+              containerPort: 19003
+            - name: metrics
+              containerPort: 19103
+          startupProbe:
+            grpc:
+              port: 19003
+              service: mini_reco.ad.AdRecallRpc
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:
+            grpc:
+              port: 19003
+              service: mini_reco.ad.AdRecallRpc
+            periodSeconds: 3
+            timeoutSeconds: 2
+          livenessProbe:
+            grpc:
+              port: 19003
+              service: mini_reco.ad.AdRecallRpc
+            periodSeconds: 10
+            timeoutSeconds: 2
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ad
+  labels:
+    monitoring: prometheus
+spec:
+  selector:
+    app.kubernetes.io/name: ad
+  ports:
+    - name: grpc
+      port: 19003
+      targetPort: grpc
+    - name: metrics
+      port: 19103
+      targetPort: metrics

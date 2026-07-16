@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mini-reco-config
+data:
+  OTEL_SDK_DISABLED: "false"
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://trace-collector:4317
+  OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+  OTEL_TRACES_EXPORTER: otlp
+  OTEL_METRICS_EXPORTER: none
+  OTEL_LOGS_EXPORTER: none
+  OTEL_BSP_SCHEDULE_DELAY: "200"
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=kubernetes,service.version=v17
+  RECALL_TRANSPORT: grpc
+  GRPC_GOODS_TARGET: goods:19001
+  GRPC_LIVE_TARGET: live:19002
+  GRPC_AD_TARGET: ad:19003
+  GRPC_DEADLINE_MS: "70"

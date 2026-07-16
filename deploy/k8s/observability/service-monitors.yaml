@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mini-reco-gateway
+  namespace: mini-reco
+spec:
+  selector:
+    matchLabels:
+      monitoring: prometheus-gateway
+  namespaceSelector:
+    matchNames: ["mini-reco"]
+  endpoints:
+    - port: http
+      path: /metrics/prometheus
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mini-reco-recalls
+  namespace: mini-reco
+spec:
+  selector:
+    matchLabels:
+      monitoring: prometheus
+  namespaceSelector:
+    matchNames: ["mini-reco"]
+  endpoints:
+    - port: metrics
+      path: /metrics/prometheus
+      interval: 15s
