@@ -1,7 +1,6 @@
 package com.interview.minireco.service.operator.impl;
 
 import com.interview.minireco.degradation.DegradationDecision;
-import com.interview.minireco.domain.Item;
 import com.interview.minireco.observability.MetricsRegistry;
 import com.interview.minireco.service.context.RecommendContext;
 import com.interview.minireco.service.downstream.RecallService;
@@ -15,9 +14,21 @@ public class RecallOperator implements Operator {
     public static final String NAME = "recall";
 
     private final List<RecallService> recallServices;
+    private final ParallelRecallFanout parallelRecallFanout;
+    private final MetricsRegistry metricsRegistry;
 
     public RecallOperator(List<RecallService> recallServices) {
+        this(recallServices, RecallFanoutConfig.defaults(), MetricsRegistry.global());
+    }
+
+    public RecallOperator(
+            List<RecallService> recallServices,
+            RecallFanoutConfig config,
+            MetricsRegistry metricsRegistry
+    ) {
         this.recallServices = List.copyOf(recallServices);
+        this.metricsRegistry = metricsRegistry;
+        this.parallelRecallFanout = new ParallelRecallFanout(this.recallServices, config, metricsRegistry);
     }
 
     @Override
@@ -27,23 +38,25 @@ public class RecallOperator implements Operator {
 
     @Override
     public void execute(RecommendContext context) {
-        List<Item> items = new ArrayList<>();
         DegradationDecision decision = context.getDegradationDecision();
+        List<String> skippedSources = new ArrayList<>();
         for (RecallService recallService : recallServices) {
-            if (decision.shouldSkipRecallSource(recallService.source())) {
-                MetricsRegistry.global().increment(
-                        "degradation.recall.skipped",
-                        Map.of(
-                                "level", decision.getLevel().name(),
-                                "source", recallService.source()
-                        )
-                );
+            if (!decision.shouldSkipRecallSource(recallService.source())) {
                 continue;
             }
-            List<Item> recalled = recallService.recall(context);
-            items.addAll(recalled);
+            skippedSources.add(recallService.source());
+            metricsRegistry.increment(
+                    "degradation.recall.skipped",
+                    Map.of(
+                            "level", decision.getLevel().name(),
+                            "source", recallService.source()
+                    )
+            );
         }
-        context.setRecalledItems(items);
-        context.putDebug("recallItemCount", items.size());
+
+        ParallelRecallFanout.FanoutResult result = parallelRecallFanout.execute(context, skippedSources);
+        context.setRecalledItems(result.items());
+        context.putDebug("recallItemCount", result.items().size());
+        context.putDebug("recallFanout", result.debug());
     }
 }

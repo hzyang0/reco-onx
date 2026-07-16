@@ -104,6 +104,7 @@ class RecommendServiceTest {
     }
 
     private RecommendService createRecommendService() {
+        when(goodsRecallService.source()).thenReturn("goods");
         List<Operator> operators = List.of(
                 new PrepareOperator(userFeatureService, abService, addressService),
                 new RecallOperator(List.of(goodsRecallService)),

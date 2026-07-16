@@ -199,6 +199,8 @@ Invoke-RestMethod "http://localhost:8080/recommend?userId=123&scene=mall&limit=1
 
 脚本会对这些逻辑条件做自动断言，并确认 `/alerts` 已产生 `downstream_fallback_happened`，因此它不仅是展示脚本，也是一个轻量的端到端测试。
 
+> 版本提示：V11 在外层增加了 120ms 召回统一截止时间。使用最新 `main` 运行本脚本时，前两次 live 会在第二次尝试期间被外层取消，`reason` 显示为 `cancelled`，同时 `recallFanout.status=PARTIAL`；第三次仍是 `circuit_open`。上表保留的是 V10 当时尚未并行化的历史结果。
+
 恢复故障并重置熔断器：
 
 ```powershell

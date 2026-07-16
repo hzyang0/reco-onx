@@ -54,6 +54,13 @@ public class AlertManager {
                         "metric", sample.toMap()
                 ));
             }
+            if ("recall.fanout.timeout".equals(sample.getName()) && sample.getCount() > 0) {
+                alerts.add(Map.of(
+                        "level", "WARN",
+                        "rule", "recall_fanout_timeout",
+                        "metric", sample.toMap()
+                ));
+            }
         }
         return Map.of("alerts", alerts);
     }

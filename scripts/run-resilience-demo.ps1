@@ -54,6 +54,7 @@ try {
     for ($requestIndex = 1; $requestIndex -le 3; $requestIndex++) {
         $response = Invoke-RestMethod "$baseUrl/recommend?userId=123&scene=mall&limit=10"
         $live = $response.debug.resilience.live
+        $fanout = $response.debug.recallFanout
         $rows += [pscustomobject]@{
             Request = $requestIndex
             TotalCostMs = $response.costMs
@@ -62,12 +63,15 @@ try {
             Reason = $live.reason
             Attempts = $live.attempts
             Circuit = $live.circuit.state
+            Fanout = $fanout.status
+            RecallCostMs = $fanout.costMs
+            FanoutTimedOut = [bool]($fanout.timedOutSources -contains "live")
         }
     }
     $rows | Format-Table -AutoSize
 
-    if ($rows[0].Reason -ne "timeout" -or $rows[0].Attempts -ne 2) {
-        throw "first request should retry once and fallback because of timeout"
+    if ($rows[0].Reason -ne "cancelled" -or $rows[0].Attempts -ne 2 -or -not $rows[0].FanoutTimedOut) {
+        throw "first request should be cancelled by the fanout deadline during its retry"
     }
     if ($rows[1].Circuit -ne "OPEN") {
         throw "second failed request should open the circuit"

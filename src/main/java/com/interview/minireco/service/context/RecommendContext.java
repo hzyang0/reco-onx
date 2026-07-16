@@ -138,6 +138,10 @@ public class RecommendContext {
         resilienceDebug.put(source, value);
     }
 
+    public synchronized Map<String, Object> getResilienceDebugSnapshot() {
+        return new LinkedHashMap<>(resilienceDebug);
+    }
+
     public synchronized Map<String, Object> buildDebugSnapshot() {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.putAll(debug);

@@ -91,6 +91,10 @@ public class ResilientRecallService implements RecallService {
                         "downstream.call.error",
                         Map.of("source", source(), "reason", reason)
                 );
+                if ("cancelled".equals(reason)) {
+                    circuitBreaker.recordFailure();
+                    return fallback(context, reason, attempt, elapsedMs(logicalStart), e);
+                }
                 if (attempt < maxAttempts) {
                     metricsRegistry.increment(
                             "downstream.retry",
@@ -201,6 +205,9 @@ public class ResilientRecallService implements RecallService {
         }
         if (error instanceof BulkheadFullException) {
             return "bulkhead_full";
+        }
+        if (error instanceof DownstreamCallException && error.getCause() instanceof InterruptedException) {
+            return "cancelled";
         }
         return "error";
     }

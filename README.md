@@ -177,3 +177,25 @@ V10 为商品、直播和广告召回统一增加：
 ```text
 docs/11-v10-resilience.md
 ```
+
+## V11：多路并行召回
+
+V11 将 goods、live、ad 从顺序调用改为真正的 fan-out/fan-in 并行召回：
+
+- 使用完成队列收集先返回的来源；
+- 召回阶段设置 120ms 统一截止时间；
+- 超时后保留已完成的部分结果；
+- 最终按固定来源顺序拼接，保证确定性；
+- 补充来源耗时、整体耗时、部分结果指标和告警。
+
+一条命令观察健康并行和直播超时两种场景：
+
+```powershell
+.\scripts\run-parallel-recall-demo.ps1
+```
+
+学习文档：
+
+```text
+docs/12-v11-parallel-recall.md
+```
