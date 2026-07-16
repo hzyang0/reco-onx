@@ -13,6 +13,15 @@ import com.interview.minireco.service.downstream.MixRankService;
 import com.interview.minireco.service.downstream.OnlineFeatureService;
 import com.interview.minireco.service.downstream.RecallService;
 import com.interview.minireco.service.downstream.UserFeatureService;
+import com.interview.minireco.service.operator.Operator;
+import com.interview.minireco.service.operator.OperatorConfig;
+import com.interview.minireco.service.operator.OperatorExecutor;
+import com.interview.minireco.service.operator.impl.FilterOperator;
+import com.interview.minireco.service.operator.impl.MixRankOperator;
+import com.interview.minireco.service.operator.impl.OnlineFeatureOperator;
+import com.interview.minireco.service.operator.impl.PostProcessOperator;
+import com.interview.minireco.service.operator.impl.PrepareOperator;
+import com.interview.minireco.service.operator.impl.RecallOperator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -75,14 +84,7 @@ class RecommendServiceTest {
         when(mixRankService.rank(anyList(), any(RecommendContext.class), eq(2)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        RecommendService recommendService = new RecommendService(
-                userFeatureService,
-                abService,
-                addressService,
-                List.of(goodsRecallService),
-                onlineFeatureService,
-                mixRankService
-        );
+        RecommendService recommendService = createRecommendService();
 
         RecommendResponse response = recommendService.recommend(new RecommendRequest(123L, "mall", 2));
 
@@ -94,17 +96,30 @@ class RecommendServiceTest {
 
     @Test
     void recommendShouldRejectUnsupportedScene() {
-        RecommendService recommendService = new RecommendService(
-                userFeatureService,
-                abService,
-                addressService,
-                List.of(goodsRecallService),
-                onlineFeatureService,
-                mixRankService
-        );
+        RecommendService recommendService = createRecommendService();
 
         RecommendRequest request = new RecommendRequest(123L, "unknown_scene", 10);
 
         assertThrows(IllegalArgumentException.class, () -> recommendService.recommend(request));
+    }
+
+    private RecommendService createRecommendService() {
+        List<Operator> operators = List.of(
+                new PrepareOperator(userFeatureService, abService, addressService),
+                new RecallOperator(List.of(goodsRecallService)),
+                new OnlineFeatureOperator(onlineFeatureService),
+                new FilterOperator(),
+                new MixRankOperator(mixRankService),
+                new PostProcessOperator()
+        );
+        List<OperatorConfig> configs = List.of(
+                OperatorConfig.enabled(PrepareOperator.NAME),
+                OperatorConfig.enabled(RecallOperator.NAME),
+                OperatorConfig.enabled(OnlineFeatureOperator.NAME),
+                OperatorConfig.enabled(FilterOperator.NAME),
+                OperatorConfig.enabled(MixRankOperator.NAME),
+                OperatorConfig.enabled(PostProcessOperator.NAME)
+        );
+        return new RecommendService(new OperatorExecutor(operators, configs));
     }
 }

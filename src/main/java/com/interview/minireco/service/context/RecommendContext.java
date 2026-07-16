@@ -18,6 +18,8 @@ public class RecommendContext {
     private Address address;
     private List<Item> recalledItems = List.of();
     private List<Item> filteredItems = List.of();
+    private List<Item> rankedItems = List.of();
+    private List<Item> finalItems = List.of();
     private final Map<String, Long> stageCostMs = new LinkedHashMap<>();
     private final Map<String, Object> debug = new LinkedHashMap<>();
 
@@ -84,6 +86,22 @@ public class RecommendContext {
 
     public void setFilteredItems(List<Item> filteredItems) {
         this.filteredItems = new ArrayList<>(filteredItems);
+    }
+
+    public List<Item> getRankedItems() {
+        return rankedItems;
+    }
+
+    public void setRankedItems(List<Item> rankedItems) {
+        this.rankedItems = new ArrayList<>(rankedItems);
+    }
+
+    public List<Item> getFinalItems() {
+        return finalItems;
+    }
+
+    public void setFinalItems(List<Item> finalItems) {
+        this.finalItems = new ArrayList<>(finalItems);
     }
 
     public void addStageCostMs(String stageName, long costMs) {
