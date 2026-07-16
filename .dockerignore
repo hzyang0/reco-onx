@@ -1,0 +1,10 @@
+.git
+.github
+.idea
+.vscode
+docs
+scripts
+target/*
+!target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar
+*.log
+*.iml

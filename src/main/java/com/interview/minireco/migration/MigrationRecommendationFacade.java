@@ -5,6 +5,8 @@ import com.interview.minireco.domain.RecommendResponse;
 import com.interview.minireco.observability.MetricsRegistry;
 import com.interview.minireco.observability.StructuredLogger;
 import com.interview.minireco.service.RecommendationFacade;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -136,8 +138,13 @@ public class MigrationRecommendationFacade implements RecommendationFacade {
             RecommendResponse primaryResponse,
             RolloutDecision decision
     ) {
+        Context telemetryContext = Context.current();
         try {
-            shadowExecutor.execute(() -> runShadow(request, primaryResponse, decision));
+            shadowExecutor.execute(() -> {
+                try (Scope ignored = telemetryContext.makeCurrent()) {
+                    runShadow(request, primaryResponse, decision);
+                }
+            });
             metricsRegistry.increment(
                     "migration.shadow.submitted",
                     Map.of("pipeline", decision.shadowVersion().name().toLowerCase())

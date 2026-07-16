@@ -5,6 +5,7 @@ import com.interview.minireco.domain.Address;
 import com.interview.minireco.domain.Item;
 import com.interview.minireco.domain.RecommendRequest;
 import com.interview.minireco.domain.UserFeature;
+import io.opentelemetry.context.Context;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -14,6 +15,7 @@ import java.util.Map;
 public class RecommendContext {
     private final String requestId;
     private final RecommendRequest request;
+    private final Context telemetryContext;
     private UserFeature userFeature;
     private Map<String, String> abParams = Map.of();
     private Address address;
@@ -29,6 +31,7 @@ public class RecommendContext {
     public RecommendContext(String requestId, RecommendRequest request) {
         this.requestId = requestId;
         this.request = request;
+        this.telemetryContext = Context.current();
     }
 
     public String getRequestId() {
@@ -37,6 +40,10 @@ public class RecommendContext {
 
     public RecommendRequest getRequest() {
         return request;
+    }
+
+    public Context getTelemetryContext() {
+        return telemetryContext;
     }
 
     public long getUserId() {

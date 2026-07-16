@@ -1,6 +1,8 @@
 package com.interview.minireco.observability;
 
 import com.interview.minireco.util.JsonUtil;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -54,6 +56,11 @@ public class StructuredLogger {
         payload.put("event", event);
         if (requestId != null) {
             payload.put("requestId", requestId);
+        }
+        SpanContext spanContext = Span.current().getSpanContext();
+        if (spanContext.isValid()) {
+            payload.put("traceId", spanContext.getTraceId());
+            payload.put("spanId", spanContext.getSpanId());
         }
         if (fieldsSupplier != null) {
             payload.putAll(fieldsSupplier.get());

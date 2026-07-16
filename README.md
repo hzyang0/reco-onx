@@ -271,3 +271,32 @@ V14 将 goods、live、ad 运行成三个独立 gRPC 服务进程，推荐接入
 ```text
 docs/15-v14-grpc-multiprocess.md
 ```
+
+## V15：Docker Compose、服务治理与分布式链路追踪
+
+V15 将网关、三路召回和 Trace Collector 容器化并统一编排：
+
+- Compose DNS 服务发现和一键部署；
+- 标准 gRPC Health Checking 与 Server Reflection；
+- HTTP、线程池和 gRPC Metadata 中的 OpenTelemetry Context 传播；
+- OTLP/gRPC 异步导出和按 TraceId 查询；
+- 非 root、只读根文件系统、资源限制与健康依赖；
+- 真实停止 live 容器，验证 25 → 17 → 25 的降级和恢复过程。
+
+一条命令完成测试、构建、部署、追踪、故障注入和恢复验收：
+
+```powershell
+.\scripts\run-docker-compose-demo.ps1
+```
+
+保留容器用于手动学习：
+
+```powershell
+.\scripts\run-docker-compose-demo.ps1 -KeepRunning
+```
+
+学习文档：
+
+```text
+docs/16-v15-docker-otel.md
+```

@@ -6,6 +6,8 @@ import com.interview.minireco.resilience.DownstreamCallException;
 import com.interview.minireco.resilience.DownstreamTimeoutException;
 import com.interview.minireco.service.context.RecommendContext;
 import com.interview.minireco.service.downstream.RecallService;
+import com.interview.minireco.telemetry.GrpcTelemetry;
+import com.interview.minireco.telemetry.Telemetry;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
@@ -13,6 +15,11 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.MetadataUtils;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -69,22 +76,38 @@ abstract class AbstractGrpcRecallService implements RecallService, AutoCloseable
     ) {
         Metadata metadata = new Metadata();
         metadata.put(GrpcRequestMetadata.REQUEST_ID_HEADER, context.getRequestId());
+        Context parent = context.getTelemetryContext();
+        Span span = Telemetry.tracer().spanBuilder("mini_reco." + source + "/Recall")
+                .setParent(parent)
+                .setSpanKind(SpanKind.CLIENT)
+                .startSpan();
+        span.setAttribute("rpc.system", "grpc");
+        span.setAttribute("rpc.service", source);
+        span.setAttribute("server.address", target);
+        Context callContext = parent.with(span);
+        GrpcTelemetry.inject(callContext, metadata);
         S configuredStub = stub
                 .withDeadlineAfter(deadlineMs, TimeUnit.MILLISECONDS)
                 .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadata));
         long start = System.nanoTime();
-        try {
+        try (Scope ignored = callContext.makeCurrent()) {
             R response = rpc.apply(configuredStub);
+            span.setStatus(StatusCode.OK);
             record("success", elapsedMs(start));
             context.putDebug("recallTransport", "grpc");
             return response;
         } catch (StatusRuntimeException e) {
             String status = e.getStatus().getCode().name().toLowerCase();
+            span.setAttribute("rpc.grpc.status_code", e.getStatus().getCode().value());
+            span.recordException(e);
+            span.setStatus(StatusCode.ERROR, status);
             record(status, elapsedMs(start));
             if (e.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
                 throw new DownstreamTimeoutException(source, deadlineMs);
             }
             throw new DownstreamCallException(source, e);
+        } finally {
+            span.end();
         }
     }
 

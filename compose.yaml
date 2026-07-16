@@ -1,0 +1,182 @@
+name: mini-reco-v15
+
+x-app: &app
+  image: mini-reco-access-layer:v15
+  build:
+    context: .
+    args:
+      RUNTIME_IMAGE: ${MINI_RECO_RUNTIME_IMAGE:-eclipse-temurin:17-jre-jammy}
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m
+  networks:
+    - reco
+
+x-otel: &otel
+  OTEL_SDK_DISABLED: "false"
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://trace-collector:4317
+  OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+  OTEL_TRACES_EXPORTER: otlp
+  OTEL_METRICS_EXPORTER: none
+  OTEL_LOGS_EXPORTER: none
+  OTEL_BSP_SCHEDULE_DELAY: "200"
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v15
+
+services:
+  trace-collector:
+    <<: *app
+    command:
+      - -cp
+      - /app/app.jar
+      - com.interview.minireco.telemetry.collector.TraceCollectorApplication
+      - "4317"
+      - "16686"
+    ports:
+      - "16686:16686"
+    healthcheck:
+      test:
+        - CMD
+        - java
+        - -cp
+        - /app/app.jar
+        - com.interview.minireco.ops.HttpHealthProbe
+        - http://localhost:16686/health
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 5s
+    mem_limit: 256m
+    cpus: 0.50
+
+  goods:
+    <<: *app
+    command:
+      - -cp
+      - /app/app.jar
+      - com.interview.minireco.grpc.server.DownstreamGrpcApplication
+      - goods
+      - "19001"
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: mini-reco-goods
+    depends_on:
+      trace-collector:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - java
+        - -cp
+        - /app/app.jar
+        - com.interview.minireco.grpc.ops.GrpcHealthProbe
+        - localhost:19001
+        - mini_reco.goods.GoodsRecallRpc
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 5s
+    mem_limit: 256m
+    cpus: 0.50
+
+  live:
+    <<: *app
+    command:
+      - -cp
+      - /app/app.jar
+      - com.interview.minireco.grpc.server.DownstreamGrpcApplication
+      - live
+      - "19002"
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: mini-reco-live
+    depends_on:
+      trace-collector:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - java
+        - -cp
+        - /app/app.jar
+        - com.interview.minireco.grpc.ops.GrpcHealthProbe
+        - localhost:19002
+        - mini_reco.live.LiveRecallRpc
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 5s
+    mem_limit: 256m
+    cpus: 0.50
+
+  ad:
+    <<: *app
+    command:
+      - -cp
+      - /app/app.jar
+      - com.interview.minireco.grpc.server.DownstreamGrpcApplication
+      - ad
+      - "19003"
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: mini-reco-ad
+    depends_on:
+      trace-collector:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - java
+        - -cp
+        - /app/app.jar
+        - com.interview.minireco.grpc.ops.GrpcHealthProbe
+        - localhost:19003
+        - mini_reco.ad.AdRecallRpc
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 5s
+    mem_limit: 256m
+    cpus: 0.50
+
+  gateway:
+    <<: *app
+    command:
+      - -jar
+      - /app/app.jar
+      - "8080"
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: mini-reco-gateway
+      RECALL_TRANSPORT: grpc
+      GRPC_GOODS_TARGET: goods:19001
+      GRPC_LIVE_TARGET: live:19002
+      GRPC_AD_TARGET: ad:19003
+      GRPC_DEADLINE_MS: "70"
+    depends_on:
+      goods:
+        condition: service_healthy
+      live:
+        condition: service_healthy
+      ad:
+        condition: service_healthy
+    ports:
+      - "18093:8080"
+    healthcheck:
+      test:
+        - CMD
+        - java
+        - -cp
+        - /app/app.jar
+        - com.interview.minireco.ops.HttpHealthProbe
+        - http://localhost:8080/health
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 5s
+    mem_limit: 384m
+    cpus: 1.00
+
+networks:
+  reco:
+    driver: bridge

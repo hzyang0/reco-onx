@@ -16,6 +16,8 @@ import com.interview.minireco.resilience.FaultInjectionManager;
 import com.interview.minireco.resilience.ResilienceRegistry;
 import com.interview.minireco.service.DemoWiring;
 import com.interview.minireco.service.RecommendationFacade;
+import com.interview.minireco.telemetry.Telemetry;
+import com.interview.minireco.telemetry.TracingHttpHandler;
 import com.interview.minireco.util.JsonUtil;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -30,6 +32,7 @@ import java.util.concurrent.Executors;
 public class MiniRecoApplication {
     public static void main(String[] args) throws IOException {
         int port = resolvePort(args);
+        Telemetry.initialize("mini-reco-gateway");
         ProtoRuntimeWarmup.initialize();
         RecommendationFacade recommendService = DemoWiring.createRoutedRecommendService();
         MetricsRegistry metricsRegistry = MetricsRegistry.global();
@@ -41,8 +44,14 @@ public class MiniRecoApplication {
         ComparisonRegistry comparisonRegistry = ComparisonRegistry.global();
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.createContext("/recommend", new RecommendHttpHandler(recommendService));
-        server.createContext("/recommend-pb", new RecommendProtoHttpHandler(recommendService));
+        server.createContext(
+                "/recommend",
+                new TracingHttpHandler("GET /recommend", new RecommendHttpHandler(recommendService))
+        );
+        server.createContext(
+                "/recommend-pb",
+                new TracingHttpHandler("GET /recommend-pb", new RecommendProtoHttpHandler(recommendService))
+        );
         server.createContext("/health", exchange -> {
             String body = JsonUtil.mapToJson(Map.of(
                     "status", "UP",
