@@ -357,3 +357,27 @@ V17 把 V16 的五个应用容器迁移为真正的 Kubernetes 工作负载：
 ```text
 docs/18-v17-kubernetes.md
 ```
+
+## V18：动态配置中心与灰度治理
+
+V18 新增独立配置中心和网关轮询客户端，让发布策略无需重启即可安全生效：
+
+- 灰度比例、shadow 比例和降级级别组成不可变版本快照；
+- `expectedVersion` 乐观锁阻止并发发布丢失更新；
+- 0～100 范围与枚举完整校验，拒绝半份错误配置；
+- 稳定用户分桶支持 0% 回滚、5% 金丝雀和 100% 全量；
+- 网关主链路只读本地内存，配置中心宕机时保留 Last Known Good；
+- `/runtime-config` 暴露 HEALTHY/STALE、版本、错误数和实际生效值；
+- 配置中心保留最近 20 次操作者与时间审计。
+
+一条命令完成 48 项测试、六容器部署、版本冲突、非法配置、宕机容灾和恢复验收：
+
+```powershell
+.\scripts\run-dynamic-config-demo.ps1
+```
+
+学习文档：
+
+```text
+docs/19-v18-dynamic-config.md
+```

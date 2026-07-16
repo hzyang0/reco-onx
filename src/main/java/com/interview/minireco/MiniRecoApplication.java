@@ -1,8 +1,11 @@
 package com.interview.minireco;
 
+import com.interview.minireco.config.DynamicConfigPoller;
+import com.interview.minireco.config.HttpConfigFetcher;
 import com.interview.minireco.degradation.DegradationManager;
 import com.interview.minireco.grpc.client.RecallTransportFactory;
 import com.interview.minireco.http.DegradationHttpHandler;
+import com.interview.minireco.http.DynamicConfigHttpHandler;
 import com.interview.minireco.http.RecommendHttpHandler;
 import com.interview.minireco.http.RecommendProtoHttpHandler;
 import com.interview.minireco.http.ResilienceHttpHandler;
@@ -43,6 +46,7 @@ public class MiniRecoApplication {
         FaultInjectionManager faultInjectionManager = FaultInjectionManager.global();
         RolloutManager rolloutManager = RolloutManager.global();
         ComparisonRegistry comparisonRegistry = ComparisonRegistry.global();
+        DynamicConfigPoller configPoller = createConfigPoller(rolloutManager, degradationManager);
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext(
@@ -79,6 +83,9 @@ public class MiniRecoApplication {
                 new ResilienceHttpHandler(resilienceRegistry, faultInjectionManager)
         );
         server.createContext("/rollout", new RolloutHttpHandler(rolloutManager, comparisonRegistry));
+        if (configPoller != null) {
+            server.createContext("/runtime-config", new DynamicConfigHttpHandler(configPoller));
+        }
         server.setExecutor(Executors.newFixedThreadPool(16));
         server.start();
 
@@ -92,6 +99,39 @@ public class MiniRecoApplication {
         System.out.printf("Degradation: http://localhost:%d/degradation%n", port);
         System.out.printf("Resilience: http://localhost:%d/resilience%n", port);
         System.out.printf("Rollout: http://localhost:%d/rollout%n", port);
+        if (configPoller != null) {
+            System.out.printf("Runtime config: http://localhost:%d/runtime-config%n", port);
+        }
+    }
+
+    private static DynamicConfigPoller createConfigPoller(
+            RolloutManager rolloutManager,
+            DegradationManager degradationManager
+    ) {
+        String url = System.getenv("CONFIG_CENTER_URL");
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        long intervalMs = parsePositiveLong("CONFIG_POLL_INTERVAL_MS", 500);
+        long staleAfterMs = parsePositiveLong("CONFIG_STALE_AFTER_MS", Math.max(3000, intervalMs * 5));
+        DynamicConfigPoller poller = new DynamicConfigPoller(
+                new HttpConfigFetcher(url), rolloutManager, degradationManager, staleAfterMs
+        );
+        poller.start(intervalMs);
+        Runtime.getRuntime().addShutdownHook(new Thread(poller::close, "dynamic-config-shutdown"));
+        return poller;
+    }
+
+    private static long parsePositiveLong(String name, long defaultValue) {
+        String raw = System.getenv(name);
+        if (raw == null || raw.isBlank()) {
+            return defaultValue;
+        }
+        long value = Long.parseLong(raw);
+        if (value <= 0) {
+            throw new IllegalArgumentException(name + " must be positive");
+        }
+        return value;
     }
 
     private static int resolvePort(String[] args) {

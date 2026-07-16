@@ -1,7 +1,7 @@
-name: mini-reco-v16
+name: mini-reco-v18
 
 x-app: &app
-  image: mini-reco-access-layer:v16
+  image: mini-reco-access-layer:v18
   build:
     context: .
     args:
@@ -21,9 +21,35 @@ x-otel: &otel
   OTEL_METRICS_EXPORTER: none
   OTEL_LOGS_EXPORTER: none
   OTEL_BSP_SCHEDULE_DELAY: "200"
-  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v16
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v18
 
 services:
+  config-center:
+    <<: *app
+    profiles:
+      - dynamic
+    command:
+      - -cp
+      - /app/app.jar
+      - com.interview.minireco.config.ConfigCenterApplication
+      - "8888"
+    ports:
+      - "18888:8888"
+    healthcheck:
+      test:
+        - CMD
+        - java
+        - -cp
+        - /app/app.jar
+        - com.interview.minireco.ops.HttpHealthProbe
+        - http://localhost:8888/health
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 3s
+    mem_limit: 192m
+    cpus: 0.35
+
   trace-collector:
     <<: *app
     command:
@@ -156,6 +182,9 @@ services:
       GRPC_LIVE_TARGET: live:19002
       GRPC_AD_TARGET: ad:19003
       GRPC_DEADLINE_MS: "70"
+      CONFIG_CENTER_URL: ${CONFIG_CENTER_URL:-}
+      CONFIG_POLL_INTERVAL_MS: "500"
+      CONFIG_STALE_AFTER_MS: "3000"
     depends_on:
       goods:
         condition: service_healthy
