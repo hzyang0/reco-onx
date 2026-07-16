@@ -70,6 +70,7 @@ HTTP 请求
 - V3：已将 item attr 从 `List<ItemAttr>` 重构为 `Map<AttrName, ItemAttr>`。
 - V4：已拆分阶段算子，并新增 `OperatorExecutor` 执行框架。
 - V5：已引入 DAG 图模型和 `DagOperatorExecutor` 拓扑执行器。
+- V6：已引入 `ParallelDagOperatorExecutor`，并将 `onlineFeature` 与 `mixRank` 并行执行。
 
 V2 学习文档见：
 
@@ -93,4 +94,10 @@ V5 学习文档见：
 
 ```text
 docs/06-v5-dag-executor.md
+```
+
+V6 学习文档见：
+
+```text
+docs/07-v6-parallel-dag.md
 ```

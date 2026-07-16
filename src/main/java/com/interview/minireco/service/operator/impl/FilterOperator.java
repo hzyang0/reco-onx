@@ -18,8 +18,11 @@ public class FilterOperator implements Operator {
 
     @Override
     public void execute(RecommendContext context) {
+        List<Item> sourceItems = context.getRankedItems().isEmpty()
+                ? context.getRecalledItems()
+                : context.getRankedItems();
         List<Item> result = new ArrayList<>();
-        for (Item item : context.getRecalledItems()) {
+        for (Item item : sourceItems) {
             int stock = item.findAttr(AttrName.STOCK)
                     .map(Integer::parseInt)
                     .orElse(0);

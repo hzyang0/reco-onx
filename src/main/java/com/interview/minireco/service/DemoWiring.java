@@ -13,7 +13,7 @@ import com.interview.minireco.service.operator.Operator;
 import com.interview.minireco.service.operator.OperatorConfig;
 import com.interview.minireco.service.operator.graph.DagGraph;
 import com.interview.minireco.service.operator.graph.DagNode;
-import com.interview.minireco.service.operator.graph.DagOperatorExecutor;
+import com.interview.minireco.service.operator.graph.ParallelDagOperatorExecutor;
 import com.interview.minireco.service.operator.impl.FilterOperator;
 import com.interview.minireco.service.operator.impl.MixRankOperator;
 import com.interview.minireco.service.operator.impl.OnlineFeatureOperator;
@@ -60,11 +60,11 @@ public final class DemoWiring {
                 DagNode.of(prepareOperator),
                 DagNode.of(recallOperator, PrepareOperator.NAME),
                 DagNode.of(onlineFeatureOperator, RecallOperator.NAME),
-                DagNode.of(filterOperator, OnlineFeatureOperator.NAME),
-                DagNode.of(mixRankOperator, FilterOperator.NAME),
-                DagNode.of(postProcessOperator, MixRankOperator.NAME)
+                DagNode.of(mixRankOperator, RecallOperator.NAME),
+                DagNode.of(filterOperator, OnlineFeatureOperator.NAME, MixRankOperator.NAME),
+                DagNode.of(postProcessOperator, FilterOperator.NAME)
         ));
 
-        return new RecommendService(new DagOperatorExecutor(graph, configs));
+        return new RecommendService(new ParallelDagOperatorExecutor(graph, configs, 4));
     }
 }

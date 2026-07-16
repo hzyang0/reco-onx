@@ -23,7 +23,10 @@ public class MixRankOperator implements Operator {
 
     @Override
     public void execute(RecommendContext context) {
-        List<Item> rankedItems = mixRankService.rank(context.getFilteredItems(), context, context.getLimit());
+        List<Item> candidates = context.getFilteredItems().isEmpty()
+                ? context.getRecalledItems()
+                : context.getFilteredItems();
+        List<Item> rankedItems = mixRankService.rank(candidates, context, context.getLimit());
         context.setRankedItems(rankedItems);
     }
 }

@@ -18,7 +18,10 @@ public class PostProcessOperator implements Operator {
 
     @Override
     public void execute(RecommendContext context) {
-        List<Item> result = new ArrayList<>(context.getRankedItems());
+        List<Item> baseItems = context.getFilteredItems().isEmpty()
+                ? context.getRankedItems()
+                : context.getFilteredItems();
+        List<Item> result = new ArrayList<>(baseItems);
         int index = 0;
         while (result.size() < context.getLimit()) {
             Item fallback = new Item(90_000L + index, "Fallback hot item-" + index, "fallback", "hot", 0.30);

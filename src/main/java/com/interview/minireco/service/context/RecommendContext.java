@@ -104,19 +104,19 @@ public class RecommendContext {
         this.finalItems = new ArrayList<>(finalItems);
     }
 
-    public void addStageCostMs(String stageName, long costMs) {
+    public synchronized void addStageCostMs(String stageName, long costMs) {
         stageCostMs.put(stageName, costMs);
     }
 
-    public Map<String, Long> getStageCostMs() {
+    public synchronized Map<String, Long> getStageCostMs() {
         return Map.copyOf(stageCostMs);
     }
 
-    public void putDebug(String key, Object value) {
+    public synchronized void putDebug(String key, Object value) {
         debug.put(key, value);
     }
 
-    public Map<String, Object> buildDebugSnapshot() {
+    public synchronized Map<String, Object> buildDebugSnapshot() {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.putAll(debug);
         snapshot.put("stageCostMs", new LinkedHashMap<>(stageCostMs));
