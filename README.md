@@ -69,6 +69,7 @@ HTTP 请求
 - V2：已将运行态大 Map 重构为强类型 `RecommendContext`。
 - V3：已将 item attr 从 `List<ItemAttr>` 重构为 `Map<AttrName, ItemAttr>`。
 - V4：已拆分阶段算子，并新增 `OperatorExecutor` 执行框架。
+- V5：已引入 DAG 图模型和 `DagOperatorExecutor` 拓扑执行器。
 
 V2 学习文档见：
 
@@ -86,4 +87,10 @@ V4 学习文档见：
 
 ```text
 docs/05-v4-operator-framework.md
+```
+
+V5 学习文档见：
+
+```text
+docs/06-v5-dag-executor.md
 ```

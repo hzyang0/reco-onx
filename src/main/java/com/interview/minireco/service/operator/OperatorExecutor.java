@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class OperatorExecutor {
+public class OperatorExecutor implements ExecutionEngine {
     private final List<Operator> operators;
     private final Map<String, OperatorConfig> configByName;
 
@@ -18,6 +18,7 @@ public class OperatorExecutor {
         }
     }
 
+    @Override
     public void execute(RecommendContext context) {
         for (Operator operator : operators) {
             OperatorConfig config = configByName.getOrDefault(operator.name(), OperatorConfig.enabled(operator.name()));

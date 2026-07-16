@@ -3,22 +3,22 @@ package com.interview.minireco.service;
 import com.interview.minireco.domain.RecommendRequest;
 import com.interview.minireco.domain.RecommendResponse;
 import com.interview.minireco.service.context.RecommendContext;
-import com.interview.minireco.service.operator.OperatorExecutor;
+import com.interview.minireco.service.operator.ExecutionEngine;
 
 import java.util.UUID;
 
 public class RecommendService {
-    private final OperatorExecutor operatorExecutor;
+    private final ExecutionEngine executionEngine;
 
-    public RecommendService(OperatorExecutor operatorExecutor) {
-        this.operatorExecutor = operatorExecutor;
+    public RecommendService(ExecutionEngine executionEngine) {
+        this.executionEngine = executionEngine;
     }
 
     public RecommendResponse recommend(RecommendRequest request) {
         long totalStart = System.nanoTime();
         RecommendContext context = new RecommendContext(UUID.randomUUID().toString(), request);
 
-        operatorExecutor.execute(context);
+        executionEngine.execute(context);
 
         long totalCostMs = toMs(System.nanoTime() - totalStart);
 

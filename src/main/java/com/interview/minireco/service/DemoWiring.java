@@ -11,7 +11,9 @@ import com.interview.minireco.service.downstream.impl.GoodsRecallService;
 import com.interview.minireco.service.downstream.impl.LiveRecallService;
 import com.interview.minireco.service.operator.Operator;
 import com.interview.minireco.service.operator.OperatorConfig;
-import com.interview.minireco.service.operator.OperatorExecutor;
+import com.interview.minireco.service.operator.graph.DagGraph;
+import com.interview.minireco.service.operator.graph.DagNode;
+import com.interview.minireco.service.operator.graph.DagOperatorExecutor;
 import com.interview.minireco.service.operator.impl.FilterOperator;
 import com.interview.minireco.service.operator.impl.MixRankOperator;
 import com.interview.minireco.service.operator.impl.OnlineFeatureOperator;
@@ -38,14 +40,12 @@ public final class DemoWiring {
                 new AdRecallService()
         );
 
-        List<Operator> operators = List.of(
-                new PrepareOperator(userFeatureService, abService, addressService),
-                new RecallOperator(recallServices),
-                new OnlineFeatureOperator(onlineFeatureService),
-                new FilterOperator(),
-                new MixRankOperator(mixRankService),
-                new PostProcessOperator()
-        );
+        Operator prepareOperator = new PrepareOperator(userFeatureService, abService, addressService);
+        Operator recallOperator = new RecallOperator(recallServices);
+        Operator onlineFeatureOperator = new OnlineFeatureOperator(onlineFeatureService);
+        Operator filterOperator = new FilterOperator();
+        Operator mixRankOperator = new MixRankOperator(mixRankService);
+        Operator postProcessOperator = new PostProcessOperator();
 
         List<OperatorConfig> configs = List.of(
                 OperatorConfig.enabled(PrepareOperator.NAME),
@@ -56,6 +56,15 @@ public final class DemoWiring {
                 OperatorConfig.enabled(PostProcessOperator.NAME)
         );
 
-        return new RecommendService(new OperatorExecutor(operators, configs));
+        DagGraph graph = new DagGraph(List.of(
+                DagNode.of(prepareOperator),
+                DagNode.of(recallOperator, PrepareOperator.NAME),
+                DagNode.of(onlineFeatureOperator, RecallOperator.NAME),
+                DagNode.of(filterOperator, OnlineFeatureOperator.NAME),
+                DagNode.of(mixRankOperator, FilterOperator.NAME),
+                DagNode.of(postProcessOperator, MixRankOperator.NAME)
+        ));
+
+        return new RecommendService(new DagOperatorExecutor(graph, configs));
     }
 }
