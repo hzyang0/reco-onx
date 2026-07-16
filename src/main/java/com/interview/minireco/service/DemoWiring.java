@@ -1,5 +1,6 @@
 package com.interview.minireco.service;
 
+import com.interview.minireco.cache.FeatureCacheRuntime;
 import com.interview.minireco.degradation.DegradationManager;
 import com.interview.minireco.grpc.client.RecallTransportFactory;
 import com.interview.minireco.migration.ComparisonRegistry;
@@ -12,6 +13,7 @@ import com.interview.minireco.resilience.ResilienceConfig;
 import com.interview.minireco.resilience.ResilienceRegistry;
 import com.interview.minireco.resilience.ResilientRecallService;
 import com.interview.minireco.service.downstream.RecallService;
+import com.interview.minireco.service.downstream.UserFeatureService;
 import com.interview.minireco.service.downstream.impl.DemoAbService;
 import com.interview.minireco.service.downstream.impl.DemoAddressService;
 import com.interview.minireco.service.downstream.impl.DemoMixRankService;
@@ -38,19 +40,20 @@ public final class DemoWiring {
     }
 
     public static RecommendService createRecommendService() {
-        return createPipeline(true, true, RecallTransportFactory.createRecallServices());
+        return createPipeline(true, true, RecallTransportFactory.createRecallServices(), createUserFeatureService());
     }
 
     public static RecommendService createLegacyRecommendService() {
-        return createPipeline(false, false, RecallTransportFactory.createRecallServices());
+        return createPipeline(false, false, RecallTransportFactory.createRecallServices(), createUserFeatureService());
     }
 
     public static RecommendationFacade createRoutedRecommendService() {
         List<RecallService> transportRecallServices = RecallTransportFactory.createRecallServices();
-        RecommendService primaryLegacyPipeline = createPipeline(false, false, transportRecallServices);
-        RecommendService primaryNewPipeline = createPipeline(true, true, transportRecallServices);
-        RecommendService shadowLegacyPipeline = createPipeline(false, false, transportRecallServices);
-        RecommendService shadowNewPipeline = createPipeline(true, false, transportRecallServices);
+        UserFeatureService userFeatureService = createUserFeatureService();
+        RecommendService primaryLegacyPipeline = createPipeline(false, false, transportRecallServices, userFeatureService);
+        RecommendService primaryNewPipeline = createPipeline(true, true, transportRecallServices, userFeatureService);
+        RecommendService shadowLegacyPipeline = createPipeline(false, false, transportRecallServices, userFeatureService);
+        RecommendService shadowNewPipeline = createPipeline(true, false, transportRecallServices, userFeatureService);
         return new MigrationRecommendationFacade(
                 primaryLegacyPipeline,
                 primaryNewPipeline,
@@ -65,9 +68,9 @@ public final class DemoWiring {
     private static RecommendService createPipeline(
             boolean parallelRecall,
             boolean registerResilience,
-            List<RecallService> transportRecallServices
+            List<RecallService> transportRecallServices,
+            UserFeatureService userFeatureService
     ) {
-        DemoUserFeatureService userFeatureService = new DemoUserFeatureService();
         DemoAbService abService = new DemoAbService();
         DemoAddressService addressService = new DemoAddressService();
         DemoOnlineFeatureService onlineFeatureService = new DemoOnlineFeatureService();
@@ -108,6 +111,10 @@ public final class DemoWiring {
         ));
 
         return new RecommendService(new ParallelDagOperatorExecutor(graph, configs, 4));
+    }
+
+    private static UserFeatureService createUserFeatureService() {
+        return FeatureCacheRuntime.wrap(new DemoUserFeatureService());
     }
 
     private static List<RecallService> createRecallServices(

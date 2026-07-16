@@ -6,6 +6,7 @@ import com.interview.minireco.degradation.DegradationManager;
 import com.interview.minireco.grpc.client.RecallTransportFactory;
 import com.interview.minireco.http.DegradationHttpHandler;
 import com.interview.minireco.http.DynamicConfigHttpHandler;
+import com.interview.minireco.http.FeatureCacheHttpHandler;
 import com.interview.minireco.http.RecommendHttpHandler;
 import com.interview.minireco.http.RecommendProtoHttpHandler;
 import com.interview.minireco.http.ResilienceHttpHandler;
@@ -83,6 +84,7 @@ public class MiniRecoApplication {
                 new ResilienceHttpHandler(resilienceRegistry, faultInjectionManager)
         );
         server.createContext("/rollout", new RolloutHttpHandler(rolloutManager, comparisonRegistry));
+        server.createContext("/feature-cache", new FeatureCacheHttpHandler());
         if (configPoller != null) {
             server.createContext("/runtime-config", new DynamicConfigHttpHandler(configPoller));
         }
@@ -99,6 +101,7 @@ public class MiniRecoApplication {
         System.out.printf("Degradation: http://localhost:%d/degradation%n", port);
         System.out.printf("Resilience: http://localhost:%d/resilience%n", port);
         System.out.printf("Rollout: http://localhost:%d/rollout%n", port);
+        System.out.printf("Feature cache: http://localhost:%d/feature-cache%n", port);
         if (configPoller != null) {
             System.out.printf("Runtime config: http://localhost:%d/runtime-config%n", port);
         }

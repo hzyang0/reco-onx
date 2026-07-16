@@ -1,7 +1,7 @@
-name: mini-reco-v18
+name: mini-reco-v19
 
 x-app: &app
-  image: mini-reco-access-layer:v18
+  image: mini-reco-access-layer:v19
   build:
     context: .
     args:
@@ -21,9 +21,26 @@ x-otel: &otel
   OTEL_METRICS_EXPORTER: none
   OTEL_LOGS_EXPORTER: none
   OTEL_BSP_SCHEDULE_DELAY: "200"
-  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v18
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v19
 
 services:
+  redis:
+    image: redis:7-alpine
+    profiles:
+      - cache
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "16379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    networks:
+      - reco
+    mem_limit: 192m
+    cpus: 0.35
+
   config-center:
     <<: *app
     profiles:
@@ -185,6 +202,10 @@ services:
       CONFIG_CENTER_URL: ${CONFIG_CENTER_URL:-}
       CONFIG_POLL_INTERVAL_MS: "500"
       CONFIG_STALE_AFTER_MS: "3000"
+      REDIS_URL: ${REDIS_URL:-}
+      FEATURE_CACHE_TTL_SECONDS: "60"
+      FEATURE_CACHE_TTL_JITTER_SECONDS: "15"
+      FEATURE_CACHE_NULL_TTL_SECONDS: "10"
     depends_on:
       goods:
         condition: service_healthy
