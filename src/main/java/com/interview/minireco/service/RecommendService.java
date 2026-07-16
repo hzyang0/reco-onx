@@ -10,7 +10,7 @@ import com.interview.minireco.service.operator.ExecutionEngine;
 import java.util.Map;
 import java.util.UUID;
 
-public class RecommendService {
+public class RecommendService implements RecommendationFacade {
     private static final StructuredLogger LOGGER = StructuredLogger.getLogger(RecommendService.class);
 
     private final ExecutionEngine executionEngine;
@@ -25,6 +25,7 @@ public class RecommendService {
         this.metricsRegistry = metricsRegistry;
     }
 
+    @Override
     public RecommendResponse recommend(RecommendRequest request) {
         long totalStart = System.nanoTime();
         RecommendContext context = new RecommendContext(UUID.randomUUID().toString(), request);

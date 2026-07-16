@@ -55,4 +55,20 @@ class AlertManagerTest {
         assertEquals(1, alerts.size());
         assertEquals("recall_fanout_timeout", alert.get("rule"));
     }
+
+    @Test
+    void shouldCreateAlertWhenMigrationResultDoesNotMatch() {
+        MetricsRegistry registry = new MetricsRegistry();
+        registry.increment("migration.diff", Map.of("exact", "false"));
+
+        AlertManager alertManager = new AlertManager(registry);
+
+        @SuppressWarnings("unchecked")
+        List<Object> alerts = (List<Object>) alertManager.snapshot().get("alerts");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> alert = (Map<String, Object>) alerts.get(0);
+
+        assertEquals(1, alerts.size());
+        assertEquals("migration_result_mismatch", alert.get("rule"));
+    }
 }

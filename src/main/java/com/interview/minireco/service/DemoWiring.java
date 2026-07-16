@@ -1,6 +1,10 @@
 package com.interview.minireco.service;
 
 import com.interview.minireco.degradation.DegradationManager;
+import com.interview.minireco.migration.ComparisonRegistry;
+import com.interview.minireco.migration.MigrationRecommendationFacade;
+import com.interview.minireco.migration.RecommendationDiffEngine;
+import com.interview.minireco.migration.RolloutManager;
 import com.interview.minireco.resilience.FaultInjectingRecallService;
 import com.interview.minireco.resilience.FaultInjectionManager;
 import com.interview.minireco.resilience.ResilienceConfig;
@@ -27,6 +31,7 @@ import com.interview.minireco.service.operator.impl.OnlineFeatureOperator;
 import com.interview.minireco.service.operator.impl.PostProcessOperator;
 import com.interview.minireco.service.operator.impl.PrepareOperator;
 import com.interview.minireco.service.operator.impl.RecallOperator;
+import com.interview.minireco.service.operator.impl.SequentialRecallOperator;
 
 import java.util.List;
 
@@ -35,29 +40,42 @@ public final class DemoWiring {
     }
 
     public static RecommendService createRecommendService() {
+        return createPipeline(true, true);
+    }
+
+    public static RecommendService createLegacyRecommendService() {
+        return createPipeline(false, false);
+    }
+
+    public static RecommendationFacade createRoutedRecommendService() {
+        RecommendService primaryLegacyPipeline = createPipeline(false, false);
+        RecommendService primaryNewPipeline = createPipeline(true, true);
+        RecommendService shadowLegacyPipeline = createPipeline(false, false);
+        RecommendService shadowNewPipeline = createPipeline(true, false);
+        return new MigrationRecommendationFacade(
+                primaryLegacyPipeline,
+                primaryNewPipeline,
+                shadowLegacyPipeline,
+                shadowNewPipeline,
+                RolloutManager.global(),
+                new RecommendationDiffEngine(),
+                ComparisonRegistry.global()
+        );
+    }
+
+    private static RecommendService createPipeline(boolean parallelRecall, boolean registerResilience) {
         DemoUserFeatureService userFeatureService = new DemoUserFeatureService();
         DemoAbService abService = new DemoAbService();
         DemoAddressService addressService = new DemoAddressService();
         DemoOnlineFeatureService onlineFeatureService = new DemoOnlineFeatureService();
         DemoMixRankService mixRankService = new DemoMixRankService();
-
-        List<RecallService> rawRecallServices = List.of(
-                new GoodsRecallService(),
-                new LiveRecallService(),
-                new AdRecallService()
-        );
-        FaultInjectionManager faultInjectionManager = FaultInjectionManager.global();
-        ResilienceRegistry resilienceRegistry = ResilienceRegistry.global();
-        ResilienceConfig resilienceConfig = ResilienceConfig.recallDefaults();
-        List<RecallService> recallServices = rawRecallServices.stream()
-                .map(service -> new FaultInjectingRecallService(service, faultInjectionManager))
-                .map(service -> new ResilientRecallService(service, resilienceConfig))
-                .map(resilienceRegistry::register)
-                .toList();
+        List<RecallService> recallServices = createRecallServices(registerResilience);
 
         Operator prepareOperator = new PrepareOperator(userFeatureService, abService, addressService);
         Operator degradationOperator = new DegradationOperator(DegradationManager.global());
-        Operator recallOperator = new RecallOperator(recallServices);
+        Operator recallOperator = parallelRecall
+                ? new RecallOperator(recallServices)
+                : new SequentialRecallOperator(recallServices);
         Operator onlineFeatureOperator = new OnlineFeatureOperator(onlineFeatureService);
         Operator filterOperator = new FilterOperator();
         Operator mixRankOperator = new MixRankOperator(mixRankService);
@@ -84,5 +102,23 @@ public final class DemoWiring {
         ));
 
         return new RecommendService(new ParallelDagOperatorExecutor(graph, configs, 4));
+    }
+
+    private static List<RecallService> createRecallServices(boolean registerResilience) {
+        List<RecallService> rawRecallServices = List.of(
+                new GoodsRecallService(),
+                new LiveRecallService(),
+                new AdRecallService()
+        );
+        FaultInjectionManager faultInjectionManager = FaultInjectionManager.global();
+        ResilienceConfig resilienceConfig = ResilienceConfig.recallDefaults();
+
+        return rawRecallServices.stream()
+                .map(service -> new FaultInjectingRecallService(service, faultInjectionManager))
+                .map(service -> new ResilientRecallService(service, resilienceConfig))
+                .map(service -> registerResilience
+                        ? ResilienceRegistry.global().register(service)
+                        : service)
+                .toList();
     }
 }

@@ -61,6 +61,22 @@ public class AlertManager {
                         "metric", sample.toMap()
                 ));
             }
+            if ("migration.diff".equals(sample.getName())
+                    && "false".equals(sample.getTags().get("exact"))
+                    && sample.getCount() > 0) {
+                alerts.add(Map.of(
+                        "level", "ERROR",
+                        "rule", "migration_result_mismatch",
+                        "metric", sample.toMap()
+                ));
+            }
+            if ("migration.shadow.error".equals(sample.getName()) && sample.getCount() > 0) {
+                alerts.add(Map.of(
+                        "level", "WARN",
+                        "rule", "migration_shadow_error",
+                        "metric", sample.toMap()
+                ));
+            }
         }
         return Map.of("alerts", alerts);
     }

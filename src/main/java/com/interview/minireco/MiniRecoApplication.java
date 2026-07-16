@@ -4,12 +4,15 @@ import com.interview.minireco.degradation.DegradationManager;
 import com.interview.minireco.http.DegradationHttpHandler;
 import com.interview.minireco.http.RecommendHttpHandler;
 import com.interview.minireco.http.ResilienceHttpHandler;
+import com.interview.minireco.http.RolloutHttpHandler;
+import com.interview.minireco.migration.ComparisonRegistry;
+import com.interview.minireco.migration.RolloutManager;
 import com.interview.minireco.observability.AlertManager;
 import com.interview.minireco.observability.MetricsRegistry;
 import com.interview.minireco.resilience.FaultInjectionManager;
 import com.interview.minireco.resilience.ResilienceRegistry;
 import com.interview.minireco.service.DemoWiring;
-import com.interview.minireco.service.RecommendService;
+import com.interview.minireco.service.RecommendationFacade;
 import com.interview.minireco.util.JsonUtil;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -24,12 +27,14 @@ import java.util.concurrent.Executors;
 public class MiniRecoApplication {
     public static void main(String[] args) throws IOException {
         int port = resolvePort(args);
-        RecommendService recommendService = DemoWiring.createRecommendService();
+        RecommendationFacade recommendService = DemoWiring.createRoutedRecommendService();
         MetricsRegistry metricsRegistry = MetricsRegistry.global();
         AlertManager alertManager = new AlertManager(metricsRegistry);
         DegradationManager degradationManager = DegradationManager.global();
         ResilienceRegistry resilienceRegistry = ResilienceRegistry.global();
         FaultInjectionManager faultInjectionManager = FaultInjectionManager.global();
+        RolloutManager rolloutManager = RolloutManager.global();
+        ComparisonRegistry comparisonRegistry = ComparisonRegistry.global();
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/recommend", new RecommendHttpHandler(recommendService));
@@ -56,6 +61,7 @@ public class MiniRecoApplication {
                 "/resilience",
                 new ResilienceHttpHandler(resilienceRegistry, faultInjectionManager)
         );
+        server.createContext("/rollout", new RolloutHttpHandler(rolloutManager, comparisonRegistry));
         server.setExecutor(Executors.newFixedThreadPool(16));
         server.start();
 
@@ -65,6 +71,7 @@ public class MiniRecoApplication {
         System.out.printf("Alerts: http://localhost:%d/alerts%n", port);
         System.out.printf("Degradation: http://localhost:%d/degradation%n", port);
         System.out.printf("Resilience: http://localhost:%d/resilience%n", port);
+        System.out.printf("Rollout: http://localhost:%d/rollout%n", port);
     }
 
     private static int resolvePort(String[] args) {

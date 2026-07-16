@@ -3,7 +3,7 @@ package com.interview.minireco.http;
 import com.interview.minireco.domain.RecommendRequest;
 import com.interview.minireco.domain.RecommendResponse;
 import com.interview.minireco.observability.MetricsRegistry;
-import com.interview.minireco.service.RecommendService;
+import com.interview.minireco.service.RecommendationFacade;
 import com.interview.minireco.util.JsonUtil;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -13,14 +13,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class RecommendHttpHandler implements HttpHandler {
-    private final RecommendService recommendService;
+    private final RecommendationFacade recommendService;
     private final MetricsRegistry metricsRegistry;
 
-    public RecommendHttpHandler(RecommendService recommendService) {
+    public RecommendHttpHandler(RecommendationFacade recommendService) {
         this(recommendService, MetricsRegistry.global());
     }
 
-    public RecommendHttpHandler(RecommendService recommendService, MetricsRegistry metricsRegistry) {
+    public RecommendHttpHandler(RecommendationFacade recommendService, MetricsRegistry metricsRegistry) {
         this.recommendService = recommendService;
         this.metricsRegistry = metricsRegistry;
     }
