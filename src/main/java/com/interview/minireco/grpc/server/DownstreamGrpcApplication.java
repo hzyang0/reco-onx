@@ -1,6 +1,8 @@
 package com.interview.minireco.grpc.server;
 
 import com.interview.minireco.grpc.GrpcRequestMetadata;
+import com.interview.minireco.observability.MetricsHttpServer;
+import com.interview.minireco.observability.MetricsRegistry;
 import com.interview.minireco.telemetry.GrpcTelemetry;
 import com.interview.minireco.telemetry.Telemetry;
 import io.grpc.BindableService;
@@ -20,14 +22,15 @@ public final class DownstreamGrpcApplication {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        if (args.length < 1 || args.length > 2) {
+        if (args.length < 1 || args.length > 3) {
             throw new IllegalArgumentException(
-                    "usage: DownstreamGrpcApplication <goods|live|ad> [port]"
+                    "usage: DownstreamGrpcApplication <goods|live|ad> [grpc-port] [metrics-port]"
             );
         }
         String source = args[0].trim().toLowerCase(Locale.ROOT);
         Telemetry.initialize("mini-reco-" + source);
-        int port = args.length == 2 ? Integer.parseInt(args[1]) : defaultPort(source);
+        int port = args.length >= 2 ? Integer.parseInt(args[1]) : defaultPort(source);
+        int metricsPort = args.length == 3 ? Integer.parseInt(args[2]) : port + 100;
         BindableService service = service(source);
         String serviceName = service.bindService().getServiceDescriptor().getName();
         HealthStatusManager health = new HealthStatusManager();
@@ -41,18 +44,26 @@ public final class DownstreamGrpcApplication {
                 .addService(ProtoReflectionServiceV1.newInstance())
                 .build()
                 .start();
+        MetricsHttpServer metricsServer;
+        try {
+            metricsServer = MetricsHttpServer.start(metricsPort, MetricsRegistry.global());
+        } catch (IOException e) {
+            server.shutdownNow();
+            throw e;
+        }
         health.setStatus("", ServingStatus.SERVING);
         health.setStatus(serviceName, ServingStatus.SERVING);
 
         Runtime.getRuntime().addShutdownHook(new Thread(
-                () -> shutdown(server, health),
+                () -> shutdown(server, health, metricsServer),
                 source + "-grpc-shutdown"
         ));
         System.out.printf(
-                "GRPC_DOWNSTREAM_READY source=%s service=%s port=%d health=SERVING reflection=enabled%n",
+                "GRPC_DOWNSTREAM_READY source=%s service=%s port=%d metricsPort=%d health=SERVING reflection=enabled%n",
                 source,
                 serviceName,
-                port
+                port,
+                metricsPort
         );
         server.awaitTermination();
     }
@@ -75,8 +86,13 @@ public final class DownstreamGrpcApplication {
         };
     }
 
-    private static void shutdown(Server server, HealthStatusManager health) {
+    private static void shutdown(
+            Server server,
+            HealthStatusManager health,
+            MetricsHttpServer metricsServer
+    ) {
         health.enterTerminalState();
+        metricsServer.close();
         server.shutdown();
         try {
             if (!server.awaitTermination(2, TimeUnit.SECONDS)) {

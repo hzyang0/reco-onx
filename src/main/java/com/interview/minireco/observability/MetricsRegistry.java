@@ -13,6 +13,9 @@ import java.util.concurrent.atomic.LongAdder;
 
 public class MetricsRegistry {
     private static final MetricsRegistry GLOBAL = new MetricsRegistry();
+    private static final long[] TIMER_BUCKETS_MS = {
+            5, 10, 25, 50, 100, 200, 500, 1_000, 2_500, 5_000, 10_000, Long.MAX_VALUE
+    };
 
     private final ConcurrentMap<String, MetricStat> stats = new ConcurrentHashMap<>();
 
@@ -21,11 +24,11 @@ public class MetricsRegistry {
     }
 
     public void increment(String name, Map<String, String> tags) {
-        stat(name, tags).increment(1);
+        stat(name, tags, MetricSample.Type.COUNTER).increment(1);
     }
 
     public void recordTimer(String name, Map<String, String> tags, long costMs) {
-        stat(name, tags).record(costMs);
+        stat(name, tags, MetricSample.Type.TIMER).record(costMs);
     }
 
     public List<MetricSample> samples() {
@@ -51,10 +54,14 @@ public class MetricsRegistry {
         stats.clear();
     }
 
-    private MetricStat stat(String name, Map<String, String> tags) {
+    private MetricStat stat(String name, Map<String, String> tags, MetricSample.Type type) {
         Map<String, String> safeTags = new LinkedHashMap<>(tags);
         String key = metricKey(name, safeTags);
-        return stats.computeIfAbsent(key, ignored -> new MetricStat(name, safeTags));
+        MetricStat metric = stats.computeIfAbsent(key, ignored -> new MetricStat(name, safeTags, type));
+        if (metric.type != type) {
+            throw new IllegalArgumentException("metric type changed for " + key);
+        }
+        return metric;
     }
 
     private String metricKey(String name, Map<String, String> tags) {
@@ -68,13 +75,19 @@ public class MetricsRegistry {
     private static class MetricStat {
         private final String name;
         private final Map<String, String> tags;
+        private final MetricSample.Type type;
         private final LongAdder count = new LongAdder();
         private final LongAdder total = new LongAdder();
         private final AtomicLong max = new AtomicLong();
+        private final LongAdder[] bucketCounts;
 
-        private MetricStat(String name, Map<String, String> tags) {
+        private MetricStat(String name, Map<String, String> tags, MetricSample.Type type) {
             this.name = name;
             this.tags = Map.copyOf(tags);
+            this.type = type;
+            this.bucketCounts = type == MetricSample.Type.TIMER
+                    ? createBucketCounters()
+                    : new LongAdder[0];
         }
 
         private void increment(long value) {
@@ -87,10 +100,36 @@ public class MetricsRegistry {
             count.increment();
             total.add(value);
             max.accumulateAndGet(value, Math::max);
+            for (int i = 0; i < TIMER_BUCKETS_MS.length; i++) {
+                if (value <= TIMER_BUCKETS_MS[i]) {
+                    bucketCounts[i].increment();
+                }
+            }
         }
 
         private MetricSample sample() {
-            return new MetricSample(name, tags, count.sum(), total.sum(), max.get());
+            long[] buckets = new long[bucketCounts.length];
+            for (int i = 0; i < bucketCounts.length; i++) {
+                buckets[i] = bucketCounts[i].sum();
+            }
+            return new MetricSample(
+                    name,
+                    tags,
+                    type,
+                    count.sum(),
+                    total.sum(),
+                    max.get(),
+                    type == MetricSample.Type.TIMER ? TIMER_BUCKETS_MS : new long[0],
+                    buckets
+            );
+        }
+
+        private static LongAdder[] createBucketCounters() {
+            LongAdder[] counters = new LongAdder[TIMER_BUCKETS_MS.length];
+            for (int i = 0; i < counters.length; i++) {
+                counters[i] = new LongAdder();
+            }
+            return counters;
         }
     }
 }

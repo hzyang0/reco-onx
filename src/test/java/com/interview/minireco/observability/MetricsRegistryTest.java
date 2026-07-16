@@ -19,9 +19,12 @@ class MetricsRegistryTest {
 
         assertEquals(1, samples.size());
         assertEquals("operator.cost", samples.get(0).getName());
+        assertEquals(MetricSample.Type.TIMER, samples.get(0).getType());
         assertEquals(2, samples.get(0).getCount());
         assertEquals(240, samples.get(0).getTotal());
         assertEquals(120.0, samples.get(0).getAvg());
         assertEquals(140, samples.get(0).getMax());
+        assertEquals(2, samples.get(0).getBucketCounts()[5]);
+        assertEquals(2, samples.get(0).getBucketCounts()[11]);
     }
 }

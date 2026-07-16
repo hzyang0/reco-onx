@@ -1,0 +1,32 @@
+groups:
+  - name: mini-reco-availability
+    rules:
+      - alert: MiniRecoTargetDown
+        expr: up{job=~"mini-reco-.+"} == 0
+        for: 5s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Mini Reco scrape target is down"
+          description: "{{ $labels.instance }} has been unavailable for more than 5 seconds."
+
+      - alert: MiniRecoLiveFallback
+        expr: increase(mini_reco_downstream_fallback_total{source="live"}[1m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Live recall fallback happened"
+          description: "The gateway observed at least one live fallback in the last minute."
+
+      - alert: MiniRecoHighRequestP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(mini_reco_request_cost_seconds_bucket{status="success"}[1m]))
+          ) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Recommendation request P95 is high"
+          description: "Successful request P95 has exceeded 500 ms for one minute."

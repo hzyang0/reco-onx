@@ -11,6 +11,7 @@ import com.interview.minireco.migration.ComparisonRegistry;
 import com.interview.minireco.migration.RolloutManager;
 import com.interview.minireco.observability.AlertManager;
 import com.interview.minireco.observability.MetricsRegistry;
+import com.interview.minireco.observability.PrometheusMetricsHandler;
 import com.interview.minireco.proto.ProtoRuntimeWarmup;
 import com.interview.minireco.resilience.FaultInjectionManager;
 import com.interview.minireco.resilience.ResilienceRegistry;
@@ -68,6 +69,7 @@ public class MiniRecoApplication {
         server.createContext("/metrics", exchange ->
                 writeJson(exchange, JsonUtil.mapToJson(metricsRegistry.snapshot()))
         );
+        server.createContext("/metrics/prometheus", new PrometheusMetricsHandler(metricsRegistry));
         server.createContext("/alerts", exchange ->
                 writeJson(exchange, JsonUtil.mapToJson(alertManager.snapshot()))
         );
@@ -85,6 +87,7 @@ public class MiniRecoApplication {
         System.out.printf("Try: http://localhost:%d/recommend?userId=123&scene=mall&limit=10%n", port);
         System.out.printf("Protobuf: http://localhost:%d/recommend-pb?userId=123&scene=mall&limit=10%n", port);
         System.out.printf("Metrics: http://localhost:%d/metrics%n", port);
+        System.out.printf("Prometheus: http://localhost:%d/metrics/prometheus%n", port);
         System.out.printf("Alerts: http://localhost:%d/alerts%n", port);
         System.out.printf("Degradation: http://localhost:%d/degradation%n", port);
         System.out.printf("Resilience: http://localhost:%d/resilience%n", port);

@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 1s
+  evaluation_interval: 1s
+  external_labels:
+    environment: compose
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: mini-reco-gateway
+    metrics_path: /metrics/prometheus
+    static_configs:
+      - targets:
+          - gateway:8080
+
+  - job_name: mini-reco-recall
+    metrics_path: /metrics/prometheus
+    static_configs:
+      - targets:
+          - goods:19101
+          - live:19102
+          - ad:19103

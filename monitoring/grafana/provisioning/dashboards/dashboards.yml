@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: Mini Reco
+    orgId: 1
+    folder: Recommendation
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 5
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

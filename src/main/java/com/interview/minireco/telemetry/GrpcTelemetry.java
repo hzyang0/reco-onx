@@ -1,5 +1,6 @@
 package com.interview.minireco.telemetry;
 
+import com.interview.minireco.observability.MetricsRegistry;
 import io.grpc.Contexts;
 import io.grpc.ForwardingServerCall;
 import io.grpc.ForwardingServerCallListener;
@@ -18,6 +19,8 @@ import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public final class GrpcTelemetry {
     private static final io.grpc.Context.Key<Context> OTEL_CONTEXT = io.grpc.Context.key("otel-context");
@@ -66,6 +69,8 @@ public final class GrpcTelemetry {
                     ServerCallHandler<ReqT, RespT> next
             ) {
                 String method = call.getMethodDescriptor().getFullMethodName();
+                String source = source(call.getMethodDescriptor().getServiceName());
+                long startNanos = System.nanoTime();
                 Context parent = GlobalOpenTelemetry.getPropagators()
                         .getTextMapPropagator()
                         .extract(Context.root(), headers, METADATA_GETTER);
@@ -87,6 +92,7 @@ public final class GrpcTelemetry {
                                     : status.getDescription());
                         }
                         if (ended.compareAndSet(false, true)) {
+                            recordServerCall(source, method, status, startNanos);
                             span.end();
                         }
                         super.close(status, trailers);
@@ -108,6 +114,7 @@ public final class GrpcTelemetry {
                     span.recordException(e);
                     span.setStatus(StatusCode.ERROR);
                     if (ended.compareAndSet(false, true)) {
+                        recordServerCall(source, method, Status.INTERNAL, startNanos);
                         span.end();
                     }
                     throw e;
@@ -152,5 +159,31 @@ public final class GrpcTelemetry {
         try (Scope ignored = context.makeCurrent()) {
             action.run();
         }
+    }
+
+    private static void recordServerCall(String source, String method, Status status, long startNanos) {
+        String statusName = status.getCode().name().toLowerCase();
+        Map<String, String> tags = Map.of(
+                "source", source,
+                "method", method,
+                "status", statusName
+        );
+        MetricsRegistry.global().increment("grpc.server.call", tags);
+        MetricsRegistry.global().recordTimer(
+                "grpc.server.call.cost",
+                tags,
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos)
+        );
+    }
+
+    private static String source(String serviceName) {
+        String prefix = "mini_reco.";
+        if (serviceName.startsWith(prefix)) {
+            int separator = serviceName.indexOf('.', prefix.length());
+            if (separator > prefix.length()) {
+                return serviceName.substring(prefix.length(), separator);
+            }
+        }
+        return "unknown";
     }
 }

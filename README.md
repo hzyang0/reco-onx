@@ -300,3 +300,37 @@ V15 将网关、三路召回和 Trace Collector 容器化并统一编排：
 ```text
 docs/16-v15-docker-otel.md
 ```
+
+## V16：Prometheus、Grafana 与可执行告警
+
+V16 在 V15 的日志和 Trace 基础上补齐真实指标监控闭环：
+
+- `/metrics/prometheus` 标准文本暴露端点；
+- Counter 与毫秒耗时 Histogram，支持平均值和 P95；
+- 网关及三路召回共四个 Prometheus 抓取目标；
+- 三条 Prometheus 告警规则及 Pending/Firing/Resolved 状态；
+- 自动预置 Prometheus 数据源和 7 面板 Grafana Dashboard；
+- `monitoring` Compose profile，不影响默认 V15 五容器演示；
+- 自动停止 live，验证 `up=0`、告警触发、17 条兜底及恢复。
+
+一条命令完成测试、七容器部署、流量生成、PromQL 查询、Dashboard 验证和告警实验：
+
+```powershell
+.\scripts\run-monitoring-demo.ps1
+```
+
+保留监控环境用于手动学习：
+
+```powershell
+.\scripts\run-monitoring-demo.ps1 -KeepRunning
+```
+
+Grafana：`http://localhost:13000/d/mini-reco-overview`
+
+Prometheus：`http://localhost:19090`
+
+学习文档：
+
+```text
+docs/17-v16-prometheus-grafana.md
+```

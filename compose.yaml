@@ -1,7 +1,7 @@
-name: mini-reco-v15
+name: mini-reco-v16
 
 x-app: &app
-  image: mini-reco-access-layer:v15
+  image: mini-reco-access-layer:v16
   build:
     context: .
     args:
@@ -21,7 +21,7 @@ x-otel: &otel
   OTEL_METRICS_EXPORTER: none
   OTEL_LOGS_EXPORTER: none
   OTEL_BSP_SCHEDULE_DELAY: "200"
-  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v15
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v16
 
 services:
   trace-collector:
@@ -57,6 +57,7 @@ services:
       - com.interview.minireco.grpc.server.DownstreamGrpcApplication
       - goods
       - "19001"
+      - "19101"
     environment:
       <<: *otel
       OTEL_SERVICE_NAME: mini-reco-goods
@@ -87,6 +88,7 @@ services:
       - com.interview.minireco.grpc.server.DownstreamGrpcApplication
       - live
       - "19002"
+      - "19102"
     environment:
       <<: *otel
       OTEL_SERVICE_NAME: mini-reco-live
@@ -117,6 +119,7 @@ services:
       - com.interview.minireco.grpc.server.DownstreamGrpcApplication
       - ad
       - "19003"
+      - "19103"
     environment:
       <<: *otel
       OTEL_SERVICE_NAME: mini-reco-ad
@@ -177,6 +180,78 @@ services:
     mem_limit: 384m
     cpus: 1.00
 
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    profiles:
+      - monitoring
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=2h
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "19090:9090"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --spider
+        - --quiet
+        - http://localhost:9090/-/ready
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 3s
+    networks:
+      - reco
+    mem_limit: 384m
+    cpus: 0.75
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    profiles:
+      - monitoring
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_USERS_DEFAULT_THEME: light
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/mini-reco-overview.json
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "13000:3000"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --spider
+        - --quiet
+        - http://localhost:3000/api/health
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    networks:
+      - reco
+    mem_limit: 384m
+    cpus: 0.75
+
 networks:
   reco:
     driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
