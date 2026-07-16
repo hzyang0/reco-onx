@@ -132,3 +132,25 @@ Invoke-RestMethod "http://localhost:8080/degradation"
 Invoke-RestMethod "http://localhost:8080/degradation?level=HEAVY"
 Invoke-RestMethod "http://localhost:8080/recommend?userId=185&scene=mall&limit=10"
 ```
+
+## V9：降级压测与效果对比
+
+V9 新增了可重复运行的本地 benchmark，对比 `NONE`、`LIGHT`、`HEAVY` 三种状态下的平均耗时、P50、P95、召回量、返回量和降级命中率。
+
+一条命令完成单测、打包和实验：
+
+```powershell
+.\scripts\run-degradation-benchmark.ps1
+```
+
+实验结果会写入：
+
+```text
+target/degradation-benchmark.csv
+```
+
+学习文档：
+
+```text
+docs/10-v9-degradation-benchmark.md
+```
