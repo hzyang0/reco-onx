@@ -35,4 +35,25 @@ class DynamicConfigStoreTest {
                 () -> store.update(1, 101, 0, DegradationLevel.NONE, "release-bot"));
         assertEquals(1, store.get().version());
     }
+
+    @Test
+    void shouldNotPublishInMemoryWhenDurableAppendFails() {
+        ConfigJournal failing = new ConfigJournal() {
+            private int appends;
+
+            public java.util.List<RuntimeConfigSnapshot> load() { return java.util.List.of(); }
+
+            public void append(RuntimeConfigSnapshot snapshot) {
+                if (++appends > 1) { throw new ConfigPersistenceException("disk full"); }
+            }
+
+            public String description() { return "failing-test"; }
+        };
+        DynamicConfigStore store = new DynamicConfigStore(Clock.systemUTC(), failing);
+
+        assertThrows(ConfigPersistenceException.class,
+                () -> store.update(1, 5, 0, DegradationLevel.NONE, "release-bot"));
+        assertEquals(1, store.get().version());
+        assertEquals(100, store.get().newPipelinePercent());
+    }
 }

@@ -9,6 +9,7 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,17 +21,29 @@ public final class ConfigCenterApplication {
 
     public static void main(String[] args) throws IOException {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8888;
-        DynamicConfigStore store = new DynamicConfigStore();
+        DynamicConfigStore store = createStore();
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/health", exchange -> write(exchange, 200, JsonUtil.mapToJson(Map.of(
-                "status", "UP", "service", "mini-reco-config-center", "version", store.get().version()
+                "status", "UP",
+                "service", "mini-reco-config-center",
+                "version", store.get().version(),
+                "storage", store.storageDescription()
         ))));
         server.createContext("/api/config", exchange -> handleConfig(exchange, store));
         server.createContext("/api/config/history", exchange -> handleHistory(exchange, store));
         server.setExecutor(Executors.newFixedThreadPool(4));
         server.start();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop(1), "config-center-shutdown"));
-        System.out.printf("CONFIG_CENTER_READY port=%d version=%d%n", port, store.get().version());
+        System.out.printf("CONFIG_CENTER_READY port=%d version=%d storage=%s%n",
+                port, store.get().version(), store.storageDescription());
+    }
+
+    private static DynamicConfigStore createStore() {
+        String path = System.getenv("CONFIG_STORE_PATH");
+        ConfigJournal journal = path == null || path.isBlank()
+                ? new InMemoryConfigJournal()
+                : new FileConfigJournal(Path.of(path));
+        return new DynamicConfigStore(java.time.Clock.systemUTC(), journal);
     }
 
     private static void handleConfig(HttpExchange exchange, DynamicConfigStore store) throws IOException {
@@ -54,6 +67,8 @@ public final class ConfigCenterApplication {
             write(exchange, 200, JsonUtil.mapToJson(updated.toMap()));
         } catch (ConfigVersionConflictException e) {
             write(exchange, 409, JsonUtil.errorToJson(e.getMessage()));
+        } catch (ConfigPersistenceException e) {
+            write(exchange, 503, JsonUtil.errorToJson(e.getMessage()));
         } catch (IllegalArgumentException e) {
             write(exchange, 400, JsonUtil.errorToJson(e.getMessage()));
         }

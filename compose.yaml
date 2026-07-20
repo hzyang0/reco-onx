@@ -1,7 +1,7 @@
-name: mini-reco-v20
+name: mini-reco-v21
 
 x-app: &app
-  image: mini-reco-access-layer:v20
+  image: mini-reco-access-layer:v21
   build:
     context: .
     args:
@@ -21,9 +21,22 @@ x-otel: &otel
   OTEL_METRICS_EXPORTER: none
   OTEL_LOGS_EXPORTER: none
   OTEL_BSP_SCHEDULE_DELAY: "200"
-  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v20
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v21
 
 services:
+  config-data-init:
+    image: mini-reco-access-layer:v21
+    profiles:
+      - dynamic
+    user: "0:0"
+    entrypoint: ["sh", "-c"]
+    command: ["chown 65532:65532 /data"]
+    read_only: true
+    volumes:
+      - config-data:/data
+    networks:
+      - reco
+
   redis:
     image: redis:7-alpine
     profiles:
@@ -50,6 +63,13 @@ services:
       - /app/app.jar
       - com.interview.minireco.config.ConfigCenterApplication
       - "8888"
+    environment:
+      CONFIG_STORE_PATH: /data/config-journal.jsonl
+    volumes:
+      - config-data:/data
+    depends_on:
+      config-data-init:
+        condition: service_completed_successfully
     ports:
       - "18888:8888"
     healthcheck:
@@ -305,5 +325,6 @@ networks:
     driver: bridge
 
 volumes:
+  config-data:
   prometheus-data:
   grafana-data:

@@ -16,18 +16,32 @@ public class DynamicConfigStore {
     private final AtomicReference<RuntimeConfigSnapshot> current;
     private final Deque<RuntimeConfigSnapshot> history = new ArrayDeque<>();
     private final Clock clock;
+    private final ConfigJournal journal;
 
     public DynamicConfigStore() {
-        this(Clock.systemUTC());
+        this(Clock.systemUTC(), new InMemoryConfigJournal());
     }
 
     DynamicConfigStore(Clock clock) {
+        this(clock, new InMemoryConfigJournal());
+    }
+
+    DynamicConfigStore(Clock clock, ConfigJournal journal) {
         this.clock = clock;
-        RuntimeConfigSnapshot initial = new RuntimeConfigSnapshot(
-                1, 100, 0, DegradationLevel.NONE, "bootstrap", Instant.now(clock)
-        );
-        this.current = new AtomicReference<>(initial);
-        history.addFirst(initial);
+        this.journal = journal;
+        List<RuntimeConfigSnapshot> persisted = journal.load();
+        if (persisted.isEmpty()) {
+            RuntimeConfigSnapshot initial = new RuntimeConfigSnapshot(
+                    1, 100, 0, DegradationLevel.NONE, "bootstrap", Instant.now(clock)
+            );
+            journal.append(initial);
+            persisted = List.of(initial);
+        }
+        this.current = new AtomicReference<>(persisted.get(persisted.size() - 1));
+        for (RuntimeConfigSnapshot snapshot : persisted) {
+            history.addFirst(snapshot);
+            trimHistory();
+        }
     }
 
     public RuntimeConfigSnapshot get() {
@@ -53,15 +67,24 @@ public class DynamicConfigStore {
                 updatedBy,
                 Instant.now(clock)
         );
+        journal.append(next);
         current.set(next);
         history.addFirst(next);
-        while (history.size() > MAX_HISTORY) {
-            history.removeLast();
-        }
+        trimHistory();
         return next;
     }
 
     public synchronized List<RuntimeConfigSnapshot> history() {
         return new ArrayList<>(history);
+    }
+
+    public String storageDescription() {
+        return journal.description();
+    }
+
+    private void trimHistory() {
+        while (history.size() > MAX_HISTORY) {
+            history.removeLast();
+        }
     }
 }

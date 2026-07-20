@@ -435,3 +435,19 @@ V20 为完整工程补齐可重复的性能与质量验收：
 ```text
 docs/21-v20-capacity-slo.md
 ```
+
+## V21: Persistent dynamic configuration
+
+V21 upgrades the configuration center from memory-only state to a durable append-only journal:
+
+- persist before publishing a new in-memory version;
+- restore the latest snapshot and audit history after a real container restart;
+- reject middle corruption and version gaps;
+- safely repair only a truncated final append;
+- keep the journal in the Docker named volume `config-data`.
+
+```powershell
+.\scripts\run-persistent-config-demo.ps1
+```
+
+Beginner guide: `docs/22-v21-persistent-config.md`.
