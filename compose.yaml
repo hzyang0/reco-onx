@@ -1,7 +1,7 @@
-name: mini-reco-v21
+name: mini-reco-v22
 
 x-app: &app
-  image: mini-reco-access-layer:v21
+  image: mini-reco-access-layer:v22
   build:
     context: .
     args:
@@ -21,11 +21,11 @@ x-otel: &otel
   OTEL_METRICS_EXPORTER: none
   OTEL_LOGS_EXPORTER: none
   OTEL_BSP_SCHEDULE_DELAY: "200"
-  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v21
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=compose,service.version=v22
 
 services:
   config-data-init:
-    image: mini-reco-access-layer:v21
+    image: mini-reco-access-layer:v22
     profiles:
       - dynamic
     user: "0:0"
@@ -65,6 +65,11 @@ services:
       - "8888"
     environment:
       CONFIG_STORE_PATH: /data/config-journal.jsonl
+      ADMIN_RELEASE_KEY_ID: ${ADMIN_RELEASE_KEY_ID:-}
+      ADMIN_RELEASE_SECRET: ${ADMIN_RELEASE_SECRET:-}
+      ADMIN_OPS_KEY_ID: ${ADMIN_OPS_KEY_ID:-}
+      ADMIN_OPS_SECRET: ${ADMIN_OPS_SECRET:-}
+      ADMIN_AUTH_MAX_SKEW_SECONDS: ${ADMIN_AUTH_MAX_SKEW_SECONDS:-60}
     volumes:
       - config-data:/data
     depends_on:
@@ -228,6 +233,11 @@ services:
       FEATURE_CACHE_TTL_SECONDS: "60"
       FEATURE_CACHE_TTL_JITTER_SECONDS: "15"
       FEATURE_CACHE_NULL_TTL_SECONDS: "10"
+      ADMIN_RELEASE_KEY_ID: ${ADMIN_RELEASE_KEY_ID:-}
+      ADMIN_RELEASE_SECRET: ${ADMIN_RELEASE_SECRET:-}
+      ADMIN_OPS_KEY_ID: ${ADMIN_OPS_KEY_ID:-}
+      ADMIN_OPS_SECRET: ${ADMIN_OPS_SECRET:-}
+      ADMIN_AUTH_MAX_SKEW_SECONDS: ${ADMIN_AUTH_MAX_SKEW_SECONDS:-60}
     depends_on:
       goods:
         condition: service_healthy

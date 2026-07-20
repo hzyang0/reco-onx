@@ -19,6 +19,10 @@ import com.interview.minireco.observability.PrometheusMetricsHandler;
 import com.interview.minireco.proto.ProtoRuntimeWarmup;
 import com.interview.minireco.resilience.FaultInjectionManager;
 import com.interview.minireco.resilience.ResilienceRegistry;
+import com.interview.minireco.security.AdminAuthConfig;
+import com.interview.minireco.security.AdminPermission;
+import com.interview.minireco.security.AdminRequestAuthenticator;
+import com.interview.minireco.security.SecuredAdminHttpHandler;
 import com.interview.minireco.service.DemoWiring;
 import com.interview.minireco.service.RecommendationFacade;
 import com.interview.minireco.telemetry.Telemetry;
@@ -48,6 +52,8 @@ public class MiniRecoApplication {
         RolloutManager rolloutManager = RolloutManager.global();
         ComparisonRegistry comparisonRegistry = ComparisonRegistry.global();
         DynamicConfigPoller configPoller = createConfigPoller(rolloutManager, degradationManager);
+        AdminAuthConfig adminAuthConfig = AdminAuthConfig.fromEnvironment();
+        AdminRequestAuthenticator adminAuthenticator = new AdminRequestAuthenticator(adminAuthConfig);
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext(
@@ -78,13 +84,28 @@ public class MiniRecoApplication {
         server.createContext("/alerts", exchange ->
                 writeJson(exchange, JsonUtil.mapToJson(alertManager.snapshot()))
         );
-        server.createContext("/degradation", new DegradationHttpHandler(degradationManager));
+        server.createContext("/degradation", new SecuredAdminHttpHandler(
+                new DegradationHttpHandler(degradationManager), adminAuthenticator, AdminPermission.DEGRADATION_WRITE
+        ));
         server.createContext(
                 "/resilience",
-                new ResilienceHttpHandler(resilienceRegistry, faultInjectionManager)
+                new SecuredAdminHttpHandler(
+                        new ResilienceHttpHandler(resilienceRegistry, faultInjectionManager),
+                        adminAuthenticator,
+                        AdminPermission.RESILIENCE_WRITE
+                )
         );
-        server.createContext("/rollout", new RolloutHttpHandler(rolloutManager, comparisonRegistry));
-        server.createContext("/feature-cache", new FeatureCacheHttpHandler());
+        server.createContext("/rollout", new SecuredAdminHttpHandler(
+                new RolloutHttpHandler(rolloutManager, comparisonRegistry),
+                adminAuthenticator,
+                AdminPermission.ROLLOUT_WRITE
+        ));
+        server.createContext("/feature-cache", new SecuredAdminHttpHandler(
+                new FeatureCacheHttpHandler(), adminAuthenticator, AdminPermission.CACHE_RESET
+        ));
+        server.createContext("/admin-auth", exchange ->
+                writeJson(exchange, JsonUtil.mapToJson(adminAuthConfig.safeSnapshot()))
+        );
         if (configPoller != null) {
             server.createContext("/runtime-config", new DynamicConfigHttpHandler(configPoller));
         }
@@ -102,6 +123,7 @@ public class MiniRecoApplication {
         System.out.printf("Resilience: http://localhost:%d/resilience%n", port);
         System.out.printf("Rollout: http://localhost:%d/rollout%n", port);
         System.out.printf("Feature cache: http://localhost:%d/feature-cache%n", port);
+        System.out.printf("Admin auth: %s%n", adminAuthConfig.safeSnapshot());
         if (configPoller != null) {
             System.out.printf("Runtime config: http://localhost:%d/runtime-config%n", port);
         }

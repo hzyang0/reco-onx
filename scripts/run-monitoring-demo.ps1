@@ -54,7 +54,7 @@ function Wait-HealthyResult {
                 -and $response.debug.resilience.ad.status -eq "SUCCESS") {
             return $response
         }
-        $null = Invoke-RestMethod "$baseUrl/resilience?reset=true"
+        $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post
         Start-Sleep -Milliseconds 500
     }
     throw "gRPC recalls did not settle at 25 healthy items"
@@ -253,7 +253,7 @@ try {
     Write-Host "[9/10] Restarting live and verifying monitoring plus business recovery..."
     Invoke-Compose start live
     Wait-GrpcHealth "live" "localhost:19002" "mini_reco.live.LiveRecallRpc"
-    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true"
+    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post
     $recovered = Wait-HealthyResult -MaxAttempts 50
     $null = Wait-PrometheusScalar `
         'up{job="mini-reco-recall",instance="live:19102"}' `

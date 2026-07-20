@@ -33,8 +33,14 @@ public class ResilienceHttpHandler implements HttpHandler {
         }
 
         Map<String, String> params = QueryStringParser.parse(exchange.getRequestURI().getRawQuery());
+        if ("GET".equalsIgnoreCase(method) && !params.isEmpty()) {
+            write(exchange, 405, JsonUtil.errorToJson("state changes require POST"));
+            return;
+        }
         try {
-            applyCommand(params);
+            if ("POST".equalsIgnoreCase(method)) {
+                applyCommand(params);
+            }
         } catch (IllegalArgumentException e) {
             write(exchange, 400, JsonUtil.errorToJson(e.getMessage()));
             return;
@@ -45,9 +51,9 @@ public class ResilienceHttpHandler implements HttpHandler {
         body.putAll(resilienceRegistry.snapshot());
         body.put("usage", Map.of(
                 "view", "/resilience",
-                "injectTimeout", "/resilience?source=live&fault=TIMEOUT",
-                "injectError", "/resilience?source=live&fault=ERROR",
-                "recover", "/resilience?reset=true"
+                "injectTimeout", "POST /resilience?source=live&fault=TIMEOUT",
+                "injectError", "POST /resilience?source=live&fault=ERROR",
+                "recover", "POST /resilience?reset=true"
         ));
         write(exchange, 200, JsonUtil.mapToJson(body));
     }

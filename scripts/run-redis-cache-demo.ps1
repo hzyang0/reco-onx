@@ -29,7 +29,7 @@ function Invoke-Recommend([long]$UserId) {
             $response = Invoke-RestMethod "$baseUrl/recommend?userId=$UserId&scene=mall&limit=10" -TimeoutSec 10
             if ($response.items.Count -eq 10) { return $response }
         } catch {}
-        try { $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -TimeoutSec 3 } catch {}
+        try { $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post -TimeoutSec 3 } catch {}
         Start-Sleep -Milliseconds 500
     }
     throw "recommendation for user $UserId did not become healthy"

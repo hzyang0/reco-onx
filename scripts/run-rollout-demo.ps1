@@ -60,7 +60,7 @@ try {
     }
 
     Write-Host "[3/6] Running legacy primary with 100% new-pipeline shadow..."
-    $null = Invoke-RestMethod "$baseUrl/rollout?newPercent=0&shadowPercent=100&clear=true"
+    $null = Invoke-RestMethod "$baseUrl/rollout?newPercent=0&shadowPercent=100&clear=true" -Method Post
     $userIds = @(123, 124, 125)
     for ($index = 0; $index -lt $userIds.Count; $index++) {
         $response = Invoke-RestMethod "$baseUrl/recommend?userId=$($userIds[$index])&scene=mall&limit=10"
@@ -92,7 +92,7 @@ try {
     } | Format-Table -AutoSize
 
     Write-Host "[4/6] Switching to a 5% canary..."
-    $null = Invoke-RestMethod "$baseUrl/rollout?newPercent=5&shadowPercent=0"
+    $null = Invoke-RestMethod "$baseUrl/rollout?newPercent=5&shadowPercent=0" -Method Post
     $bucket0 = Invoke-RestMethod "$baseUrl/recommend?userId=100&scene=mall&limit=10"
     $bucket5 = Invoke-RestMethod "$baseUrl/recommend?userId=105&scene=mall&limit=10"
     if ($bucket0.debug.migration.primaryPipeline -ne "NEW") {
@@ -107,7 +107,7 @@ try {
     ) | Format-Table -AutoSize
 
     Write-Host "[5/6] Promoting NEW pipeline to 100%..."
-    $fullState = Invoke-RestMethod "$baseUrl/rollout?newPercent=100&shadowPercent=0"
+    $fullState = Invoke-RestMethod "$baseUrl/rollout?newPercent=100&shadowPercent=0" -Method Post
     $fullResponse = Invoke-RestMethod "$baseUrl/recommend?userId=199&scene=mall&limit=10"
     if ($fullState.config.newPipelinePercent -ne 100 -or $fullResponse.debug.migration.primaryPipeline -ne "NEW") {
         throw "full rollout should route every user to NEW"

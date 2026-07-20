@@ -48,8 +48,8 @@ try {
     }
 
     Write-Host "[3/4] Injecting live recall timeout and sending three requests..."
-    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true"
-    $null = Invoke-RestMethod "$baseUrl/resilience?source=live&fault=TIMEOUT"
+    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post
+    $null = Invoke-RestMethod "$baseUrl/resilience?source=live&fault=TIMEOUT" -Method Post
     $rows = @()
     for ($requestIndex = 1; $requestIndex -le 3; $requestIndex++) {
         $response = Invoke-RestMethod "$baseUrl/recommend?userId=123&scene=mall&limit=10"
@@ -91,7 +91,7 @@ try {
     Write-Host "fallback alert:" $fallbackAlert.rule
 
     Write-Host "[4/4] Recovering fault injection and circuit breaker..."
-    $state = Invoke-RestMethod "$baseUrl/resilience?reset=true"
+    $state = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post
     Write-Host "live fault:" $state.faultInjection.live
     Write-Host "live circuit:" $state.services.live.circuit.state
     Write-Host "service log:" $stdoutPath

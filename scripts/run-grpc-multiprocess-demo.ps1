@@ -61,7 +61,7 @@ function Wait-HealthyGrpcResult {
                 -and $response.debug.resilience.ad.status -eq "SUCCESS") {
             return $response
         }
-        $null = Invoke-RestMethod "$baseUrl/resilience?reset=true"
+        $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post
         Start-Sleep -Milliseconds 400
     }
     throw "gRPC recall did not reach a healthy 25-item result"
@@ -138,7 +138,7 @@ try {
     Write-Host "[6/7] Restarting live, resetting the circuit and verifying recovery..."
     $liveProcess = Start-Downstream "live" $LivePort
     Wait-TcpPort $LivePort "restarted live gRPC"
-    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true"
+    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post
     Start-Sleep -Milliseconds 200
     $recovered = Wait-HealthyGrpcResult
 

@@ -2,6 +2,11 @@ package com.interview.minireco.config;
 
 import com.interview.minireco.degradation.DegradationLevel;
 import com.interview.minireco.http.QueryStringParser;
+import com.interview.minireco.security.AdminAuthConfig;
+import com.interview.minireco.security.AdminPermission;
+import com.interview.minireco.security.AdminPrincipal;
+import com.interview.minireco.security.AdminRequestAuthenticator;
+import com.interview.minireco.security.SecuredAdminHttpHandler;
 import com.interview.minireco.util.JsonUtil;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -22,14 +27,19 @@ public final class ConfigCenterApplication {
     public static void main(String[] args) throws IOException {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8888;
         DynamicConfigStore store = createStore();
+        AdminAuthConfig adminAuthConfig = AdminAuthConfig.fromEnvironment();
+        AdminRequestAuthenticator adminAuthenticator = new AdminRequestAuthenticator(adminAuthConfig);
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/health", exchange -> write(exchange, 200, JsonUtil.mapToJson(Map.of(
                 "status", "UP",
                 "service", "mini-reco-config-center",
                 "version", store.get().version(),
-                "storage", store.storageDescription()
+                "storage", store.storageDescription(),
+                "adminAuthEnabled", adminAuthConfig.enabled()
         ))));
-        server.createContext("/api/config", exchange -> handleConfig(exchange, store));
+        server.createContext("/api/config", new SecuredAdminHttpHandler(
+                exchange -> handleConfig(exchange, store), adminAuthenticator, AdminPermission.CONFIG_WRITE
+        ));
         server.createContext("/api/config/history", exchange -> handleHistory(exchange, store));
         server.setExecutor(Executors.newFixedThreadPool(4));
         server.start();
@@ -57,12 +67,16 @@ public final class ConfigCenterApplication {
         }
         Map<String, String> params = QueryStringParser.parse(exchange.getRequestURI().getRawQuery());
         try {
+            AdminPrincipal principal = (AdminPrincipal) exchange.getAttribute("adminPrincipal");
+            String updatedBy = principal != null && !"LOCAL".equals(principal.role())
+                    ? principal.keyId()
+                    : required(params, "updatedBy");
             RuntimeConfigSnapshot updated = store.update(
                     parseLong(required(params, "expectedVersion"), "expectedVersion"),
                     parseInt(required(params, "newPipelinePercent"), "newPipelinePercent"),
                     parseInt(required(params, "shadowPercent"), "shadowPercent"),
                     DegradationLevel.parse(required(params, "degradationLevel")),
-                    required(params, "updatedBy")
+                    updatedBy
             );
             write(exchange, 200, JsonUtil.mapToJson(updated.toMap()));
         } catch (ConfigVersionConflictException e) {

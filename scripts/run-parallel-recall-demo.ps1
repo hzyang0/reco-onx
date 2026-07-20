@@ -48,7 +48,7 @@ try {
     }
 
     Write-Host "[3/5] Running healthy parallel fan-out..."
-    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true"
+    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post
     $normal = Invoke-RestMethod "$baseUrl/recommend?userId=123&scene=mall&limit=10"
     $normalFanout = $normal.debug.recallFanout
     $sourceCostSum = ($normalFanout.sourceCostMs.PSObject.Properties.Value | Measure-Object -Sum).Sum
@@ -61,7 +61,7 @@ try {
     }
 
     Write-Host "[4/5] Injecting live timeout and checking partial results..."
-    $null = Invoke-RestMethod "$baseUrl/resilience?source=live&fault=TIMEOUT"
+    $null = Invoke-RestMethod "$baseUrl/resilience?source=live&fault=TIMEOUT" -Method Post
     $partial = Invoke-RestMethod "$baseUrl/recommend?userId=123&scene=mall&limit=10"
     $partialFanout = $partial.debug.recallFanout
 
@@ -104,7 +104,7 @@ try {
     Write-Host "fan-out alert:" $fanoutAlert.rule
 
     Write-Host "[5/5] Resetting injected fault..."
-    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true"
+    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post
     Write-Host "service log:" $stdoutPath
 }
 finally {

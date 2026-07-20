@@ -29,8 +29,14 @@ public class RolloutHttpHandler implements HttpHandler {
         }
 
         Map<String, String> params = QueryStringParser.parse(exchange.getRequestURI().getRawQuery());
+        if ("GET".equalsIgnoreCase(method) && !params.isEmpty()) {
+            write(exchange, 405, JsonUtil.errorToJson("state changes require POST"));
+            return;
+        }
         try {
-            applyCommand(params);
+            if ("POST".equalsIgnoreCase(method)) {
+                applyCommand(params);
+            }
         } catch (IllegalArgumentException e) {
             write(exchange, 400, JsonUtil.errorToJson(e.getMessage()));
             return;
@@ -40,10 +46,10 @@ public class RolloutHttpHandler implements HttpHandler {
         body.put("config", rolloutManager.snapshot());
         body.put("comparison", comparisonRegistry.snapshot());
         body.put("usage", Map.of(
-                "shadowCompare", "/rollout?newPercent=0&shadowPercent=100&clear=true",
-                "canary5Percent", "/rollout?newPercent=5&shadowPercent=20",
-                "fullRollout", "/rollout?newPercent=100&shadowPercent=0",
-                "rollback", "/rollout?newPercent=0&shadowPercent=0"
+                "shadowCompare", "POST /rollout?newPercent=0&shadowPercent=100&clear=true",
+                "canary5Percent", "POST /rollout?newPercent=5&shadowPercent=20",
+                "fullRollout", "POST /rollout?newPercent=100&shadowPercent=0",
+                "rollback", "POST /rollout?newPercent=0&shadowPercent=0"
         ));
         write(exchange, 200, JsonUtil.mapToJson(body));
     }

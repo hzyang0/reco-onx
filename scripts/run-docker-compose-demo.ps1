@@ -42,7 +42,7 @@ function Wait-HealthyResult {
                 -and $response.debug.resilience.ad.status -eq "SUCCESS") {
             return $response
         }
-        $null = Invoke-RestMethod "$baseUrl/resilience?reset=true"
+        $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post
         Start-Sleep -Milliseconds 500
     }
     throw "containerized gRPC recall did not reach a healthy 25-item result"
@@ -172,7 +172,7 @@ try {
     Write-Host "[8/9] Restarting live, checking health and verifying recovery..."
     Invoke-Compose start live
     Wait-GrpcHealth "live" "localhost:19002" "mini_reco.live.LiveRecallRpc"
-    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true"
+    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post
     Start-Sleep -Milliseconds 300
     # The restarted server can be healthy before the gateway's existing gRPC
     # channel finishes its exponential reconnect backoff.

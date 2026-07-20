@@ -51,7 +51,7 @@ function Wait-Recommendation {
         catch {
             # Pod startup, EndpointSlice convergence and circuit recovery are eventually consistent.
         }
-        try { $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -TimeoutSec 3 } catch {}
+        try { $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post -TimeoutSec 3 } catch {}
         Start-Sleep -Milliseconds 700
     }
     throw "recommendation did not settle at count=$ExpectedCount, live=$ExpectedLiveStatus"

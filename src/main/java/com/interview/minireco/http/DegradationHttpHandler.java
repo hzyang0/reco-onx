@@ -27,8 +27,12 @@ public class DegradationHttpHandler implements HttpHandler {
         }
 
         Map<String, String> params = QueryStringParser.parse(exchange.getRequestURI().getRawQuery());
+        if ("GET".equalsIgnoreCase(method) && !params.isEmpty()) {
+            write(exchange, 405, JsonUtil.errorToJson("state changes require POST"));
+            return;
+        }
         String requestedLevel = params.get("level");
-        if (requestedLevel != null && !requestedLevel.isBlank()) {
+        if ("POST".equalsIgnoreCase(method) && requestedLevel != null && !requestedLevel.isBlank()) {
             try {
                 degradationManager.setLevel(DegradationLevel.parse(requestedLevel));
             } catch (IllegalArgumentException e) {
@@ -40,9 +44,9 @@ public class DegradationHttpHandler implements HttpHandler {
         Map<String, Object> body = new LinkedHashMap<>(degradationManager.snapshot());
         body.put("usage", Map.of(
                 "view", "/degradation",
-                "setLight", "/degradation?level=LIGHT",
-                "setHeavy", "/degradation?level=HEAVY",
-                "disable", "/degradation?level=NONE"
+                "setLight", "POST /degradation?level=LIGHT",
+                "setHeavy", "POST /degradation?level=HEAVY",
+                "disable", "POST /degradation?level=NONE"
         ));
         write(exchange, 200, JsonUtil.mapToJson(body));
     }

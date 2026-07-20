@@ -36,7 +36,7 @@ function Wait-HealthyRecommendation([int]$Attempts = 30) {
                     -and $response.debug.resilience.live.status -eq "SUCCESS" `
                     -and $response.debug.resilience.ad.status -eq "SUCCESS") { return $response }
         } catch {}
-        try { $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -TimeoutSec 3 } catch {}
+        try { $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post -TimeoutSec 3 } catch {}
         Start-Sleep -Milliseconds 500
     }
     throw "recommendation service did not reach a fully healthy state"
@@ -69,7 +69,7 @@ try {
     for ($i = 0; $i -lt 30; $i++) {
         $null = Invoke-RestMethod "$baseUrl/recommend?userId=$($i + 10000)&scene=mall&limit=10" -TimeoutSec 8
     }
-    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -TimeoutSec 3
+    $null = Invoke-RestMethod "$baseUrl/resilience?reset=true" -Method Post -TimeoutSec 3
 
     Write-Host "[4/10] Running 1/2/4/8 concurrency capacity staircase..."
     $env:SLO_MIN_SUCCESS_RATE = "99"

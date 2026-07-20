@@ -451,3 +451,19 @@ V21 upgrades the configuration center from memory-only state to a durable append
 ```
 
 Beginner guide: `docs/22-v21-persistent-config.md`.
+
+## V22: Secured management plane and final release gate
+
+V22 completes the engineering loop:
+
+- HMAC-SHA256 request signing with timestamp and nonce replay protection;
+- server-side RELEASE/OPS role permissions;
+- read-only GET and authenticated state-changing POST semantics;
+- 65-test Maven gate plus production image build in GitHub Actions;
+- one-command authenticated release, restart recovery, Redis outage and live-recall outage acceptance.
+
+```powershell
+.\scripts\run-v22-final-acceptance.ps1
+```
+
+Beginner guide and interview notes: `docs/23-v22-admin-security-release.md`.

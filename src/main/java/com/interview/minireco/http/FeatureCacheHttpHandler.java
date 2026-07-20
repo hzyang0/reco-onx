@@ -19,7 +19,12 @@ public class FeatureCacheHttpHandler implements HttpHandler {
             return;
         }
         Map<String, String> params = QueryStringParser.parse(exchange.getRequestURI().getRawQuery());
-        if (Boolean.parseBoolean(params.getOrDefault("reset", "false"))) {
+        if ("GET".equalsIgnoreCase(exchange.getRequestMethod()) && !params.isEmpty()) {
+            write(exchange, 405, JsonUtil.errorToJson("state changes require POST"));
+            return;
+        }
+        if ("POST".equalsIgnoreCase(exchange.getRequestMethod())
+                && Boolean.parseBoolean(params.getOrDefault("reset", "false"))) {
             FeatureCacheStats.global().reset();
         }
         write(exchange, 200, JsonUtil.mapToJson(
