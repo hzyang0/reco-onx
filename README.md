@@ -467,3 +467,11 @@ V22 completes the engineering loop:
 ```
 
 Beginner guide and interview notes: `docs/23-v22-admin-security-release.md`.
+
+## Complete interview knowledge handbook
+
+The project-wide interview handbook connects every major concept to the implementation, including Java/JVM, JUnit/Mockito/Groovy, data structures, operators and DAGs, concurrency, Protobuf/gRPC, resilience, Redis, observability, Docker/Kubernetes, dynamic configuration, security, capacity SLOs, CI, common follow-ups and a three-minute project narrative.
+
+```text
+docs/24-project-interview-handbook.md
+```
