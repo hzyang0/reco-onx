@@ -6,6 +6,7 @@ Mini Reco 位于 HTTP 请求与多个推荐数据来源之间，负责流程编�
 
 ```text
 Client
+  -> Embedded Console or HTTP API
   -> HTTP Handler
   -> Recommendation Service
   -> DAG Execution Engine
@@ -14,6 +15,8 @@ Client
 ```
 
 本地实现模拟了用户特征、AB 参数、地址、三路召回、在线特征和混排服务，因此项目无需额外基础设施即可运行。
+
+根路径 `/` 由 `DashboardHttpHandler` 返回内置 HTML，CSS 和 JavaScript 同样从 classpath 读取。控制台只负责展示和交互，真实推荐请求仍调用 `/recommend`，状态与指标分别调用 `/health` 和 `/metrics`。因此页面层和推荐链路之间仍以 HTTP JSON 契约解耦。
 
 ## 2. RecommendContext
 

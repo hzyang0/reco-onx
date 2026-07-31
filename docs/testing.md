@@ -53,6 +53,15 @@ mvn clean test
 
 验证计数器、耗时统计、标签隔离和线程安全累加。
 
+### `DashboardHttpHandlerTest`
+
+启动随机端口的真实 `HttpServer`，验证：
+
+- 根路径能返回控制台 HTML；
+- CSS 和 JavaScript 能从 JAR 资源路径读取并返回正确类型；
+- 响应包含内容安全策略等安全头；
+- 未知资源返回 404，非 GET/HEAD 请求返回 405。
+
 ## 4. JUnit 与 Mockito 的分工
 
 ```java

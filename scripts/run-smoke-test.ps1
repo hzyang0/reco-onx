@@ -5,7 +5,13 @@ $target = Join-Path $root "target"
 $jar = Join-Path $target "mini-reco-access-layer-0.1.0-SNAPSHOT.jar"
 $stdout = Join-Path $target "smoke-test.out.log"
 $stderr = Join-Path $target "smoke-test.err.log"
-$port = 18080
+$portProbe = [System.Net.Sockets.TcpListener]::new(
+        [System.Net.IPAddress]::Loopback,
+        0
+)
+$portProbe.Start()
+$port = ([System.Net.IPEndPoint]$portProbe.LocalEndpoint).Port
+$portProbe.Stop()
 
 if (-not (Test-Path -LiteralPath $jar)) {
     throw "Missing application JAR. Run 'mvn -DskipTests package' first."
@@ -35,6 +41,8 @@ try {
         throw "Application did not become ready."
     }
 
+    $dashboard = Invoke-WebRequest "http://localhost:$port/" -UseBasicParsing -TimeoutSec 5
+    $dashboardJs = Invoke-WebRequest "http://localhost:$port/assets/dashboard.js" -UseBasicParsing -TimeoutSec 5
     $response = Invoke-RestMethod `
         "http://localhost:$port/recommend?userId=123&scene=mall&limit=5" `
         -TimeoutSec 5
@@ -46,9 +54,16 @@ try {
     if ($response.items.Count -ne 5) {
         throw "Expected 5 items, got '$($response.items.Count)'."
     }
+    if ($dashboard.Content -notmatch 'id="recommendForm"') {
+        throw "Dashboard HTML did not contain the expected title."
+    }
+    if ($dashboardJs.Content -notmatch "runRecommendation") {
+        throw "Dashboard JavaScript did not contain the request flow."
+    }
 
     [pscustomobject]@{
         health = $health.status
+        dashboard = "OK"
         returnedItems = $response.items.Count
         metricGroups = $metrics.PSObject.Properties.Name.Count
     }

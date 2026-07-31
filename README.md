@@ -13,6 +13,7 @@ Mini Reco 是一个轻量级 Java 推荐请求编排服务。它接收用户和�
 - 并行执行互不依赖的在线特征与混排节点；
 - 为多路召回设置整体截止时间，保留已成功返回的部分结果；
 - 输出结构化日志、请求指标和算子指标；
+- 提供随 JAR 打包的轻量级控制台，可直接观察推荐结果、DAG 耗时和指标；
 - 提供 JUnit 5、Mockito、Maven、Docker 和 GitHub Actions 验证链路。
 
 ## 请求流程
@@ -47,6 +48,8 @@ mvn -DskipTests package
 java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar
 ```
 
+浏览器打开 `http://localhost:8080/`，可以在内置控制台中修改用户、场景和返回数量，发起推荐请求并观察完整结果。
+
 请求推荐结果：
 
 ```powershell
@@ -69,6 +72,10 @@ mvn -DskipTests package
 ```
 
 ## HTTP API
+
+### `GET /`
+
+返回内置控制台页面。页面使用原生 HTML、CSS 和 JavaScript，资源随 JAR 一起打包，不需要额外安装 Node.js 或启动前端服务。
 
 ### `GET /recommend`
 
@@ -120,6 +127,11 @@ src/main/java/io/github/hzyang0/minireco
 ├─ service/operator/graph DAG 模型与并行执行器
 ├─ service/operator/impl  六个业务算子和并行召回
 └─ util                   JSON 与延迟模拟工具
+
+src/main/resources/dashboard
+├─ index.html             控制台页面结构
+├─ dashboard.css          页面样式与响应式布局
+└─ dashboard.js           接口调用与结果渲染
 ```
 
 ## 文档

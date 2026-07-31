@@ -1,5 +1,6 @@
 package io.github.hzyang0.minireco;
 
+import io.github.hzyang0.minireco.http.DashboardHttpHandler;
 import io.github.hzyang0.minireco.http.RecommendHttpHandler;
 import io.github.hzyang0.minireco.observability.MetricsRegistry;
 import io.github.hzyang0.minireco.service.DemoWiring;
@@ -33,10 +34,12 @@ public class MiniRecoApplication {
         server.createContext("/metrics", exchange ->
                 writeJson(exchange, JsonUtil.mapToJson(metricsRegistry.snapshot()))
         );
+        server.createContext("/", new DashboardHttpHandler());
         server.setExecutor(Executors.newFixedThreadPool(16));
         server.start();
 
         System.out.printf("Mini Reco started on port %d%n", port);
+        System.out.printf("Console: http://localhost:%d/%n", port);
         System.out.printf("Recommend: http://localhost:%d/recommend?userId=123&scene=mall&limit=10%n", port);
         System.out.printf("Health: http://localhost:%d/health%n", port);
         System.out.printf("Metrics: http://localhost:%d/metrics%n", port);

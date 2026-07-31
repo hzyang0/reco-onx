@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Mini Reco 推荐请求编排控制台">
+    <title>Mini Reco 控制台</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/dashboard.css">
+</head>
+<body>
+<div class="page-shell">
+    <header class="topbar">
+        <a class="brand" href="/" aria-label="Mini Reco 首页">
+            <span class="brand-mark" aria-hidden="true">MR</span>
+            <span>
+                <strong>Mini Reco</strong>
+                <small>Recommendation Orchestration</small>
+            </span>
+        </a>
+        <nav class="top-actions" aria-label="服务链接">
+            <a href="/health" target="_blank" rel="noreferrer">Health JSON</a>
+            <a href="/metrics" target="_blank" rel="noreferrer">Metrics JSON</a>
+            <span id="healthBadge" class="status-badge status-pending">
+                <span class="status-dot" aria-hidden="true"></span>
+                检查服务中
+            </span>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">DAG-BASED REQUEST PIPELINE</p>
+                <h1>观察一次推荐请求<br>如何被并行编排</h1>
+                <p class="hero-description">
+                    从参数准备到三路召回、在线特征、混排、过滤和后处理，
+                    在同一个页面查看结果、阶段耗时与运行指标。
+                </p>
+                <div class="hero-tags" aria-label="技术标签">
+                    <span>Java 17</span>
+                    <span>Operator</span>
+                    <span>DAG</span>
+                    <span>Parallel Fan-out</span>
+                </div>
+            </div>
+
+            <form id="recommendForm" class="request-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-kicker">REQUEST BUILDER</p>
+                        <h2>发起推荐请求</h2>
+                    </div>
+                    <span class="method-badge">GET</span>
+                </div>
+
+                <label>
+                    <span>用户 ID</span>
+                    <input id="userId" name="userId" type="number" min="1" value="123" required>
+                </label>
+
+                <label>
+                    <span>推荐场景</span>
+                    <select id="scene" name="scene">
+                        <option value="mall">mall · 商城</option>
+                        <option value="buy_first">buy_first · 买首</option>
+                        <option value="single_column">single_column · 单列</option>
+                        <option value="double_column">double_column · 双列</option>
+                        <option value="new_user_card">new_user_card · 新用户卡片</option>
+                    </select>
+                </label>
+
+                <label>
+                    <span>返回数量</span>
+                    <div class="range-row">
+                        <input id="limit" name="limit" type="range" min="1" max="20" value="5">
+                        <output id="limitOutput" for="limit">5</output>
+                    </div>
+                </label>
+
+                <button id="submitButton" class="primary-button" type="submit">
+                    <span>运行推荐链路</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+
+                <p id="requestPath" class="request-path">/recommend?userId=123&amp;scene=mall&amp;limit=5</p>
+            </form>
+        </section>
+
+        <div id="errorBanner" class="error-banner" role="alert" hidden></div>
+
+        <section class="summary-grid" aria-label="请求摘要">
+            <article class="summary-card accent-blue">
+                <span>总耗时</span>
+                <strong id="totalCost">—</strong>
+                <small>端到端请求时间</small>
+            </article>
+            <article class="summary-card accent-green">
+                <span>返回结果</span>
+                <strong id="returnedCount">—</strong>
+                <small id="sceneSummary">等待请求</small>
+            </article>
+            <article class="summary-card accent-orange">
+                <span>召回状态</span>
+                <strong id="recallStatus">—</strong>
+                <small id="recallSummary">goods · live · ad</small>
+            </article>
+            <article class="summary-card accent-purple">
+                <span>Request ID</span>
+                <strong id="requestId" class="request-id">—</strong>
+                <small>单次链路标识</small>
+            </article>
+        </section>
+
+        <section class="content-section">
+            <div class="section-heading">
+                <div>
+                    <p class="section-kicker">EXECUTION GRAPH</p>
+                    <h2>请求执行链路</h2>
+                </div>
+                <p>节点耗时来自响应中的 <code>debug.stageCostMs</code></p>
+            </div>
+
+            <div class="pipeline" aria-label="推荐 DAG">
+                <article class="pipeline-node" data-stage="prepare">
+                    <span class="node-index">01</span>
+                    <div>
+                        <strong>Prepare</strong>
+                        <small>特征 · AB · 地址</small>
+                    </div>
+                    <span class="node-cost">—</span>
+                </article>
+                <span class="pipeline-arrow" aria-hidden="true">→</span>
+                <article class="pipeline-node" data-stage="recall">
+                    <span class="node-index">02</span>
+                    <div>
+                        <strong>Recall</strong>
+                        <small>三路并行召回</small>
+                    </div>
+                    <span class="node-cost">—</span>
+                </article>
+                <span class="pipeline-arrow" aria-hidden="true">→</span>
+                <div class="parallel-group">
+                    <span class="parallel-label">PARALLEL</span>
+                    <article class="pipeline-node" data-stage="onlineFeature">
+                        <span class="node-index">03A</span>
+                        <div>
+                            <strong>Online Feature</strong>
+                            <small>价格 · 库存 · 状态</small>
+                        </div>
+                        <span class="node-cost">—</span>
+                    </article>
+                    <article class="pipeline-node" data-stage="mixRank">
+                        <span class="node-index">03B</span>
+                        <div>
+                            <strong>Mix Rank</strong>
+                            <small>规则混排</small>
+                        </div>
+                        <span class="node-cost">—</span>
+                    </article>
+                </div>
+                <span class="pipeline-arrow" aria-hidden="true">→</span>
+                <article class="pipeline-node" data-stage="filter">
+                    <span class="node-index">04</span>
+                    <div>
+                        <strong>Filter</strong>
+                        <small>库存与状态过滤</small>
+                    </div>
+                    <span class="node-cost">—</span>
+                </article>
+                <span class="pipeline-arrow" aria-hidden="true">→</span>
+                <article class="pipeline-node" data-stage="postProcess">
+                    <span class="node-index">05</span>
+                    <div>
+                        <strong>Post Process</strong>
+                        <small>截断与兜底</small>
+                    </div>
+                    <span class="node-cost">—</span>
+                </article>
+            </div>
+
+            <div class="recall-strip">
+                <div>
+                    <p class="section-kicker">RECALL FAN-OUT</p>
+                    <strong>召回来源</strong>
+                </div>
+                <div id="recallSources" class="source-list">
+                    <span class="source-chip source-idle">goods</span>
+                    <span class="source-chip source-idle">live</span>
+                    <span class="source-chip source-idle">ad</span>
+                </div>
+                <div class="recall-meta">
+                    <span>Fan-out 耗时</span>
+                    <strong id="fanoutCost">—</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <div class="section-heading">
+                <div>
+                    <p class="section-kicker">RECOMMENDATION RESULT</p>
+                    <h2>推荐结果</h2>
+                </div>
+                <p id="resultCaption">运行请求后展示 Item</p>
+            </div>
+            <div id="itemsGrid" class="items-grid">
+                <div class="empty-state">
+                    <span aria-hidden="true">◎</span>
+                    <p>正在获取第一组推荐结果…</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <div class="section-heading metrics-heading">
+                <div>
+                    <p class="section-kicker">RUNTIME METRICS</p>
+                    <h2>运行指标</h2>
+                </div>
+                <button id="refreshMetrics" class="secondary-button" type="button">刷新指标</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>指标</th>
+                        <th>标签</th>
+                        <th>类型</th>
+                        <th>次数</th>
+                        <th>平均值</th>
+                        <th>最大值</th>
+                    </tr>
+                    </thead>
+                    <tbody id="metricsBody">
+                    <tr>
+                        <td colspan="6" class="table-empty">正在读取指标…</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <details class="raw-panel">
+            <summary>查看原始 JSON 响应</summary>
+            <pre id="rawJson">等待请求</pre>
+        </details>
+    </main>
+
+    <footer>
+        <span>Mini Reco · Java 17 Standard Library</span>
+        <span>HTTP · Operator · DAG · Future</span>
+    </footer>
+</div>
+
+<script src="/assets/dashboard.js" defer></script>
+</body>
+</html>
