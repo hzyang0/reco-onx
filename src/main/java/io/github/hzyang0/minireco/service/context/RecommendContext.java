@@ -1,0 +1,124 @@
+package io.github.hzyang0.minireco.service.context;
+
+import io.github.hzyang0.minireco.domain.Address;
+import io.github.hzyang0.minireco.domain.Item;
+import io.github.hzyang0.minireco.domain.RecommendRequest;
+import io.github.hzyang0.minireco.domain.UserFeature;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+public class RecommendContext {
+    private final String requestId;
+    private final RecommendRequest request;
+    private UserFeature userFeature;
+    private Map<String, String> abParams = Map.of();
+    private Address address;
+    private List<Item> recalledItems = List.of();
+    private List<Item> filteredItems = List.of();
+    private List<Item> rankedItems = List.of();
+    private List<Item> finalItems = List.of();
+    private final Map<String, Long> stageCostMs = new LinkedHashMap<>();
+    private final Map<String, Object> debug = new LinkedHashMap<>();
+
+    public RecommendContext(String requestId, RecommendRequest request) {
+        this.requestId = requestId;
+        this.request = request;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public RecommendRequest getRequest() {
+        return request;
+    }
+
+    public long getUserId() {
+        return request.getUserId();
+    }
+
+    public String getScene() {
+        return request.getScene();
+    }
+
+    public int getLimit() {
+        return request.getLimit();
+    }
+
+    public UserFeature getUserFeature() {
+        return userFeature;
+    }
+
+    public void setUserFeature(UserFeature userFeature) {
+        this.userFeature = userFeature;
+    }
+
+    public Map<String, String> getAbParams() {
+        return abParams;
+    }
+
+    public void setAbParams(Map<String, String> abParams) {
+        this.abParams = Map.copyOf(abParams);
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
+    public List<Item> getRecalledItems() {
+        return recalledItems;
+    }
+
+    public void setRecalledItems(List<Item> recalledItems) {
+        this.recalledItems = new ArrayList<>(recalledItems);
+    }
+
+    public List<Item> getFilteredItems() {
+        return filteredItems;
+    }
+
+    public void setFilteredItems(List<Item> filteredItems) {
+        this.filteredItems = new ArrayList<>(filteredItems);
+    }
+
+    public List<Item> getRankedItems() {
+        return rankedItems;
+    }
+
+    public void setRankedItems(List<Item> rankedItems) {
+        this.rankedItems = new ArrayList<>(rankedItems);
+    }
+
+    public List<Item> getFinalItems() {
+        return finalItems;
+    }
+
+    public void setFinalItems(List<Item> finalItems) {
+        this.finalItems = new ArrayList<>(finalItems);
+    }
+
+    public synchronized void addStageCostMs(String stageName, long costMs) {
+        stageCostMs.put(stageName, costMs);
+    }
+
+    public synchronized Map<String, Long> getStageCostMs() {
+        return Map.copyOf(stageCostMs);
+    }
+
+    public synchronized void putDebug(String key, Object value) {
+        debug.put(key, value);
+    }
+
+    public synchronized Map<String, Object> buildDebugSnapshot() {
+        Map<String, Object> snapshot = new LinkedHashMap<>(debug);
+        snapshot.put("stageCostMs", new LinkedHashMap<>(stageCostMs));
+        return snapshot;
+    }
+}

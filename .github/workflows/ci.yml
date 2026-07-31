@@ -1,4 +1,4 @@
-name: release-gate
+name: ci
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Check out source
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -24,8 +24,8 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Compile and run all tests
+      - name: Test and package
         run: mvn --batch-mode --no-transfer-progress clean verify
 
-      - name: Build production image
-        run: docker build --tag mini-reco-access-layer:ci .
+      - name: Build container image
+        run: docker build --tag mini-reco:ci .
