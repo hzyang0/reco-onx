@@ -7,6 +7,7 @@
 1. [开始运行](getting-started.md)：环境、启动、接口调用和代码阅读入口；
 2. [架构与请求链路](architecture.md)：Context、Operator、DAG、并行召回和异常处理；
 3. [测试说明](testing.md)：JUnit、Mockito、并行测试和验收命令。
+4. [代码导读](code-walkthrough.md)：从一条请求出发的推荐阅读路线、模块职责和练习。
 
 项目入口为 `MiniRecoApplication`，默认注册：
 

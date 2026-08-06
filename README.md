@@ -139,6 +139,7 @@ src/main/resources/dashboard
 - [开始运行](docs/getting-started.md)
 - [架构与请求链路](docs/architecture.md)
 - [测试说明](docs/testing.md)
+- [代码导读](docs/code-walkthrough.md)
 
 ## 实现边界
 
