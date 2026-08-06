@@ -16,7 +16,7 @@
 | `catalog_items` | `source`、`category`、`base_score` | goods/live/ad 三路召回候选 |
 | `inventory_snapshots` | `price`、`stock`、`status` | 补充在线特征并过滤无货、下线 Item |
 
-初始化文件是 `db/init/001-schema-and-seed.sql`。新的 MySQL 数据卷第一次启动时会自动执行，创建 5 张表、索引、外键、5 个差异化用户画像和 100 条候选记录。
+初始化文件是 `db/init/001-schema-and-seed.sql`。新的 MySQL 数据卷第一次启动时会自动执行，创建 5 张表、索引、外键、5 个差异化用户画像和 100 条候选记录。候选包含 80 种名称唯一的 goods、10 个直播间和 10 个广告活动；每种商品只保留一个款式。
 
 5 个画像分别覆盖居家、数码、美食、穿搭和运动偏好，其中潮流新用户没有历史行为，用于展示冷启动；其余用户具有不同的浏览、点击、加购或购买序列。控制台通过 `/api/console-data` 实时读取这些画像和候选总数，不在前端硬编码用户列表。
 

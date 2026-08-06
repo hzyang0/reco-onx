@@ -49,11 +49,17 @@ try {
 
     $profileCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM user_profiles" mini_reco).Trim()
     $catalogCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items" mini_reco).Trim()
+    $goodsCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items WHERE source='goods'" mini_reco).Trim()
+    $distinctGoodsTitleCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT title) FROM catalog_items WHERE source='goods'" mini_reco).Trim()
+    $variantSuffixCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items WHERE source='goods' AND (title LIKE '%轻享款%' OR title LIKE '%进阶款%' OR title LIKE '%旗舰款%')" mini_reco).Trim()
     $innodbTableCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM information_schema.tables WHERE table_schema='mini_reco' AND engine='InnoDB'" mini_reco).Trim()
     $businessIndexCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='mini_reco' AND index_name IN ('idx_user_events_user_time','idx_catalog_items_source_score')" mini_reco).Trim()
     $firstTitleUtf8Hex = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT HEX(title) FROM catalog_items WHERE item_id=11001" mini_reco).Trim()
     if ([int]$profileCount -lt 5 -or [int]$catalogCount -ne 100) {
         throw "Expected at least 5 user profiles and 100 catalog items, got user_profiles=$profileCount catalog_items=$catalogCount."
+    }
+    if ([int]$goodsCount -ne 80 -or [int]$distinctGoodsTitleCount -ne 80 -or [int]$variantSuffixCount -ne 0) {
+        throw "Expected 80 unique one-style goods and no generated variant suffixes."
     }
     if ([int]$innodbTableCount -ne 5 -or [int]$businessIndexCount -ne 2) {
         throw "Expected 5 InnoDB tables and 2 business indexes, got tables=$innodbTableCount indexes=$businessIndexCount."
@@ -117,6 +123,8 @@ try {
         health = $health.status
         profileRows = [int]$profileCount
         catalogRows = [int]$catalogCount
+        uniqueGoods = [int]$distinctGoodsTitleCount
+        generatedVariants = [int]$variantSuffixCount
         innodbTables = [int]$innodbTableCount
         businessIndexes = [int]$businessIndexCount
         returnedItems = $response.items.Count
