@@ -51,15 +51,20 @@ try {
     $catalogCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items" mini_reco).Trim()
     $goodsCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items WHERE source='goods'" mini_reco).Trim()
     $distinctGoodsTitleCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT title) FROM catalog_items WHERE source='goods'" mini_reco).Trim()
+    $imbalancedSourceCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM (SELECT source FROM catalog_items GROUP BY source HAVING COUNT(*) <> 100) source_counts" mini_reco).Trim()
+    $imbalancedCategorySourceCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM (SELECT source,category FROM catalog_items GROUP BY source,category HAVING COUNT(*) <> 20) bucket_counts" mini_reco).Trim()
     $variantSuffixCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items WHERE source='goods' AND (title LIKE '%轻享款%' OR title LIKE '%进阶款%' OR title LIKE '%旗舰款%')" mini_reco).Trim()
     $innodbTableCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM information_schema.tables WHERE table_schema='mini_reco' AND engine='InnoDB'" mini_reco).Trim()
     $businessIndexCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='mini_reco' AND index_name IN ('idx_user_events_user_time','idx_catalog_items_source_score')" mini_reco).Trim()
     $firstTitleUtf8Hex = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT HEX(title) FROM catalog_items WHERE item_id=11001" mini_reco).Trim()
-    if ([int]$profileCount -lt 5 -or [int]$catalogCount -ne 100) {
-        throw "Expected at least 5 user profiles and 100 catalog items, got user_profiles=$profileCount catalog_items=$catalogCount."
+    if ([int]$profileCount -lt 5 -or [int]$catalogCount -ne 300) {
+        throw "Expected at least 5 user profiles and 300 catalog items, got user_profiles=$profileCount catalog_items=$catalogCount."
     }
-    if ([int]$goodsCount -ne 80 -or [int]$distinctGoodsTitleCount -ne 80 -or [int]$variantSuffixCount -ne 0) {
-        throw "Expected 80 unique one-style goods and no generated variant suffixes."
+    if ([int]$goodsCount -ne 100 -or [int]$distinctGoodsTitleCount -ne 100 -or [int]$variantSuffixCount -ne 0) {
+        throw "Expected 100 unique one-style goods and no generated variant suffixes."
+    }
+    if ([int]$imbalancedSourceCount -ne 0 -or [int]$imbalancedCategorySourceCount -ne 0) {
+        throw "Expected goods/live/ad to have 100 candidates each and every source-category bucket to have 20."
     }
     if ([int]$innodbTableCount -ne 5 -or [int]$businessIndexCount -ne 2) {
         throw "Expected 5 InnoDB tables and 2 business indexes, got tables=$innodbTableCount indexes=$businessIndexCount."
@@ -73,6 +78,10 @@ try {
     if ($response.items.Count -ne 5) {
         throw "Expected 5 recommended items, got $($response.items.Count)."
     }
+    $sourceRecallCounts = $response.debug.recallFanout.itemCountBySource
+    if ($sourceRecallCounts.goods -ne 20 -or $sourceRecallCounts.live -ne 20 -or $sourceRecallCounts.ad -ne 20) {
+        throw "Expected balanced 20/20/20 recall results, got goods=$($sourceRecallCounts.goods) live=$($sourceRecallCounts.live) ad=$($sourceRecallCounts.ad)."
+    }
     if ($response.items[0].itemId -ne 11001 -or $firstTitleUtf8Hex -ne "E58C97E6ACA7E694B6E7BAB3E7AEB1") {
         throw "Expected item 11001 and valid UTF-8 title bytes, got itemId=$($response.items[0].itemId) hex=$firstTitleUtf8Hex."
     }
@@ -85,7 +94,7 @@ try {
     if ($dashboard.Content -notmatch 'id="recommendForm"') {
         throw "Dashboard HTML did not contain the recommendation form."
     }
-    if ($consoleData.userCount -lt 5 -or $consoleData.catalogCount -ne 100) {
+    if ($consoleData.userCount -lt 5 -or $consoleData.catalogCount -ne 300) {
         throw "Console data endpoint returned unexpected counts."
     }
     $personaNames = @($consoleData.users | ForEach-Object { $_.personaName } | Select-Object -Unique)
@@ -124,6 +133,8 @@ try {
         profileRows = [int]$profileCount
         catalogRows = [int]$catalogCount
         uniqueGoods = [int]$distinctGoodsTitleCount
+        candidatesPerSource = 100
+        recallItemsPerSource = "20/20/20"
         generatedVariants = [int]$variantSuffixCount
         innodbTables = [int]$innodbTableCount
         businessIndexes = [int]$businessIndexCount

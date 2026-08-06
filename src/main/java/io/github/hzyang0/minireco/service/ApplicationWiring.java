@@ -40,9 +40,9 @@ public final class ApplicationWiring {
 
     public static RecommendationFacade createRecommendService(JdbcDataRepository repository) {
         List<RecallService> recallServices = List.of(
-                new JdbcRecallService("goods", 12, repository),
-                new JdbcRecallService("live", 8, repository),
-                new JdbcRecallService("ad", 5, repository)
+                new JdbcRecallService("goods", 20, repository),
+                new JdbcRecallService("live", 20, repository),
+                new JdbcRecallService("ad", 20, repository)
         );
         Operator prepare = new PrepareOperator(
                 new JdbcUserFeatureService(repository),

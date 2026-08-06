@@ -105,6 +105,10 @@ INSERT INTO seed_goods (item_id, title, category, base_score, price) VALUES
     (11014, '不粘炒锅套装', 'home', 0.86, 329),
     (11015, '香薰助眠灯', 'home', 0.85, 139),
     (11016, '模块化书架', 'home', 0.84, 599),
+    (11017, '双层遮光窗帘', 'home', 0.83, 399),
+    (11018, '感应式垃圾桶', 'home', 0.82, 179),
+    (11019, '无线手持吸尘器', 'home', 0.81, 899),
+    (11020, '恒温智能马桶盖', 'home', 0.80, 1199),
     (11101, '无线降噪耳机', 'digital', 0.99, 799),
     (11102, '客制化机械键盘', 'digital', 0.98, 429),
     (11103, '氮化镓多口充电器', 'digital', 0.97, 149),
@@ -121,6 +125,10 @@ INSERT INTO seed_goods (item_id, title, category, base_score, price) VALUES
     (11114, '低延迟触控笔', 'digital', 0.86, 299),
     (11115, '铝合金笔记本支架', 'digital', 0.85, 169),
     (11116, '防水蓝牙音箱', 'digital', 0.84, 329),
+    (11117, '无线桌面充电站', 'digital', 0.83, 259),
+    (11118, '迷你照片打印机', 'digital', 0.82, 599),
+    (11119, '人体工学无线鼠标', 'digital', 0.81, 299),
+    (11120, '智能家庭摄像头', 'digital', 0.80, 269),
     (11201, '精品手冲咖啡豆', 'food', 0.99, 98),
     (11202, '每日坚果礼盒', 'food', 0.98, 69),
     (11203, '低糖巴斯克蛋糕', 'food', 0.97, 128),
@@ -137,6 +145,10 @@ INSERT INTO seed_goods (item_id, title, category, base_score, price) VALUES
     (11214, '海盐苏打饼干', 'food', 0.86, 32),
     (11215, '天然成熟蜂蜜', 'food', 0.85, 88),
     (11216, '低糖蓝莓果酱', 'food', 0.84, 56),
+    (11217, '云南鲜花饼礼盒', 'food', 0.83, 68),
+    (11218, '日晒风味挂耳咖啡', 'food', 0.82, 75),
+    (11219, '原切芝士片', 'food', 0.81, 48),
+    (11220, '手工酸辣粉套装', 'food', 0.80, 42),
     (11301, '通勤西装外套', 'fashion', 0.99, 459),
     (11302, '轻量托特包', 'fashion', 0.98, 299),
     (11303, '复古直筒牛仔裤', 'fashion', 0.97, 329),
@@ -153,6 +165,10 @@ INSERT INTO seed_goods (item_id, title, category, base_score, price) VALUES
     (11314, '羊绒流苏围巾', 'fashion', 0.86, 299),
     (11315, '都市双肩背包', 'fashion', 0.85, 329),
     (11316, '复古金属腕表', 'fashion', 0.84, 459),
+    (11317, '软底乐福鞋', 'fashion', 0.83, 359),
+    (11318, '法式连衣裙', 'fashion', 0.82, 399),
+    (11319, '廓形休闲西裤', 'fashion', 0.81, 299),
+    (11320, '防晒轻薄外套', 'fashion', 0.80, 249),
     (11401, '缓震竞速跑鞋', 'sports', 0.99, 599),
     (11402, '智能运动手环', 'sports', 0.98, 269),
     (11403, '可调节健身哑铃', 'sports', 0.97, 399),
@@ -168,7 +184,11 @@ INSERT INTO seed_goods (item_id, title, category, base_score, price) VALUES
     (11413, '双层运动水壶', 'sports', 0.87, 89),
     (11414, '儿童平衡滑板车', 'sports', 0.86, 499),
     (11415, '便携筋膜放松枪', 'sports', 0.85, 399),
-    (11416, '室内悬挂训练带', 'sports', 0.84, 219);
+    (11416, '室内悬挂训练带', 'sports', 0.84, 219),
+    (11417, '专业篮球护腕', 'sports', 0.83, 69),
+    (11418, '户外露营天幕', 'sports', 0.82, 599),
+    (11419, '折叠便携钓鱼椅', 'sports', 0.81, 199),
+    (11420, '防雾泳镜套装', 'sports', 0.80, 129);
 
 INSERT INTO catalog_items (
     item_id, title, source, category, base_score, recall_reason, room_id, creative_id
@@ -184,27 +204,33 @@ SELECT
     NULL
 FROM seed_goods g;
 
-INSERT INTO catalog_items (item_id, title, source, category, base_score, recall_reason, room_id, creative_id) VALUES
-    (21001, '收纳改造直播间', 'live', 'home', 0.82, 'live_hot', '900101', NULL),
-    (21002, '居家好物秒杀', 'live', 'home', 0.76, 'live_hot', '900102', NULL),
-    (21003, '数码新品首发', 'live', 'digital', 0.84, 'live_hot', '900103', NULL),
-    (21004, '键鼠选购指南', 'live', 'digital', 0.77, 'live_hot', '900104', NULL),
-    (21005, '咖啡风味实验室', 'live', 'food', 0.81, 'live_hot', '900105', NULL),
-    (21006, '零食开箱直播', 'live', 'food', 0.75, 'live_hot', '900106', NULL),
-    (21007, '秋季穿搭课堂', 'live', 'fashion', 0.83, 'live_hot', '900107', NULL),
-    (21008, '包袋专场直播', 'live', 'fashion', 0.76, 'live_hot', '900108', NULL),
-    (21009, '科学跑步训练营', 'live', 'sports', 0.85, 'live_hot', '900109', NULL),
-    (21010, '家庭健身课堂', 'live', 'sports', 0.78, 'live_hot', '900110', NULL),
-    (31001, '家居焕新满减专场', 'ad', 'home', 0.68, 'commercial', NULL, '800101'),
-    (31002, '品质床品品牌会场', 'ad', 'home', 0.62, 'commercial', NULL, '800102'),
-    (31003, '耳机新品推广', 'ad', 'digital', 0.70, 'commercial', NULL, '800103'),
-    (31004, '智能设备以旧换新', 'ad', 'digital', 0.64, 'commercial', NULL, '800104'),
-    (31005, '咖啡会员日活动', 'ad', 'food', 0.67, 'commercial', NULL, '800105'),
-    (31006, '健康零食尝鲜会场', 'ad', 'food', 0.61, 'commercial', NULL, '800106'),
-    (31007, '秋装限时活动', 'ad', 'fashion', 0.69, 'commercial', NULL, '800107'),
-    (31008, '轻奢包袋品牌周', 'ad', 'fashion', 0.63, 'commercial', NULL, '800108'),
-    (31009, '跑步装备品牌日', 'ad', 'sports', 0.71, 'commercial', NULL, '800109'),
-    (31010, '全民健身补贴会场', 'ad', 'sports', 0.65, 'commercial', NULL, '800110');
+INSERT INTO catalog_items (
+    item_id, title, source, category, base_score, recall_reason, room_id, creative_id
+)
+SELECT
+    g.item_id + 10000,
+    CONCAT('直播精选｜', g.title),
+    'live',
+    g.category,
+    ROUND(g.base_score - 0.12, 3),
+    'live_hot',
+    CONCAT('9', g.item_id),
+    NULL
+FROM seed_goods g;
+
+INSERT INTO catalog_items (
+    item_id, title, source, category, base_score, recall_reason, room_id, creative_id
+)
+SELECT
+    g.item_id + 20000,
+    CONCAT('品牌活动｜', g.title),
+    'ad',
+    g.category,
+    ROUND(g.base_score - 0.25, 3),
+    'commercial',
+    NULL,
+    CONCAT('8', g.item_id)
+FROM seed_goods g;
 
 INSERT INTO inventory_snapshots (item_id, price, stock, status)
 SELECT

@@ -189,8 +189,10 @@ function renderSummary(response) {
     const fanout = response.debug?.recallFanout || {};
     elements.recallStatus.textContent = fanout.status || "UNKNOWN";
     const completed = fanout.completedSources || [];
+    const recalledCount = Object.values(fanout.itemCountBySource || {})
+        .reduce((total, count) => total + Number(count || 0), 0);
     elements.recallSummary.textContent = completed.length
-        ? `${completed.length}/${sourceOrder.length} 来源完成`
+        ? `${completed.length}/${sourceOrder.length} 来源完成 · ${recalledCount} 候选`
         : "无召回来源";
     elements.requestId.textContent = response.requestId || "—";
     elements.requestId.title = response.requestId || "";
@@ -221,7 +223,8 @@ function renderRecall(fanout) {
     sourceOrder.forEach((source) => {
         const chip = document.createElement("span");
         chip.className = "source-chip";
-        chip.textContent = source;
+        const itemCount = fanout.itemCountBySource?.[source];
+        chip.textContent = itemCount === undefined ? source : `${source} · ${itemCount}`;
         if (completed.has(source)) {
             chip.classList.add("source-success");
             chip.title = `${source} 完成 · ${formatMs(fanout.sourceCostMs?.[source])}`;
