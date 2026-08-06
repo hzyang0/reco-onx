@@ -26,7 +26,7 @@ Browser / API client
 2. `RecommendService` 为这次请求新建 `RecommendContext`，交给 DAG。
 3. `PrepareOperator` 读取用户画像、用户行为、实验分组和地址，写入 Context。
 4. `RecallOperator` 同时执行 goods、live、ad 三个 `JdbcRecallService`；每路候选来自 `catalog_items`。
-5. 召回完成后，`OnlineFeatureOperator` 一次 SQL 批量读取 `inventory_snapshots`，写入价格、库存、状态。
+5. 召回完成后，`OnlineFeatureOperator` 一次 SQL 批量读取在线属性：goods 使用价格/库存，live 将动态量解释为热度，三路统一保留可用状态；room_id 和 creative_id 则来自各自候选记录。
 6. `MixRankOperator` 同时计算本地规则分数：偏好类目加分、实验组中商品加分、广告轻微扣分；并保留三路排序候选供后续编排。
 7. `FilterOperator` 等待在线特征和混排都完成，移除库存为 0 或状态非 ONLINE 的 Item。
 8. `PostProcessOperator` 对有效候选执行场景编排：商城为 goods + ad，视频流为 live + ad，买家首页为 goods + live + ad；然后按请求上限截断并序列化成 JSON。

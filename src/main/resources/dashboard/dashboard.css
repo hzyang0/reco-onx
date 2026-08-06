@@ -782,6 +782,14 @@ code {
     transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
+.item-card-live {
+    border-top: 3px solid rgba(118, 86, 200, 0.55);
+}
+
+.item-card-ad {
+    border-top: 3px solid rgba(217, 119, 6, 0.55);
+}
+
 .item-card:hover {
     transform: translateY(-3px);
     border-color: rgba(47, 111, 237, 0.3);

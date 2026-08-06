@@ -30,7 +30,7 @@
 3. `service/data/JdbcDataRepository.java`：所有 SQL 为什么集中在这里。
 4. `service/downstream/impl/Jdbc*.java`：数据库记录如何映射成领域对象。
 
-`JdbcOnlineFeatureService` 值得重点阅读：它先收集全部 itemId，再调用 `findInventoryByItemIds` 做一条批量 SQL，避免每个候选各查一次库存。混排会保留三路排序候选，过滤掉无货或下线候选后，`PostProcessOperator` 再按商城、视频流或买家首页的来源槽位组装结果，因此不会在代码中伪造兜底商品。
+`JdbcOnlineFeatureService` 值得重点阅读：它先收集全部 itemId，再调用 `findInventoryByItemIds` 做一条批量 SQL，避免每个候选各查一次在线状态。goods、live、ad 使用同一 Item 主结构，但分别携带价格/库存、room_id、creative_id 等来源专属属性。混排会保留三路排序候选，过滤掉不可用候选后，`PostProcessOperator` 再按商城、视频流或买家首页的来源槽位组装结果。
 
 ## 建议练习
 

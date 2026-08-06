@@ -16,7 +16,9 @@
 | `catalog_items` | `source`、`category`、`base_score` | goods/live/ad 三路召回候选 |
 | `inventory_snapshots` | `price`、`stock`、`status` | 补充在线特征并过滤无货、下线 Item |
 
-初始化文件是 `db/init/001-schema-and-seed.sql`。新的 MySQL 数据卷第一次启动时会自动执行，创建 5 张表、索引、外键、5 个差异化用户画像和 300 条候选记录。goods、live、ad 各有 100 条；每一路在五个类目中各有 20 条。100 条 goods 名称全部唯一，每种商品只保留一个款式。
+初始化文件是 `db/init/001-schema-and-seed.sql`。新的 MySQL 数据卷第一次启动时会自动执行，创建 5 张表、索引、外键、5 个差异化用户画像和 300 条候选记录。goods、live、ad 各有 100 条；每一路在五个类目中各有 20 条。goods 是具体商品，live 是直播/视频主题，ad 是营销活动；每一路内部标题唯一，来源之间也不复用标题。
+
+三种来源共享 Item 主结构，但保留来源专属字段：goods 使用价格和库存，live 使用 `room_id`，ad 使用 `creative_id`。控制台因此会为商品显示价格/库存，为直播显示直播间/热度，为广告显示创意 ID/召回方式。
 
 5 个画像分别覆盖居家、数码、美食、穿搭和运动偏好，其中潮流新用户没有历史行为，用于展示冷启动；其余用户具有不同的浏览、点击、加购或购买序列。实验表中的默认场景只使用 `mall`、`video_feed` 和 `buy_first`；新用户由画像字段表示，不作为场景。控制台通过 `/api/console-data` 实时读取这些画像和候选总数，不在前端硬编码用户列表。
 

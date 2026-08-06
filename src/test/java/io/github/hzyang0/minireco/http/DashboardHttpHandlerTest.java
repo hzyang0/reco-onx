@@ -62,6 +62,8 @@ class DashboardHttpHandlerTest {
         assertTrue(javascript.body().contains("runRecommendation"));
         assertTrue(javascript.body().contains("/api/console-data"));
         assertTrue(javascript.body().contains("/api/users"));
+        assertTrue(javascript.body().contains("itemAttributeCells"));
+        assertTrue(javascript.body().contains("创意 ID"));
         assertEquals(200, favicon.statusCode());
         assertEquals("image/svg+xml", favicon.headers().firstValue("Content-Type").orElseThrow());
         assertTrue(favicon.body().contains("<svg"));

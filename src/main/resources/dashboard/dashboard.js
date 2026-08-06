@@ -263,7 +263,7 @@ function renderItems(items) {
 
     items.forEach((item, index) => {
         const card = document.createElement("article");
-        card.className = "item-card";
+        card.className = `item-card item-card-${item.source}`;
 
         const topLine = document.createElement("div");
         topLine.className = "item-topline";
@@ -283,15 +283,33 @@ function renderItems(items) {
 
         const attributes = document.createElement("div");
         attributes.className = "attribute-grid";
-        attributes.append(
-            attributeCell("价格", item.attrs?.price ? `¥${item.attrs.price}` : "—"),
-            attributeCell("库存", item.attrs?.stock ?? "—"),
-            attributeCell("状态", item.attrs?.status ?? "—")
-        );
+        attributes.append(...itemAttributeCells(item));
 
         card.append(topLine, title, id, attributes);
         elements.itemsGrid.append(card);
     });
+}
+
+function itemAttributeCells(item) {
+    if (item.source === "live") {
+        return [
+            attributeCell("直播间", item.attrs?.room_id ?? "—"),
+            attributeCell("热度", item.attrs?.stock ?? "—"),
+            attributeCell("状态", item.attrs?.status ?? "—")
+        ];
+    }
+    if (item.source === "ad") {
+        return [
+            attributeCell("创意 ID", item.attrs?.creative_id ?? "—"),
+            attributeCell("召回方式", item.attrs?.recall_reason ?? "—"),
+            attributeCell("状态", item.attrs?.status ?? "—")
+        ];
+    }
+    return [
+        attributeCell("价格", item.attrs?.price ? `¥${item.attrs.price}` : "—"),
+        attributeCell("库存", item.attrs?.stock ?? "—"),
+        attributeCell("状态", item.attrs?.status ?? "—")
+    ];
 }
 
 function attributeCell(label, value) {

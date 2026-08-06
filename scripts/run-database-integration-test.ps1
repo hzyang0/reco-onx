@@ -51,6 +51,9 @@ try {
     $catalogCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items" mini_reco).Trim()
     $goodsCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items WHERE source='goods'" mini_reco).Trim()
     $distinctGoodsTitleCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT title) FROM catalog_items WHERE source='goods'" mini_reco).Trim()
+    $nonUniqueSourceCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM (SELECT source FROM catalog_items GROUP BY source HAVING COUNT(DISTINCT title) <> 100) title_counts" mini_reco).Trim()
+    $crossSourceTitleOverlapCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM catalog_items a JOIN catalog_items b ON a.title=b.title AND a.source < b.source" mini_reco).Trim()
+    $derivedPrefixCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM catalog_items WHERE title LIKE '直播精选｜%' OR title LIKE '品牌活动｜%'" mini_reco).Trim()
     $imbalancedSourceCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM (SELECT source FROM catalog_items GROUP BY source HAVING COUNT(*) <> 100) source_counts" mini_reco).Trim()
     $imbalancedCategorySourceCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM (SELECT source,category FROM catalog_items GROUP BY source,category HAVING COUNT(*) <> 20) bucket_counts" mini_reco).Trim()
     $variantSuffixCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items WHERE source='goods' AND (title LIKE '%轻享款%' OR title LIKE '%进阶款%' OR title LIKE '%旗舰款%')" mini_reco).Trim()
@@ -62,6 +65,9 @@ try {
     }
     if ([int]$goodsCount -ne 100 -or [int]$distinctGoodsTitleCount -ne 100 -or [int]$variantSuffixCount -ne 0) {
         throw "Expected 100 unique one-style goods and no generated variant suffixes."
+    }
+    if ([int]$nonUniqueSourceCount -ne 0 -or [int]$crossSourceTitleOverlapCount -ne 0 -or [int]$derivedPrefixCount -ne 0) {
+        throw "Expected 100 unique titles per source, no cross-source title overlap, and no derived live/ad prefixes."
     }
     if ([int]$imbalancedSourceCount -ne 0 -or [int]$imbalancedCategorySourceCount -ne 0) {
         throw "Expected goods/live/ad to have 100 candidates each and every source-category bucket to have 20."
@@ -152,6 +158,9 @@ try {
         profileRows = [int]$profileCount
         catalogRows = [int]$catalogCount
         uniqueGoods = [int]$distinctGoodsTitleCount
+        uniqueTitlesPerSource = 100
+        crossSourceTitleOverlap = [int]$crossSourceTitleOverlapCount
+        derivedSourceTitles = [int]$derivedPrefixCount
         candidatesPerSource = 100
         recallItemsPerSource = "20/20/20"
         mallLayout = $mallSources
