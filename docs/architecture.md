@@ -27,9 +27,19 @@ Browser / API client
 3. `PrepareOperator` 读取用户画像、用户行为、实验分组和地址，写入 Context。
 4. `RecallOperator` 同时执行 goods、live、ad 三个 `JdbcRecallService`；每路候选来自 `catalog_items`。
 5. 召回完成后，`OnlineFeatureOperator` 一次 SQL 批量读取 `inventory_snapshots`，写入价格、库存、状态。
-6. `MixRankOperator` 同时计算本地规则分数：偏好类目加分、实验组中商品加分、广告轻微扣分。
+6. `MixRankOperator` 同时计算本地规则分数：偏好类目加分、实验组中商品加分、广告轻微扣分；并保留三路排序候选供后续编排。
 7. `FilterOperator` 等待在线特征和混排都完成，移除库存为 0 或状态非 ONLINE 的 Item。
-8. `PostProcessOperator` 只对库存、状态都有效的数据库候选按请求上限截断，`RecommendResponse` 序列化成 JSON。
+8. `PostProcessOperator` 对有效候选执行场景编排：商城为 goods + ad，视频流为 live + ad，买家首页为 goods + live + ad；然后按请求上限截断并序列化成 JSON。
+
+## 场景和用户状态
+
+`scene` 描述请求入口，当前只保留三个清晰场景：
+
+- `mall`：货架商城，10 条结果默认是 8 个 goods 和 2 个 ad，广告位于第 4、9 位。
+- `video_feed`：合并单列和双列的内容流，10 条结果默认是 8 个 live 和 2 个 ad。
+- `buy_first`：买家首页综合入口，10 条结果默认是 4 个 goods、4 个 live 和 2 个 ad。
+
+`newUser` 是用户特征，不是流量场景。新用户仍需选择上述入口，但排序时使用声明偏好与候选热度完成冷启动；有行为用户使用画像和行为偏好。响应中的 `debug.rankingPolicy` 与 `debug.scenePolicy` 会分别说明这两个决策。
 
 ## Context 为什么重要
 

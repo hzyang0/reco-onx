@@ -26,9 +26,10 @@ public class MixRankOperator implements Operator {
         List<Item> candidates = context.getFilteredItems().isEmpty()
                 ? context.getRecalledItems()
                 : context.getFilteredItems();
-        // Rank a wider window before stock/status filtering. Otherwise a sold-out
-        // item near the top could leave too few valid database candidates.
-        int rankWindow = Math.max(context.getLimit() * 3, 10);
+        // Keep the ranked candidates from every recall source. Scene-aware
+        // composition happens after online-feature filtering, so ads and the
+        // scene's primary content source must still be available at that point.
+        int rankWindow = candidates.size();
         List<Item> rankedItems = mixRankService.rank(candidates, context, rankWindow);
         context.setRankedItems(rankedItems);
     }

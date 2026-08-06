@@ -43,7 +43,7 @@ public class PrepareOperator implements Operator {
     }
 
     private void validateScene(String scene) {
-        if (!List.of("mall", "buy_first", "single_column", "double_column", "new_user_card").contains(scene)) {
+        if (!List.of("mall", "video_feed", "buy_first").contains(scene)) {
             throw new IllegalArgumentException("unsupported scene: " + scene);
         }
     }

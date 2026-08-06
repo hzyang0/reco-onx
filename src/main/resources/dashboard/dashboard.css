@@ -269,6 +269,13 @@ main {
     background: #fbfcfe;
 }
 
+.field-hint {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.55;
+}
+
 .user-profile-card {
     margin: 12px 0 18px;
     padding: 13px 14px;

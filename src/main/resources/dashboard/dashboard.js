@@ -14,6 +14,7 @@ const elements = {
     closeProfileCreator: document.querySelector("#closeProfileCreator"),
     cancelProfileCreator: document.querySelector("#cancelProfileCreator"),
     scene: document.querySelector("#scene"),
+    sceneHint: document.querySelector("#sceneHint"),
     limit: document.querySelector("#limit"),
     limitOutput: document.querySelector("#limitOutput"),
     requestPath: document.querySelector("#requestPath"),
@@ -36,6 +37,11 @@ const elements = {
 };
 
 const sourceOrder = ["goods", "live", "ad"];
+const sceneHints = {
+    mall: "商品为主，第 4、9 位穿插广告；直播候选只参与召回观测",
+    video_feed: "直播/视频内容为主，第 4、9 位穿插广告；商品候选只参与召回观测",
+    buy_first: "买家首页综合承接商品与直播，并在第 4、9 位穿插广告"
+};
 let consoleUsers = [];
 
 async function requestJson(path, options = {}) {
@@ -161,6 +167,7 @@ function currentPath() {
 function updateRequestPreview() {
     elements.limitOutput.value = elements.limit.value;
     elements.requestPath.textContent = currentPath();
+    elements.sceneHint.textContent = sceneHints[elements.scene.value] || "按场景编排推荐内容";
 }
 
 async function runRecommendation() {

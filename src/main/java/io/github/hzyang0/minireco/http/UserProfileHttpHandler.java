@@ -15,9 +15,7 @@ import java.util.Set;
 public final class UserProfileHttpHandler implements HttpHandler {
     private static final int MAX_BODY_BYTES = 8 * 1024;
     private static final Set<String> CATEGORIES = Set.of("home", "digital", "food", "fashion", "sports");
-    private static final Set<String> SCENES = Set.of(
-            "mall", "buy_first", "single_column", "double_column", "new_user_card"
-    );
+    private static final Set<String> SCENES = Set.of("mall", "video_feed", "buy_first");
     private static final Set<String> RANK_EXPERIMENTS = Set.of("DEFAULT", "MALL_BOOST");
     private final JdbcDataRepository repository;
 

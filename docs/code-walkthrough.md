@@ -30,12 +30,13 @@
 3. `service/data/JdbcDataRepository.java`：所有 SQL 为什么集中在这里。
 4. `service/downstream/impl/Jdbc*.java`：数据库记录如何映射成领域对象。
 
-`JdbcOnlineFeatureService` 值得重点阅读：它先收集全部 itemId，再调用 `findInventoryByItemIds` 做一条批量 SQL，避免每个候选各查一次库存。混排会保留比最终返回数量更宽的窗口，过滤掉无货或下线候选后再由后处理截断，因此不会在代码中伪造兜底商品。
+`JdbcOnlineFeatureService` 值得重点阅读：它先收集全部 itemId，再调用 `findInventoryByItemIds` 做一条批量 SQL，避免每个候选各查一次库存。混排会保留三路排序候选，过滤掉无货或下线候选后，`PostProcessOperator` 再按商城、视频流或买家首页的来源槽位组装结果，因此不会在代码中伪造兜底商品。
 
 ## 建议练习
 
 - 修改一条 `inventory_snapshots` 的库存为 0，重新请求，观察该 Item 被 Filter 移除。
 - 在 `catalog_items` 新增一个 goods 候选和库存，观察它进入召回结果。
 - 为一个新场景写入 `experiment_assignments`，观察 `debug` 中的 AB 参数和排序变化。
+- 分别请求 `mall`、`video_feed`、`buy_first`，对照 `debug.scenePolicy` 验证结果来源比例。
 - 给 `JdbcDataRepository` 的查询打断点，观察一次请求访问了哪些表。
 - 在控制台分别创建冷启动和高意向用户，对比 `user_events` 记录和推荐结果。

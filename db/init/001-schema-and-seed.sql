@@ -75,9 +75,9 @@ INSERT INTO user_events (user_id, category, event_type, event_time) VALUES
 
 INSERT INTO experiment_assignments (user_id, scene, recall_exp, rank_exp) VALUES
     (123, 'mall', 'A', 'MALL_BOOST'),
-    (456, 'double_column', 'B', 'DEFAULT'),
-    (789, 'single_column', 'A', 'DEFAULT'),
-    (1000, 'new_user_card', 'B', 'MALL_BOOST'),
+    (456, 'video_feed', 'B', 'DEFAULT'),
+    (789, 'video_feed', 'A', 'DEFAULT'),
+    (1000, 'mall', 'B', 'MALL_BOOST'),
     (2024, 'buy_first', 'B', 'MALL_BOOST');
 
 CREATE TEMPORARY TABLE seed_goods (

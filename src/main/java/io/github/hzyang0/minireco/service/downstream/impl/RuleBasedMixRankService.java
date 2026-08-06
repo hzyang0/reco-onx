@@ -18,11 +18,12 @@ public final class RuleBasedMixRankService implements MixRankService {
     public List<Item> rank(List<Item> items, RecommendContext context, int limit) {
         UserFeature feature = context.getUserFeature();
         Map<String, String> abParams = context.getAbParams();
+        double categoryBoost = feature.isNewUser() ? 0.08 : 0.15;
 
         for (Item item : items) {
             double score = item.getScore();
             if (item.getCategory().equals(feature.getPreferredCategory())) {
-                score += 0.15;
+                score += categoryBoost;
             }
             if ("MALL_BOOST".equals(abParams.get("rank_exp")) && "goods".equals(item.getSource())) {
                 score += 0.05;
@@ -32,6 +33,14 @@ public final class RuleBasedMixRankService implements MixRankService {
             }
             item.setScore(score);
         }
+
+        context.putDebug("rankingPolicy", Map.of(
+                "coldStart", feature.isNewUser(),
+                "categoryBoost", categoryBoost,
+                "basis", feature.isNewUser()
+                        ? "declared_category_plus_popularity"
+                        : "profile_and_behavior"
+        ));
 
         return items.stream()
                 .sorted(Comparator.comparingDouble(Item::getScore).reversed())

@@ -83,7 +83,7 @@ class RecommendServiceTest {
             return null;
         }).when(onlineFeatureService).fillOnlineFeatures(anyList());
 
-        when(mixRankService.rank(anyList(), any(RecommendContext.class), eq(10)))
+        when(mixRankService.rank(anyList(), any(RecommendContext.class), eq(2)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         RecommendService recommendService = createRecommendService();

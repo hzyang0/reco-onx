@@ -78,11 +78,10 @@
                     <span>推荐场景</span>
                     <select id="scene" name="scene">
                         <option value="mall">mall · 商城</option>
-                        <option value="buy_first">buy_first · 买首</option>
-                        <option value="single_column">single_column · 单列</option>
-                        <option value="double_column">double_column · 双列</option>
-                        <option value="new_user_card">new_user_card · 新用户卡片</option>
+                        <option value="video_feed">video_feed · 视频流</option>
+                        <option value="buy_first">buy_first · 买家首页</option>
                     </select>
+                    <small id="sceneHint" class="field-hint">商品为主，第 4、9 位穿插广告</small>
                 </label>
 
                 <label>
@@ -142,10 +141,8 @@
                         <span>默认场景</span>
                         <select name="scene">
                             <option value="mall">mall · 商城</option>
-                            <option value="buy_first">buy_first · 买首</option>
-                            <option value="single_column">single_column · 单列</option>
-                            <option value="double_column">double_column · 双列</option>
-                            <option value="new_user_card">new_user_card · 新用户卡片</option>
+                            <option value="video_feed">video_feed · 视频流</option>
+                            <option value="buy_first">buy_first · 买家首页</option>
                         </select>
                     </label>
                     <label>
@@ -250,8 +247,8 @@
                 <article class="pipeline-node" data-stage="postProcess">
                     <span class="node-index">05</span>
                     <div>
-                        <strong>Post Process</strong>
-                        <small>截断与兜底</small>
+                            <strong>Post Process</strong>
+                            <small>场景编排与截断</small>
                     </div>
                     <span class="node-cost">—</span>
                 </article>

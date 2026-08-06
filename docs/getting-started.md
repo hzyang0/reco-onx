@@ -13,6 +13,8 @@ Compose 会先启动 MySQL 8.4，执行 `db/init/001-schema-and-seed.sql` 建表
 
 浏览器打开 <http://localhost:18081/>，从 5 个差异化用户画像中选择一个。页面会自动填入该用户的默认场景；设置返回数量后点击运行推荐。
 
+切换场景时重点观察最终 Item 的 `source`：商城是 goods 为主，视频流是 live 为主，买家首页混合 goods 与 live；三种场景都会在第 4、9 位穿插 ad。召回面板仍显示三路 `20/20/20`，因为“并行取候选”和“按场景组织最终页面”是两个阶段。
+
 如需自定义，点击“创建自己的用户画像”，填写名称、描述、年龄和地区，选择偏好类目、行为阶段、默认场景与排序策略。保存成功后新用户会自动选中并立即执行一次推荐，刷新或重启应用后仍然存在。
 
 ## 2. 接口验证
@@ -29,6 +31,8 @@ Invoke-RestMethod "http://localhost:18081/metrics"
 - `items`：最终通过库存和状态过滤后的结果；
 - `debug.operatorCostMs`：各个 Operator 的耗时；
 - `debug.recallFanout`：三路召回的完成、超时或失败状态；
+- `debug.scenePolicy`：当前场景的来源槽位和最终各来源数量；
+- `debug.rankingPolicy`：当前是否启用新用户冷启动排序；
 - 每个 Item 的 `attrs`：召回原因、价格、库存、商品状态等。
 
 ## 3. 本地调试 Java 进程

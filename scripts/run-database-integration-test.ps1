@@ -73,6 +73,10 @@ try {
     $dashboard = Invoke-WebRequest "http://localhost:$port/" -UseBasicParsing -TimeoutSec 5
     $consoleData = Invoke-RestMethod "http://localhost:$port/api/console-data" -TimeoutSec 5
     $response = Invoke-RestMethod "http://localhost:$port/recommend?userId=123&scene=mall&limit=5" -TimeoutSec 5
+    $mallResponse = Invoke-RestMethod "http://localhost:$port/recommend?userId=123&scene=mall&limit=10" -TimeoutSec 5
+    $videoResponse = Invoke-RestMethod "http://localhost:$port/recommend?userId=456&scene=video_feed&limit=10" -TimeoutSec 5
+    $buyerHomeResponse = Invoke-RestMethod "http://localhost:$port/recommend?userId=2024&scene=buy_first&limit=10" -TimeoutSec 5
+    $coldStartResponse = Invoke-RestMethod "http://localhost:$port/recommend?userId=1000&scene=mall&limit=5" -TimeoutSec 5
     $metrics = Invoke-RestMethod "http://localhost:$port/metrics" -TimeoutSec 5
 
     if ($response.items.Count -ne 5) {
@@ -81,6 +85,21 @@ try {
     $sourceRecallCounts = $response.debug.recallFanout.itemCountBySource
     if ($sourceRecallCounts.goods -ne 20 -or $sourceRecallCounts.live -ne 20 -or $sourceRecallCounts.ad -ne 20) {
         throw "Expected balanced 20/20/20 recall results, got goods=$($sourceRecallCounts.goods) live=$($sourceRecallCounts.live) ad=$($sourceRecallCounts.ad)."
+    }
+    $mallSources = @($mallResponse.items | ForEach-Object { $_.source }) -join ","
+    $videoSources = @($videoResponse.items | ForEach-Object { $_.source }) -join ","
+    $buyerHomeSources = @($buyerHomeResponse.items | ForEach-Object { $_.source }) -join ","
+    if ($mallSources -ne "goods,goods,goods,ad,goods,goods,goods,goods,ad,goods") {
+        throw "Mall scene returned an unexpected source layout: $mallSources"
+    }
+    if ($videoSources -ne "live,live,live,ad,live,live,live,live,ad,live") {
+        throw "Video-feed scene returned an unexpected source layout: $videoSources"
+    }
+    if ($buyerHomeSources -ne "goods,live,goods,ad,live,goods,live,goods,ad,live") {
+        throw "Buyer-home scene returned an unexpected source layout: $buyerHomeSources"
+    }
+    if (-not $coldStartResponse.debug.rankingPolicy.coldStart) {
+        throw "New user did not activate the cold-start ranking policy."
     }
     if ($response.items[0].itemId -ne 11001 -or $firstTitleUtf8Hex -ne "E58C97E6ACA7E694B6E7BAB3E7AEB1") {
         throw "Expected item 11001 and valid UTF-8 title bytes, got itemId=$($response.items[0].itemId) hex=$firstTitleUtf8Hex."
@@ -135,6 +154,10 @@ try {
         uniqueGoods = [int]$distinctGoodsTitleCount
         candidatesPerSource = 100
         recallItemsPerSource = "20/20/20"
+        mallLayout = $mallSources
+        videoLayout = $videoSources
+        buyerHomeLayout = $buyerHomeSources
+        coldStartPolicy = "OK"
         generatedVariants = [int]$variantSuffixCount
         innodbTables = [int]$innodbTableCount
         businessIndexes = [int]$businessIndexCount
