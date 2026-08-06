@@ -9,16 +9,16 @@ mvn -DskipTests package
 docker compose up --build -d
 ```
 
-Compose 会先启动 PostgreSQL，执行 `db/init/001-schema-and-seed.sql` 建表和写入示例数据；数据库健康后才启动应用。应用对外端口是 `18080`，避免与本地其他 8080 服务冲突。
+Compose 会先启动 MySQL 8.4，执行 `db/init/001-schema-and-seed.sql` 建表和写入示例数据；数据库健康后才启动应用。MySQL 映射到本机 `3307`，应用映射到 `18081`，避免与已有服务冲突。
 
-浏览器打开 <http://localhost:18080/>，填写 `userId=123`、`scene=mall`、`limit=5`，点击运行推荐。
+浏览器打开 <http://localhost:18081/>，填写 `userId=123`、`scene=mall`、`limit=5`，点击运行推荐。
 
 ## 2. 接口验证
 
 ```powershell
-Invoke-RestMethod "http://localhost:18080/health"
-Invoke-RestMethod "http://localhost:18080/recommend?userId=123&scene=mall&limit=5"
-Invoke-RestMethod "http://localhost:18080/metrics"
+Invoke-RestMethod "http://localhost:18081/health"
+Invoke-RestMethod "http://localhost:18081/recommend?userId=123&scene=mall&limit=5"
+Invoke-RestMethod "http://localhost:18081/metrics"
 ```
 
 `/recommend` 返回 JSON。重点看：
@@ -36,7 +36,7 @@ Invoke-RestMethod "http://localhost:18080/metrics"
 docker compose up -d db
 mvn clean test
 mvn -DskipTests package
-java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar
+java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT-all.jar
 ```
 
 或执行 `./scripts/start-local.ps1` 在后台启动，并等待 `/health` 返回 `UP`。
@@ -47,7 +47,7 @@ java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar
 
 | 变量 | 默认值 | 作用 |
 | --- | --- | --- |
-| `JDBC_URL` | `jdbc:postgresql://localhost:5432/mini_reco` | JDBC 连接地址 |
+| `JDBC_URL` | `jdbc:mysql://localhost:3307/mini_reco?...` | JDBC 连接地址 |
 | `DB_USER` | `mini_reco` | 数据库用户名 |
 | `DB_PASSWORD` | `mini_reco` | 数据库密码 |
 | `RECALL_FANOUT_TIMEOUT_MS` | `120` | 三路召回共享的超时预算（毫秒） |
@@ -59,7 +59,7 @@ java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar
 docker compose ps
 docker compose logs -f app
 docker compose logs -f db
-docker compose exec db psql -U mini_reco -d mini_reco -c "SELECT item_id, title, stock, status FROM catalog_items JOIN inventory_snapshots USING (item_id) ORDER BY item_id LIMIT 5"
+docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT item_id,title,stock,status FROM catalog_items JOIN inventory_snapshots USING(item_id) ORDER BY item_id LIMIT 5" mini_reco
 ```
 
 首次建库只会执行一次初始化 SQL。若希望完全重新创建本地示例数据，请明确执行 `docker compose down -v` 后再 `up`；这会删除 Docker 卷中的全部本地数据库数据。

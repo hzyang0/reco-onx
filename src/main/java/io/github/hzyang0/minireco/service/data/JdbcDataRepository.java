@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * JDBC repository for the local PostgreSQL data set.
+ * JDBC repository for the local MySQL data set.
  *
  * <p>The application keeps this boundary separate from the orchestration
  * layer so a future RPC/feature-store client can replace it without changing

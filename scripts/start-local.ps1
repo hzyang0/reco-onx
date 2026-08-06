@@ -1,15 +1,15 @@
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$jar = Join-Path $root "target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar"
+$jar = Join-Path $root "target/mini-reco-access-layer-0.1.0-SNAPSHOT-all.jar"
 $stdout = Join-Path $root "target/app.out.log"
 $stderr = Join-Path $root "target/app.err.log"
 
 if (-not (Test-Path -LiteralPath $jar)) {
     throw "Missing application JAR. Run 'mvn -DskipTests package' first."
 }
-if (-not (Test-NetConnection -ComputerName "localhost" -Port 5432 -InformationLevel Quiet)) {
-    throw "PostgreSQL is not reachable on localhost:5432. Run 'docker compose up -d db' first."
+if (-not (Test-NetConnection -ComputerName "localhost" -Port 3307 -InformationLevel Quiet)) {
+    throw "MySQL is not reachable on localhost:3307. Run 'docker compose up -d db' first."
 }
 if (Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue) {
     throw "Port 8080 is already in use."

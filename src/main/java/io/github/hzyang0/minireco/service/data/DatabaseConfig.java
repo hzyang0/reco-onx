@@ -2,7 +2,9 @@ package io.github.hzyang0.minireco.service.data;
 
 /** Connection settings supplied through environment variables. */
 public record DatabaseConfig(String jdbcUrl, String username, String password) {
-    private static final String DEFAULT_URL = "jdbc:postgresql://localhost:5432/mini_reco";
+    private static final String DEFAULT_URL = "jdbc:mysql://localhost:3307/mini_reco"
+            + "?useSSL=false&allowPublicKeyRetrieval=true"
+            + "&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8";
     private static final String DEFAULT_USER = "mini_reco";
     private static final String DEFAULT_PASSWORD = "mini_reco";
 

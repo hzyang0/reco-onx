@@ -1,37 +1,56 @@
 # 数据库与数据边界
 
-## 为什么要用数据库
+## 为什么使用 MySQL
 
-服务不再从代码里按用户 ID 拼接候选或库存。现在用户、行为、实验分组、候选和库存保存在 PostgreSQL 中，应用通过 JDBC 查询它们。这使“改库存、加候选、改实验分组”成为数据变更，而不是重新改 Java 代码和打包。
+项目使用 MySQL 8.4 保存用户画像、行为、实验分组、召回候选和库存快照。对这个规模的 Java 后端来说，MySQL 的使用门槛低、生态成熟，也更容易在本地和常见服务器环境中部署。
 
-内置数据仍是示例数据：它是真实运行的 PostgreSQL 数据库，但不是生产数据源。
+仓库中的数据是可重复初始化的示例数据，不是生产用户数据；但应用访问的是实际运行的 MySQL，而不是在 Java 代码中临时生成结果。
 
 ## 表与职责
 
-| 表 | 用途 | 被谁读取 |
+| 表 | 主要字段 | 用途 |
 | --- | --- | --- |
-| `user_profiles` | 年龄、新老用户、默认类目、收货地 | 用户特征、地址 |
-| `user_events` | 点击、加购、购买行为 | 用户偏好推断 |
-| `experiment_assignments` | 用户在场景下的 AB 分组 | Prepare |
-| `catalog_items` | goods/live/ad 候选 | 三路召回 |
-| `inventory_snapshots` | 价格、库存、状态 | 在线特征与过滤 |
+| `user_profiles` | `age`、`new_user`、`default_category`、地址 | 构造用户画像和默认地址 |
+| `user_events` | `category`、`event_type`、`event_time` | 按行为权重推断偏好类目 |
+| `experiment_assignments` | `scene`、`recall_exp`、`rank_exp` | 获取用户在场景下的实验分组 |
+| `catalog_items` | `source`、`category`、`base_score` | goods/live/ad 三路召回候选 |
+| `inventory_snapshots` | `price`、`stock`、`status` | 补充在线特征并过滤无货、下线 Item |
 
-初始化 SQL 位于 `db/init/001-schema-and-seed.sql`。数据库容器第一次创建数据卷时会执行它。
+初始化文件是 `db/init/001-schema-and-seed.sql`。新的 MySQL 数据卷第一次启动时会自动执行，创建 5 张表、索引、外键和示例记录。
 
 ## 访问分层
 
-`JdbcDataRepository` 是唯一直接写 SQL 的类。`JdbcUserFeatureService`、`JdbcRecallService` 等下游实现只做“把数据库记录转换成业务对象”的工作；Operator 不知道 SQL 的存在，只依赖下游接口。
+`JdbcDataRepository` 是唯一直接写 SQL 的类。它使用 `PreparedStatement` 绑定参数，负责把 `ResultSet` 映射成 record。`JdbcUserFeatureService`、`JdbcRecallService` 等适配器把数据库记录变成领域对象；Operator 只依赖下游接口，不知道 JDBC 和 SQL 的细节。
 
-这种分层的价值是：未来替换成 MySQL、远程召回服务或特征库时，编排图、Context 和 HTTP 协议不需要跟着改。
+这样做的价值是：数据访问变化被限制在仓库和适配器层，不会蔓延到 HTTP、Context、DAG 或 Operator。
 
-## PostgreSQL 与 MySQL
+## 连接和字符集
 
-本项目选 PostgreSQL 的原因是它的 SQL 标准支持、约束能力和后续扩展空间较好；但这里没有使用 PostgreSQL 独占且不可替换的业务能力，MySQL 同样可用。
+- 容器内部地址：`jdbc:mysql://db:3306/mini_reco...`。
+- 宿主机默认地址：`jdbc:mysql://localhost:3307/mini_reco...`。
+- 端口使用 `3307`，避免与本机已有的 MySQL `3306` 冲突。
+- 数据库和表使用 `utf8mb4`、`utf8mb4_0900_ai_ci`，JDBC URL 明确指定 UTF-8 和时区。
+- 用户名、密码和 URL 可以通过 `DB_USER`、`DB_PASSWORD`、`JDBC_URL` 覆盖。
 
-迁移到 MySQL 的工作主要集中在：替换 Maven JDBC 驱动、修改 `JDBC_URL`、将 Compose 镜像和初始化 DDL 调整为 MySQL 方言。`JdbcDataRepository` 之外的代码无需改变。
+## 性能点与边界
 
-## 当前实现与下一步
+库存查询使用一个 `IN (?, ?, ...)` 语句批量查询候选，避免 N 个 Item 发出 N 条 SQL 的 N+1 问题。`user_events(user_id, event_time)` 与 `catalog_items(source, base_score)` 建有组合索引。
 
-当前示例为清晰起见使用 `DriverManager` 按仓库调用获取连接。正式高并发服务通常会接入连接池（例如 HikariCP），并监控连接数、慢查询和数据库错误。
+当前版本为了让数据链路容易阅读，仍使用 `DriverManager` 按操作获取连接。更高并发的生产实现应增加 HikariCP 连接池、连接与查询超时、慢 SQL 监控、缓存以及数据库降级策略。
 
-库存已经采用“按批查询”，避免一个候选一次 SQL 的 N+1 查询。若候选规模继续增长，还需要分页、索引优化、缓存和独立的实时库存服务。
+## 常用 SQL
+
+```powershell
+docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco mini_reco
+```
+
+进入客户端后可以执行：
+
+```sql
+SELECT * FROM user_profiles WHERE user_id = 123;
+SELECT * FROM user_events WHERE user_id = 123 ORDER BY event_time DESC;
+SELECT item_id, title, source, base_score FROM catalog_items ORDER BY base_score DESC;
+SELECT c.title, i.price, i.stock, i.status
+FROM catalog_items c JOIN inventory_snapshots i USING (item_id)
+ORDER BY c.item_id;
+```

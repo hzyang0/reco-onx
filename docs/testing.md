@@ -6,7 +6,7 @@
 ./scripts/run-tests.ps1
 ```
 
-单元测试不依赖 PostgreSQL，重点验证编排逻辑：
+单元测试不依赖 MySQL，重点验证编排逻辑：
 
 - `RecommendServiceTest`：使用 Mockito 替代下游服务，验证正常链路和非法场景。
 - `RecallOperatorTest`：验证三路并行、单路失败保留部分结果和总超时。
@@ -22,7 +22,17 @@ JUnit 负责运行测试和断言；Mockito 负责制造“可控的假下游”
 ./scripts/run-database-integration-test.ps1
 ```
 
-脚本会构建 JAR、启动 Compose 中的 PostgreSQL，再以临时端口启动 JAR，检查：数据库已写入用户与候选数据、健康接口可用、推荐接口返回指定数量的真实数据库候选、控制台和指标接口可访问。它不会删除 Docker 卷中的数据。
+脚本会构建 JAR、启动 Compose 中的 MySQL，再以临时端口启动 JAR，检查：5 张表均使用 InnoDB、两个业务索引存在、中文种子数据没有乱码、健康接口可用、推荐结果不含代码兜底/无货/下线 Item、控制台和指标接口可访问。它不会删除 Docker 卷中的数据。
+
+## 完整 Compose 验证
+
+```powershell
+mvn -DskipTests package
+docker compose up --build -d --wait
+Invoke-RestMethod "http://localhost:18081/health"
+```
+
+如果数据库集成测试通过，而应用镜像构建阶段提示无法从 Docker Hub 拉取 JRE 基础镜像，说明是镜像仓库网络问题，不是 JDBC 或业务代码问题。可以先执行 `docker pull eclipse-temurin:17-jre-jammy`，网络恢复后再重试 Compose；同时可用 `./scripts/start-local.ps1` 验证宿主机 JAR。
 
 ## 冒烟测试
 

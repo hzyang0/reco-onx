@@ -25,7 +25,7 @@ try {
     Remove-Item -LiteralPath $stdout, $stderr -Force -ErrorAction SilentlyContinue
     $process = Start-Process `
             -FilePath "java" `
-            -ArgumentList @("-jar", "target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar", "$port") `
+            -ArgumentList @("-jar", "target/mini-reco-access-layer-0.1.0-SNAPSHOT-all.jar", "$port") `
             -WorkingDirectory $root `
             -WindowStyle Hidden `
             -PassThru `
@@ -46,10 +46,16 @@ try {
         throw "Application did not become healthy. $startupError"
     }
 
-    $profileCount = (docker compose exec -T db psql -U mini_reco -d mini_reco -tAc "SELECT count(*) FROM user_profiles").Trim()
-    $catalogCount = (docker compose exec -T db psql -U mini_reco -d mini_reco -tAc "SELECT count(*) FROM catalog_items").Trim()
+    $profileCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM user_profiles" mini_reco).Trim()
+    $catalogCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items" mini_reco).Trim()
+    $innodbTableCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM information_schema.tables WHERE table_schema='mini_reco' AND engine='InnoDB'" mini_reco).Trim()
+    $businessIndexCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='mini_reco' AND index_name IN ('idx_user_events_user_time','idx_catalog_items_source_score')" mini_reco).Trim()
+    $firstTitleUtf8Hex = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT HEX(title) FROM catalog_items WHERE item_id=11001" mini_reco).Trim()
     if ([int]$profileCount -lt 1 -or [int]$catalogCount -lt 1) {
         throw "Expected seeded database records, got user_profiles=$profileCount catalog_items=$catalogCount."
+    }
+    if ([int]$innodbTableCount -ne 5 -or [int]$businessIndexCount -ne 2) {
+        throw "Expected 5 InnoDB tables and 2 business indexes, got tables=$innodbTableCount indexes=$businessIndexCount."
     }
 
     $dashboard = Invoke-WebRequest "http://localhost:$port/" -UseBasicParsing -TimeoutSec 5
@@ -59,6 +65,15 @@ try {
     if ($response.items.Count -ne 5) {
         throw "Expected 5 recommended items, got $($response.items.Count)."
     }
+    if ($response.items[0].itemId -ne 11001 -or $firstTitleUtf8Hex -ne "E58C97E6ACA7E694B6E7BAB3E7AEB1") {
+        throw "Expected item 11001 and valid UTF-8 title bytes, got itemId=$($response.items[0].itemId) hex=$firstTitleUtf8Hex."
+    }
+    $invalidItems = @($response.items | Where-Object {
+        $_.source -eq "fallback" -or $_.attrs.status -ne "ONLINE" -or [int]$_.attrs.stock -le 0
+    })
+    if ($invalidItems.Count -ne 0) {
+        throw "Recommendation contained fallback, offline, or out-of-stock items."
+    }
     if ($dashboard.Content -notmatch 'id="recommendForm"') {
         throw "Dashboard HTML did not contain the recommendation form."
     }
@@ -67,7 +82,11 @@ try {
         health = $health.status
         profileRows = [int]$profileCount
         catalogRows = [int]$catalogCount
+        innodbTables = [int]$innodbTableCount
+        businessIndexes = [int]$businessIndexCount
         returnedItems = $response.items.Count
+        firstItemId = $response.items[0].itemId
+        utf8Title = "OK"
         metricGroups = $metrics.PSObject.Properties.Name.Count
         console = "OK"
     }

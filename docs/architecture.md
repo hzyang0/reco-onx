@@ -11,7 +11,7 @@ Browser / API client
         |
  Parallel DAG executor
         |
- Operators -> downstream interfaces -> JDBC repository -> PostgreSQL
+ Operators -> downstream interfaces -> JDBC repository -> MySQL
 ```
 
 `MiniRecoApplication` 负责 HTTP；`ApplicationWiring` 负责把实现装配成一张图；业务顺序由 DAG 表达，而不是散落在一个很长的方法里。

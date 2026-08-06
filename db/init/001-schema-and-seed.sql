@@ -1,3 +1,5 @@
+SET NAMES utf8mb4;
+
 CREATE TABLE user_profiles (
     user_id BIGINT PRIMARY KEY,
     age INTEGER NOT NULL CHECK (age > 0),
@@ -5,44 +7,50 @@ CREATE TABLE user_profiles (
     default_category VARCHAR(32) NOT NULL,
     province VARCHAR(32) NOT NULL,
     city VARCHAR(32) NOT NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE user_events (
-    event_id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES user_profiles(user_id),
+    event_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
     category VARCHAR(32) NOT NULL,
     event_type VARCHAR(16) NOT NULL CHECK (event_type IN ('view', 'click', 'cart', 'purchase')),
-    event_time BIGINT NOT NULL
-);
+    event_time BIGINT NOT NULL,
+    CONSTRAINT fk_user_events_user
+        FOREIGN KEY (user_id) REFERENCES user_profiles(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 CREATE INDEX idx_user_events_user_time ON user_events(user_id, event_time DESC);
 
 CREATE TABLE experiment_assignments (
-    user_id BIGINT NOT NULL REFERENCES user_profiles(user_id),
+    user_id BIGINT NOT NULL,
     scene VARCHAR(32) NOT NULL,
     recall_exp VARCHAR(32) NOT NULL,
     rank_exp VARCHAR(32) NOT NULL,
-    PRIMARY KEY (user_id, scene)
-);
+    PRIMARY KEY (user_id, scene),
+    CONSTRAINT fk_experiment_user
+        FOREIGN KEY (user_id) REFERENCES user_profiles(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE catalog_items (
     item_id BIGINT PRIMARY KEY,
     title VARCHAR(128) NOT NULL,
     source VARCHAR(16) NOT NULL CHECK (source IN ('goods', 'live', 'ad')),
     category VARCHAR(32) NOT NULL,
-    base_score DOUBLE PRECISION NOT NULL,
+    base_score DOUBLE NOT NULL,
     recall_reason VARCHAR(64) NOT NULL,
     room_id VARCHAR(32),
     creative_id VARCHAR(32)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 CREATE INDEX idx_catalog_items_source_score ON catalog_items(source, base_score DESC);
 
 CREATE TABLE inventory_snapshots (
-    item_id BIGINT PRIMARY KEY REFERENCES catalog_items(item_id),
+    item_id BIGINT PRIMARY KEY,
     price INTEGER NOT NULL CHECK (price >= 0),
     stock INTEGER NOT NULL CHECK (stock >= 0),
     status VARCHAR(16) NOT NULL CHECK (status IN ('ONLINE', 'OFFLINE')),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_inventory_item
+        FOREIGN KEY (item_id) REFERENCES catalog_items(item_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 INSERT INTO user_profiles (user_id, age, new_user, default_category, province, city) VALUES
     (123, 26, FALSE, 'home', '浙江', '杭州'),

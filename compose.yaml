@@ -1,33 +1,39 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: mysql:8.4
     environment:
-      POSTGRES_DB: mini_reco
-      POSTGRES_USER: mini_reco
-      POSTGRES_PASSWORD: mini_reco
+      MYSQL_DATABASE: mini_reco
+      MYSQL_USER: mini_reco
+      MYSQL_PASSWORD: mini_reco
+      MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
     ports:
-      - "5432:5432"
+      - "3307:3306"
     volumes:
-      - mini-reco-postgres-data:/var/lib/postgresql/data
+      - mini-reco-mysql-data:/var/lib/mysql
       - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mini_reco -d mini_reco"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-umini_reco", "-pmini_reco"]
       interval: 3s
       timeout: 3s
       retries: 20
+      start_period: 15s
 
   app:
     build:
       context: .
     environment:
-      JDBC_URL: jdbc:postgresql://db:5432/mini_reco
+      JDBC_URL: jdbc:mysql://db:3306/mini_reco?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
       DB_USER: mini_reco
       DB_PASSWORD: mini_reco
     ports:
-      - "18080:8080"
+      - "18081:8080"
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
-  mini-reco-postgres-data:
+  mini-reco-mysql-data:

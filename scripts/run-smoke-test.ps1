@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
 $target = Join-Path $root "target"
-$jar = Join-Path $target "mini-reco-access-layer-0.1.0-SNAPSHOT.jar"
+$jar = Join-Path $target "mini-reco-access-layer-0.1.0-SNAPSHOT-all.jar"
 $stdout = Join-Path $target "smoke-test.out.log"
 $stderr = Join-Path $target "smoke-test.err.log"
 $portProbe = [System.Net.Sockets.TcpListener]::new(
@@ -13,8 +13,8 @@ $portProbe.Start()
 $port = ([System.Net.IPEndPoint]$portProbe.LocalEndpoint).Port
 $portProbe.Stop()
 
-if (-not (Test-NetConnection -ComputerName "localhost" -Port 5432 -InformationLevel Quiet)) {
-    throw "PostgreSQL is not reachable on localhost:5432. Run 'docker compose up -d db' first."
+if (-not (Test-NetConnection -ComputerName "localhost" -Port 3307 -InformationLevel Quiet)) {
+    throw "MySQL is not reachable on localhost:3307. Run 'docker compose up -d db' first."
 }
 
 if (-not (Test-Path -LiteralPath $jar)) {
