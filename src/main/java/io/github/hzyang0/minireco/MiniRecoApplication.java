@@ -3,6 +3,7 @@ package io.github.hzyang0.minireco;
 import io.github.hzyang0.minireco.http.DashboardHttpHandler;
 import io.github.hzyang0.minireco.http.ConsoleDataHttpHandler;
 import io.github.hzyang0.minireco.http.RecommendHttpHandler;
+import io.github.hzyang0.minireco.http.UserProfileHttpHandler;
 import io.github.hzyang0.minireco.observability.MetricsRegistry;
 import io.github.hzyang0.minireco.service.ApplicationWiring;
 import io.github.hzyang0.minireco.service.RecommendationFacade;
@@ -38,6 +39,7 @@ public class MiniRecoApplication {
                 writeJson(exchange, JsonUtil.mapToJson(metricsRegistry.snapshot()))
         );
         server.createContext("/api/console-data", new ConsoleDataHttpHandler(repository));
+        server.createContext("/api/users", new UserProfileHttpHandler(repository));
         server.createContext("/", new DashboardHttpHandler());
         server.setExecutor(Executors.newFixedThreadPool(16));
         server.start();

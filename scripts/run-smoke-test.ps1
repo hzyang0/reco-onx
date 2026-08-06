@@ -65,8 +65,8 @@ try {
     if ($dashboardJs.Content -notmatch "runRecommendation") {
         throw "Dashboard JavaScript did not contain the request flow."
     }
-    if ($consoleData.userCount -ne 5 -or $consoleData.catalogCount -ne 100) {
-        throw "Expected 5 console users and 100 catalog candidates."
+    if ($consoleData.userCount -lt 5 -or $consoleData.catalogCount -ne 100) {
+        throw "Expected at least 5 console users and 100 catalog candidates."
     }
 
     [pscustomobject]@{

@@ -20,6 +20,8 @@
 
 5 个画像分别覆盖居家、数码、美食、穿搭和运动偏好，其中潮流新用户没有历史行为，用于展示冷启动；其余用户具有不同的浏览、点击、加购或购买序列。控制台通过 `/api/console-data` 实时读取这些画像和候选总数，不在前端硬编码用户列表。
 
+控制台还允许创建自定义画像。冷启动阶段只写入画像和实验分组；兴趣阶段额外写入 view、click；高意向阶段写入 view、click、cart、purchase。三类数据在同一个 JDBC 事务中提交，避免只创建了一半的用户。自定义画像保存在当前 Docker 数据卷中，重启应用不会丢失。
+
 ## 访问分层
 
 `JdbcDataRepository` 是唯一直接写 SQL 的类。它使用 `PreparedStatement` 绑定参数，负责把 `ResultSet` 映射成 record。`JdbcUserFeatureService`、`JdbcRecallService` 等适配器把数据库记录变成领域对象；Operator 只依赖下游接口，不知道 JDBC 和 SQL 的细节。

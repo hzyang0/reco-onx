@@ -6,9 +6,10 @@
 
 1. `MiniRecoApplication.java`：HTTP 服务在哪里注册。
 2. `http/ConsoleDataHttpHandler.java`：控制台如何读取用户画像和候选总数。
-3. `http/RecommendHttpHandler.java`：URL 参数如何变成 `RecommendRequest`。
-4. `service/RecommendService.java`：请求如何创建 Context 并调用执行器。
-5. `domain/RecommendResponse.java`：最终 JSON 的数据来自哪里。
+3. `http/UserProfileHttpHandler.java`：自定义画像怎样校验并写入数据库。
+4. `http/RecommendHttpHandler.java`：URL 参数如何变成 `RecommendRequest`。
+5. `service/RecommendService.java`：请求如何创建 Context 并调用执行器。
+6. `domain/RecommendResponse.java`：最终 JSON 的数据来自哪里。
 
 完成这一轮后，应能解释 `/recommend?userId=123&scene=mall&limit=5` 的输入和输出。
 
@@ -37,3 +38,4 @@
 - 在 `catalog_items` 新增一个 goods 候选和库存，观察它进入召回结果。
 - 为一个新场景写入 `experiment_assignments`，观察 `debug` 中的 AB 参数和排序变化。
 - 给 `JdbcDataRepository` 的查询打断点，观察一次请求访问了哪些表。
+- 在控制台分别创建冷启动和高意向用户，对比 `user_events` 记录和推荐结果。

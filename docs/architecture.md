@@ -16,7 +16,9 @@ Browser / API client
 
 `MiniRecoApplication` 负责 HTTP；`ApplicationWiring` 负责把实现装配成一张图；业务顺序由 DAG 表达，而不是散落在一个很长的方法里。
 
-控制台启动时先调用 `/api/console-data`，由 `ConsoleDataHttpHandler` 通过 `JdbcDataRepository` 返回 5 个用户画像和候选总数；选择用户后才调用 `/recommend`。因此用户列表和“100 条候选”统计来自 MySQL，不是前端常量。
+控制台启动时先调用 `/api/console-data`，由 `ConsoleDataHttpHandler` 通过 `JdbcDataRepository` 返回用户画像和候选总数；选择用户后才调用 `/recommend`。因此用户列表和“100 条候选”统计来自 MySQL，不是前端常量。
+
+自助画像表单调用 `POST /api/users`。`UserProfileHttpHandler` 完成白名单和长度校验，`JdbcDataRepository` 在一个事务中写入画像、实验分组以及可选的用户行为；任一步失败都会回滚。写入成功后页面重新加载用户列表，并用新画像立即发起推荐。
 
 ## 一条请求如何流动
 

@@ -5,6 +5,14 @@ const elements = {
     personaName: document.querySelector("#personaName"),
     personaSummary: document.querySelector("#personaSummary"),
     personaMeta: document.querySelector("#personaMeta"),
+    openProfileCreator: document.querySelector("#openProfileCreator"),
+    profileDialog: document.querySelector("#profileDialog"),
+    profileForm: document.querySelector("#profileForm"),
+    newUserId: document.querySelector("#newUserId"),
+    profileFormError: document.querySelector("#profileFormError"),
+    createProfileButton: document.querySelector("#createProfileButton"),
+    closeProfileCreator: document.querySelector("#closeProfileCreator"),
+    cancelProfileCreator: document.querySelector("#cancelProfileCreator"),
     scene: document.querySelector("#scene"),
     limit: document.querySelector("#limit"),
     limitOutput: document.querySelector("#limitOutput"),
@@ -30,9 +38,10 @@ const elements = {
 const sourceOrder = ["goods", "live", "ad"];
 let consoleUsers = [];
 
-async function requestJson(path) {
+async function requestJson(path, options = {}) {
     const response = await fetch(path, {
-        headers: {"Accept": "application/json"},
+        ...options,
+        headers: {"Accept": "application/json", ...(options.headers || {})},
         cache: "no-store"
     });
     let payload;
@@ -60,7 +69,7 @@ async function loadHealth() {
     }
 }
 
-async function loadConsoleData() {
+async function loadConsoleData(selectedUserId = elements.userId.value) {
     const response = await requestJson("/api/console-data");
     consoleUsers = response.users || [];
     if (!consoleUsers.length) {
@@ -74,8 +83,47 @@ async function loadConsoleData() {
         option.textContent = `${user.userId} · ${user.personaName}（${user.personaSummary}）`;
         elements.userId.append(option);
     });
+    const selectedExists = consoleUsers.some((user) => String(user.userId) === String(selectedUserId));
+    elements.userId.value = selectedExists ? String(selectedUserId) : String(consoleUsers[0].userId);
     elements.catalogBadge.textContent = `MySQL · ${response.userCount} 用户 · ${response.catalogCount} 候选`;
     renderSelectedUser(true);
+}
+
+function openProfileCreator() {
+    const nextId = Math.max(...consoleUsers.map((user) => Number(user.userId)), 3000) + 1;
+    elements.newUserId.value = String(nextId);
+    elements.profileFormError.hidden = true;
+    elements.profileFormError.textContent = "";
+    elements.profileDialog.showModal();
+}
+
+function closeProfileCreator() {
+    elements.profileDialog.close();
+}
+
+async function createProfile(event) {
+    event.preventDefault();
+    elements.createProfileButton.disabled = true;
+    elements.createProfileButton.textContent = "正在写入 MySQL…";
+    elements.profileFormError.hidden = true;
+    try {
+        const body = new URLSearchParams(new FormData(elements.profileForm));
+        const created = await requestJson("/api/users", {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+            body
+        });
+        await loadConsoleData(created.userId);
+        updateRequestPreview();
+        closeProfileCreator();
+        await runRecommendation();
+    } catch (error) {
+        elements.profileFormError.textContent = `创建失败：${error.message}`;
+        elements.profileFormError.hidden = false;
+    } finally {
+        elements.createProfileButton.disabled = false;
+        elements.createProfileButton.textContent = "保存画像并立即推荐";
+    }
 }
 
 function renderSelectedUser(syncScene) {
@@ -346,6 +394,10 @@ elements.userId.addEventListener("change", () => {
 });
 elements.scene.addEventListener("change", updateRequestPreview);
 elements.refreshMetrics.addEventListener("click", loadMetrics);
+elements.openProfileCreator.addEventListener("click", openProfileCreator);
+elements.closeProfileCreator.addEventListener("click", closeProfileCreator);
+elements.cancelProfileCreator.addEventListener("click", closeProfileCreator);
+elements.profileForm.addEventListener("submit", createProfile);
 
 async function initializeConsole() {
     updateRequestPreview();

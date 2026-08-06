@@ -6,7 +6,7 @@
     <meta name="description" content="Mini Reco 推荐请求编排控制台">
     <title>Mini Reco 控制台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/assets/dashboard.css">
+    <link rel="stylesheet" href="/assets/dashboard.css?v=3">
 </head>
 <body>
 <div class="page-shell">
@@ -70,6 +70,10 @@
                     <div id="personaMeta" class="persona-meta"></div>
                 </div>
 
+                <button id="openProfileCreator" class="profile-create-button" type="button">
+                    ＋ 创建自己的用户画像
+                </button>
+
                 <label>
                     <span>推荐场景</span>
                     <select id="scene" name="scene">
@@ -97,6 +101,69 @@
                 <p id="requestPath" class="request-path">/recommend?userId=123&amp;scene=mall&amp;limit=5</p>
             </form>
         </section>
+
+        <dialog id="profileDialog" class="profile-dialog">
+            <form id="profileForm" class="profile-form">
+                <div class="dialog-heading">
+                    <div>
+                        <p class="panel-kicker">USER PERSONA</p>
+                        <h2>创建用户画像</h2>
+                    </div>
+                    <button id="closeProfileCreator" class="dialog-close" type="button" aria-label="关闭">×</button>
+                </div>
+                <p class="dialog-description">画像会写入 MySQL；行为阶段会生成相应行为记录，并参与偏好计算。</p>
+
+                <div class="form-grid">
+                    <label><span>用户 ID</span><input id="newUserId" name="userId" type="number" min="1" required></label>
+                    <label><span>年龄</span><input name="age" type="number" min="12" max="100" value="24" required></label>
+                    <label><span>画像名称</span><input name="personaName" maxlength="20" placeholder="例如：户外探索者" required></label>
+                    <label><span>画像描述</span><input name="personaSummary" maxlength="80" placeholder="例如：喜欢跑步露营，注重装备性能" required></label>
+                    <label><span>省份</span><input name="province" maxlength="20" value="浙江" required></label>
+                    <label><span>城市</span><input name="city" maxlength="20" value="杭州" required></label>
+                    <label>
+                        <span>偏好类目</span>
+                        <select name="category">
+                            <option value="home">home · 家居</option>
+                            <option value="digital">digital · 数码</option>
+                            <option value="food">food · 美食</option>
+                            <option value="fashion">fashion · 穿搭</option>
+                            <option value="sports">sports · 运动</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>行为阶段</span>
+                        <select name="behaviorLevel">
+                            <option value="cold_start">冷启动 · 无历史行为</option>
+                            <option value="interested">兴趣用户 · 浏览 + 点击</option>
+                            <option value="high_intent">高意向 · 浏览 + 点击 + 加购 + 购买</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>默认场景</span>
+                        <select name="scene">
+                            <option value="mall">mall · 商城</option>
+                            <option value="buy_first">buy_first · 买首</option>
+                            <option value="single_column">single_column · 单列</option>
+                            <option value="double_column">double_column · 双列</option>
+                            <option value="new_user_card">new_user_card · 新用户卡片</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>排序策略</span>
+                        <select name="rankExperiment">
+                            <option value="DEFAULT">DEFAULT · 默认排序</option>
+                            <option value="MALL_BOOST">MALL_BOOST · 商品加权</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div id="profileFormError" class="form-error" role="alert" hidden></div>
+                <div class="dialog-actions">
+                    <button id="cancelProfileCreator" class="secondary-button" type="button">取消</button>
+                    <button id="createProfileButton" class="primary-button" type="submit">保存画像并立即推荐</button>
+                </div>
+            </form>
+        </dialog>
 
         <div id="errorBanner" class="error-banner" role="alert" hidden></div>
 
@@ -264,6 +331,6 @@
     </footer>
 </div>
 
-<script src="/assets/dashboard.js" defer></script>
+<script src="/assets/dashboard.js?v=3" defer></script>
 </body>
 </html>

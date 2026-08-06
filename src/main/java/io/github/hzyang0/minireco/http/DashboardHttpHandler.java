@@ -22,12 +22,12 @@ public final class DashboardHttpHandler implements HttpHandler {
             "/assets/dashboard.css", new AssetDefinition(
                     "/dashboard/dashboard.css",
                     "text/css; charset=utf-8",
-                    "public, max-age=3600"
+                    "no-cache"
             ),
             "/assets/dashboard.js", new AssetDefinition(
                     "/dashboard/dashboard.js",
                     "application/javascript; charset=utf-8",
-                    "public, max-age=3600"
+                    "no-cache"
             )
     );
 

@@ -42,6 +42,8 @@ class DashboardHttpHandlerTest {
         assertTrue(response.body().contains("<title>Mini Reco 控制台</title>"));
         assertTrue(response.body().contains("/assets/dashboard.js"));
         assertTrue(response.body().contains("id=\"userProfile\""));
+        assertTrue(response.body().contains("id=\"profileForm\""));
+        assertTrue(response.body().contains("dashboard.js?v=3"));
         assertTrue(response.headers().firstValue("Content-Security-Policy").isPresent());
     }
 
@@ -59,6 +61,7 @@ class DashboardHttpHandlerTest {
                 .startsWith("application/javascript"));
         assertTrue(javascript.body().contains("runRecommendation"));
         assertTrue(javascript.body().contains("/api/console-data"));
+        assertTrue(javascript.body().contains("/api/users"));
         assertEquals(200, favicon.statusCode());
         assertEquals("image/svg+xml", favicon.headers().firstValue("Content-Type").orElseThrow());
         assertTrue(favicon.body().contains("<svg"));

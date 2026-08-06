@@ -25,7 +25,7 @@ docker compose up --build -d
 
 打开内置控制台：<http://localhost:18081/>。
 
-控制台会从 MySQL 加载全部示例用户，可直接切换居家品质党、数码发烧友、美食探索家、潮流新用户和运动健康型用户，并自动选择各自的默认场景。
+控制台会从 MySQL 加载全部用户，可直接切换居家品质党、数码发烧友、美食探索家、潮流新用户和运动健康型用户，并自动选择各自的默认场景。也可以点击“创建自己的用户画像”，选择偏好类目、行为阶段、默认场景和排序策略；保存后画像、行为和实验分组会事务写入 MySQL，并立即执行推荐。
 
 也可以调用接口：
 
@@ -35,6 +35,8 @@ Invoke-RestMethod "http://localhost:18081/health"
 Invoke-RestMethod "http://localhost:18081/metrics"
 Invoke-RestMethod "http://localhost:18081/api/console-data"
 ```
+
+创建接口为 `POST /api/users`，控制台使用表单编码调用。行为阶段支持冷启动（无行为）、兴趣用户（浏览和点击）以及高意向用户（浏览、点击、加购和购买）。
 
 停止容器但保留数据库数据：
 
@@ -80,3 +82,4 @@ java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT-all.jar
 - `JdbcDataRepository` 是数据边界；将来替换成 RPC 或特征库时，不需要改动 Operator 和 DAG。
 - 混排是可解释的本地规则，不是机器学习模型。
 - 指标当前保存在进程内存中，重启后会清空。
+- 自助创建画像是本地演示能力，当前没有登录、权限、删除和修改接口；对公网部署前需要补齐鉴权、限流和管理边界。

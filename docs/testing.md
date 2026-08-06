@@ -22,7 +22,7 @@ JUnit 负责运行测试和断言；Mockito 负责制造“可控的假下游”
 ./scripts/run-database-integration-test.ps1
 ```
 
-脚本会构建 JAR、启动 Compose 中的 MySQL，再以临时端口启动 JAR，检查：5 张表均使用 InnoDB、两个业务索引存在、5 个差异化画像和 100 条候选已初始化、中文种子数据没有乱码、`/api/console-data` 计数正确、推荐结果不含代码兜底/无货/下线 Item、控制台和指标接口可访问。它不会删除 Docker 卷中的数据。
+脚本会构建 JAR、启动 Compose 中的 MySQL，再以临时端口启动 JAR，检查：5 张表均使用 InnoDB、两个业务索引存在、至少 5 个差异化画像和 100 条候选已初始化、中文种子数据没有乱码、`/api/console-data` 计数正确、推荐结果不含代码兜底/无货/下线 Item、控制台和指标接口可访问。它还会通过 `POST /api/users` 创建一个高意向运动用户，验证4条行为入库和 sports 推荐，最后自动删除该测试用户，不影响手工创建的画像。
 
 ## 完整 Compose 验证
 

@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -97,6 +98,62 @@ public final class JdbcDataRepository {
             return result.getLong(1);
         } catch (SQLException e) {
             throw databaseFailure("count catalog items", e);
+        }
+    }
+
+    public void createConsoleUser(
+            ConsoleUserProfile profile,
+            List<String> eventTypes,
+            String rankExperiment
+    ) {
+        String profileSql = "INSERT INTO user_profiles "
+                + "(user_id, age, new_user, default_category, province, city, persona_name, persona_summary) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String experimentSql = "INSERT INTO experiment_assignments "
+                + "(user_id, scene, recall_exp, rank_exp) VALUES (?, ?, 'SELF_SERVICE', ?)";
+        String eventSql = "INSERT INTO user_events "
+                + "(user_id, category, event_type, event_time) VALUES (?, ?, ?, ?)";
+
+        try (Connection connection = openConnection()) {
+            connection.setAutoCommit(false);
+            try (PreparedStatement profileStatement = connection.prepareStatement(profileSql);
+                 PreparedStatement experimentStatement = connection.prepareStatement(experimentSql);
+                 PreparedStatement eventStatement = connection.prepareStatement(eventSql)) {
+                profileStatement.setLong(1, profile.userId());
+                profileStatement.setInt(2, profile.age());
+                profileStatement.setBoolean(3, profile.newUser());
+                profileStatement.setString(4, profile.preferredCategory());
+                profileStatement.setString(5, profile.province());
+                profileStatement.setString(6, profile.city());
+                profileStatement.setString(7, profile.personaName());
+                profileStatement.setString(8, profile.personaSummary());
+                profileStatement.executeUpdate();
+
+                experimentStatement.setLong(1, profile.userId());
+                experimentStatement.setString(2, profile.defaultScene());
+                experimentStatement.setString(3, rankExperiment);
+                experimentStatement.executeUpdate();
+
+                long eventTime = Instant.now().getEpochSecond() - eventTypes.size();
+                for (String eventType : eventTypes) {
+                    eventStatement.setLong(1, profile.userId());
+                    eventStatement.setString(2, profile.preferredCategory());
+                    eventStatement.setString(3, eventType);
+                    eventStatement.setLong(4, ++eventTime);
+                    eventStatement.addBatch();
+                }
+                if (!eventTypes.isEmpty()) {
+                    eventStatement.executeBatch();
+                }
+                connection.commit();
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw databaseFailure("create console user", e);
         }
     }
 

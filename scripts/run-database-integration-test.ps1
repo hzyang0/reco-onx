@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
+$testUserId = 99001
 Push-Location $root
 try {
     mvn --batch-mode --no-transfer-progress -DskipTests package
@@ -51,8 +52,8 @@ try {
     $innodbTableCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM information_schema.tables WHERE table_schema='mini_reco' AND engine='InnoDB'" mini_reco).Trim()
     $businessIndexCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='mini_reco' AND index_name IN ('idx_user_events_user_time','idx_catalog_items_source_score')" mini_reco).Trim()
     $firstTitleUtf8Hex = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT HEX(title) FROM catalog_items WHERE item_id=11001" mini_reco).Trim()
-    if ([int]$profileCount -ne 5 -or [int]$catalogCount -ne 100) {
-        throw "Expected 5 user profiles and 100 catalog items, got user_profiles=$profileCount catalog_items=$catalogCount."
+    if ([int]$profileCount -lt 5 -or [int]$catalogCount -ne 100) {
+        throw "Expected at least 5 user profiles and 100 catalog items, got user_profiles=$profileCount catalog_items=$catalogCount."
     }
     if ([int]$innodbTableCount -ne 5 -or [int]$businessIndexCount -ne 2) {
         throw "Expected 5 InnoDB tables and 2 business indexes, got tables=$innodbTableCount indexes=$businessIndexCount."
@@ -78,12 +79,38 @@ try {
     if ($dashboard.Content -notmatch 'id="recommendForm"') {
         throw "Dashboard HTML did not contain the recommendation form."
     }
-    if ($consoleData.userCount -ne 5 -or $consoleData.catalogCount -ne 100) {
+    if ($consoleData.userCount -lt 5 -or $consoleData.catalogCount -ne 100) {
         throw "Console data endpoint returned unexpected counts."
     }
     $personaNames = @($consoleData.users | ForEach-Object { $_.personaName } | Select-Object -Unique)
-    if ($personaNames.Count -ne 5) {
-        throw "Expected five distinct user personas, got $($personaNames.Count)."
+    if ($personaNames.Count -lt 5) {
+        throw "Expected at least five distinct user personas, got $($personaNames.Count)."
+    }
+
+    docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "DELETE FROM user_events WHERE user_id=$testUserId; DELETE FROM experiment_assignments WHERE user_id=$testUserId; DELETE FROM user_profiles WHERE user_id=$testUserId" mini_reco
+    $createdUser = Invoke-RestMethod `
+            "http://localhost:$port/api/users" `
+            -Method Post `
+            -ContentType "application/x-www-form-urlencoded" `
+            -Body @{
+                userId = $testUserId
+                age = 28
+                personaName = "Integration Runner"
+                personaSummary = "Sports profile created by integration test"
+                province = "Zhejiang"
+                city = "Hangzhou"
+                category = "sports"
+                behaviorLevel = "high_intent"
+                scene = "mall"
+                rankExperiment = "MALL_BOOST"
+            } `
+            -TimeoutSec 5
+    $createdRecommendation = Invoke-RestMethod `
+            "http://localhost:$port/recommend?userId=$testUserId&scene=mall&limit=5" `
+            -TimeoutSec 5
+    $createdEventCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM user_events WHERE user_id=$testUserId" mini_reco).Trim()
+    if (-not $createdUser.created -or $createdRecommendation.items[0].category -ne "sports" -or [int]$createdEventCount -ne 4) {
+        throw "Created profile did not persist or affect recommendation as expected."
     }
 
     [pscustomobject]@{
@@ -99,6 +126,8 @@ try {
         console = "OK"
         consoleUsers = $consoleData.userCount
         catalogCandidates = $consoleData.catalogCount
+        profileCreation = "OK"
+        createdBehaviorEvents = [int]$createdEventCount
     }
 } finally {
     if ($null -ne $process -and -not $process.HasExited) {
@@ -107,5 +136,6 @@ try {
     if ($null -ne $process) {
         Wait-Process -Id $process.Id -ErrorAction SilentlyContinue
     }
+    docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "DELETE FROM user_events WHERE user_id=$testUserId; DELETE FROM experiment_assignments WHERE user_id=$testUserId; DELETE FROM user_profiles WHERE user_id=$testUserId" mini_reco 2>$null
     Pop-Location
 }
