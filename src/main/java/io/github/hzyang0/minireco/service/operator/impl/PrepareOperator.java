@@ -40,6 +40,11 @@ public class PrepareOperator implements Operator {
         context.setUserFeature(userFeature);
         context.setAbParams(abParams);
         context.setAddress(address);
+        context.putDebug("userFeature", Map.of(
+                "newUser", userFeature.isNewUser(),
+                "preferredCategory", userFeature.getPreferredCategory(),
+                "age", userFeature.getAge()
+        ));
     }
 
     private void validateScene(String scene) {

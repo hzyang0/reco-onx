@@ -2,7 +2,7 @@
 
 一个轻量级 Java 推荐请求编排服务。它接收用户和场景参数，使用 DAG 组织参数准备、多路召回、在线特征、混排、过滤和后处理，并返回 JSON 推荐结果。
 
-当前运行时会连接 MySQL 8.4。用户画像、行为、实验分组、候选内容和在线状态都从数据库读取；这些是仓库内置的示例数据，方便在本地重复运行，不是生产用户数据。数据集包含 5 个特点鲜明的用户画像，以及 goods、live、ad 各 100 条候选，共 300 条。每一路在家居、数码、美食、穿搭、运动五个类目中各有 20 条：goods 是 100 种具体商品，live 是 100 个独立直播/视频主题，ad 是 100 个独立营销活动，三路标题互不复用。
+当前运行时会连接 MySQL 8.4，并通过 Flyway 管理数据库版本、HikariCP 复用连接。用户画像、行为、实验分组、候选内容和在线状态都从数据库读取；这些是仓库内置的示例数据，方便在本地重复运行，不是生产用户数据。数据集包含 5 个特点鲜明的用户画像，以及 goods、live、ad 各 100 条候选，共 300 条。统一候选表只保存公共字段，商品、直播和广告分别拥有独立详情表，三路标题互不复用。
 
 ## 运行链路
 
@@ -10,7 +10,7 @@
 HTTP /recommend
   -> Prepare (画像、行为、AB、地址)
   -> Recall (goods / live / ad 并行)
-  -> OnlineFeature (批量读取库存) --+
+  -> OnlineFeature (批量读取来源专属状态) --+
   -> MixRank (规则混排)           --+-> Filter -> PostProcess -> JSON
 ```
 
@@ -25,7 +25,7 @@ docker compose up --build -d
 
 打开内置控制台：<http://localhost:18081/>。
 
-控制台会从 MySQL 加载全部用户，可直接切换居家品质党、数码发烧友、美食探索家、潮流新用户和运动健康型用户，并自动选择各自的默认场景。也可以点击“创建自己的用户画像”，选择偏好类目、行为阶段、默认场景和排序策略；保存后画像、行为和实验分组会事务写入 MySQL，并立即执行推荐。召回区域会显示 goods、live、ad 三路各自的耗时和召回数量，默认窗口为 20/20/20。
+控制台会从 MySQL 加载全部用户，可直接切换内置画像或创建自定义画像。推荐结果曝光会自动写入 `user_events`；商品卡片支持点击、加购、购买，直播和广告支持“感兴趣”。显式反馈会更新画像并立即重新推荐，从而形成可观察的数据闭环。召回区域会显示 goods、live、ad 三路各自的耗时和召回数量，默认窗口为 20/20/20。
 
 三路候选都会并行召回，但最终结果由场景策略编排。`mall` 返回商品并在第 4、9 位穿插广告；`video_feed` 合并原本的单双列语义，返回直播/视频内容并穿插广告；`buy_first` 表示买家首页，按商品、直播和广告混合展示。新用户不是场景：`newUser=true` 会在所选场景内启用“声明偏好 + 热度”的冷启动排序。
 
@@ -34,11 +34,13 @@ docker compose up --build -d
 ```powershell
 Invoke-RestMethod "http://localhost:18081/recommend?userId=123&scene=mall&limit=5"
 Invoke-RestMethod "http://localhost:18081/health"
+Invoke-RestMethod "http://localhost:18081/live"
 Invoke-RestMethod "http://localhost:18081/metrics"
+Invoke-WebRequest "http://localhost:18081/metrics/prometheus"
 Invoke-RestMethod "http://localhost:18081/api/console-data"
 ```
 
-创建接口为 `POST /api/users`，控制台使用表单编码调用。行为阶段支持冷启动（无行为）、兴趣用户（浏览和点击）以及高意向用户（浏览、点击、加购和购买）。
+创建接口为 `POST /api/users`，行为上报接口为 `POST /api/events`。行为支持曝光、浏览、点击、加购和购买；曝光不改变偏好，显式反馈会退出冷启动并参与后续偏好计算。
 
 停止容器但保留数据库数据：
 
@@ -66,9 +68,10 @@ java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT-all.jar
 ```powershell
 ./scripts/run-tests.ps1
 ./scripts/run-database-integration-test.ps1
+./scripts/run-recall-benchmark.ps1
 ```
 
-前者是无需数据库的单元测试；后者会启动 Compose 中的 MySQL，并通过真实 HTTP 请求和 SQL 查询验证数据库版本。
+第一条运行单元测试和可用时的 Testcontainers 测试；第二条通过真实 MySQL、HTTP 和 SQL 完成全链路验收；第三条对比单线程串行召回与三线程并行召回。当前机器 300 次请求结果为：串行 P95 8.91ms，并行 P95 5.49ms，降低 38.38%；数据仅代表本机环境，应通过脚本复测。
 
 ## 文档
 
@@ -77,6 +80,8 @@ java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT-all.jar
 - [数据库与数据边界](docs/database.md)
 - [测试说明](docs/testing.md)
 - [代码导读](docs/code-walkthrough.md)
+- [性能压测](docs/performance.md)
+- [生产化边界](docs/production-readiness.md)
 
 ## 当前边界
 
@@ -84,5 +89,5 @@ java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT-all.jar
 - `JdbcDataRepository` 是数据边界；将来替换成 RPC 或特征库时，不需要改动 Operator 和 DAG。
 - 混排是可解释的本地规则，不是机器学习模型。
 - 场景编排采用固定、可测试的来源槽位；生产系统通常会把它替换成可配置策略或模型约束。
-- 指标当前保存在进程内存中，重启后会清空。
+- `/metrics/prometheus` 可被 Prometheus 抓取，但指标仍保存在进程内存中，重启后会清空。
 - 自助创建画像是本地演示能力，当前没有登录、权限、删除和修改接口；对公网部署前需要补齐鉴权、限流和管理边界。

@@ -11,7 +11,7 @@ Browser / API client
         |
  Parallel DAG executor
         |
- Operators -> downstream interfaces -> JDBC repository -> MySQL
+ Operators -> downstream interfaces -> JDBC repository -> HikariCP -> MySQL
 ```
 
 `MiniRecoApplication` 负责 HTTP；`ApplicationWiring` 负责把实现装配成一张图；业务顺序由 DAG 表达，而不是散落在一个很长的方法里。
@@ -20,13 +20,15 @@ Browser / API client
 
 自助画像表单调用 `POST /api/users`。`UserProfileHttpHandler` 完成白名单和长度校验，`JdbcDataRepository` 在一个事务中写入画像、实验分组以及可选的用户行为；任一步失败都会回滚。写入成功后页面重新加载用户列表，并用新画像立即发起推荐。
 
+推荐结果展示后，控制台通过 `POST /api/events` 批量记录曝光；点击、加购、购买等显式反馈会更新用户状态与偏好并触发下一次推荐。曝光用于链路追踪但不改变偏好权重，避免系统因为自己的展示结果不断强化同一类目。
+
 ## 一条请求如何流动
 
 1. `RecommendHttpHandler` 校验 query 参数并创建 `RecommendRequest`。
 2. `RecommendService` 为这次请求新建 `RecommendContext`，交给 DAG。
 3. `PrepareOperator` 读取用户画像、用户行为、实验分组和地址，写入 Context。
 4. `RecallOperator` 同时执行 goods、live、ad 三个 `JdbcRecallService`；每路候选来自 `catalog_items`。
-5. 召回完成后，`OnlineFeatureOperator` 一次 SQL 批量读取在线属性：goods 使用价格/库存，live 将动态量解释为热度，三路统一保留可用状态；room_id 和 creative_id 则来自各自候选记录。
+5. 召回完成后，`OnlineFeatureOperator` 一次批量 SQL 读取来源专属属性：goods 使用价格/库存，live 使用直播间/主播/热度，ad 使用创意/计划/出价/预算；三路统一投影成接入层 Item 属性。
 6. `MixRankOperator` 同时计算本地规则分数：偏好类目加分、实验组中商品加分、广告轻微扣分；并保留三路排序候选供后续编排。
 7. `FilterOperator` 等待在线特征和混排都完成，移除库存为 0 或状态非 ONLINE 的 Item。
 8. `PostProcessOperator` 对有效候选执行场景编排：商城为 goods + ad，视频流为 live + ad，买家首页为 goods + live + ad；然后按请求上限截断并序列化成 JSON。
@@ -60,5 +62,12 @@ Prepare -> Recall -> OnlineFeature --+
 ## 失败策略
 
 - 单路召回失败或超时：保留其他成功来源的候选，并记录到 `debug.recallFanout`。
-- 关键 Operator 失败：当前请求失败，HTTP 层返回 500。
+- 关键 Operator 失败：当前请求失败；整图超时返回 504，依赖不可用返回 503，未分类内部错误返回 500。
 - 启动时数据库不可用：应用不会启动成功。这样不会出现“健康但无法推荐”的假状态。
+
+## 超时、健康与关闭
+
+- `REQUEST_TIMEOUT_MS` 是整张 DAG 的总预算，超时会取消已经提交的节点并返回 504。
+- `RECALL_FANOUT_TIMEOUT_MS` 是三路召回共享的子预算；单路超时保留其他来源结果。
+- `/live` 只说明 JVM 和 HTTP 进程存活；`/health` 会执行数据库探测并报告 HikariCP 连接池状态。
+- JVM 关闭钩子会停止 HTTP 服务、DAG/召回线程池和 HikariCP，避免请求或连接泄漏。

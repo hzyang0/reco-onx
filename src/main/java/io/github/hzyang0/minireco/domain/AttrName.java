@@ -11,7 +11,13 @@ public enum AttrName {
     STATUS("status"),
     RECALL_REASON("recall_reason"),
     ROOM_ID("room_id"),
-    CREATIVE_ID("creative_id");
+    ANCHOR_ID("anchor_id"),
+    HEAT("heat"),
+    CREATIVE_ID("creative_id"),
+    CAMPAIGN_ID("campaign_id"),
+    PROMOTED_ITEM_ID("promoted_item_id"),
+    BID_CENTS("bid_cents"),
+    REMAINING_BUDGET_CENTS("remaining_budget_cents");
 
     private static final Map<String, AttrName> BY_KEY = java.util.Arrays.stream(values())
             .collect(Collectors.toUnmodifiableMap(AttrName::key, Function.identity()));

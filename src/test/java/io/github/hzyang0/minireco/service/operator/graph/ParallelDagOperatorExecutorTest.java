@@ -3,6 +3,7 @@ package io.github.hzyang0.minireco.service.operator.graph;
 import io.github.hzyang0.minireco.domain.RecommendRequest;
 import io.github.hzyang0.minireco.service.context.RecommendContext;
 import io.github.hzyang0.minireco.service.operator.Operator;
+import io.github.hzyang0.minireco.observability.MetricsRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ParallelDagOperatorExecutorTest {
@@ -46,6 +48,37 @@ class ParallelDagOperatorExecutorTest {
         assertTrue(completed.contains("onlineFeature"));
         assertTrue(completed.contains("mixRank"));
         assertEquals("postProcess", completed.get(3));
+        executor.close();
+    }
+
+    @Test
+    void requestDeadlineShouldCancelSlowGraph() {
+        Operator slow = new Operator() {
+            @Override
+            public String name() {
+                return "slow";
+            }
+
+            @Override
+            public void execute(RecommendContext context) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        };
+        ParallelDagOperatorExecutor executor = new ParallelDagOperatorExecutor(
+                new DagGraph(List.of(DagNode.of(slow))),
+                List.of(),
+                1,
+                new MetricsRegistry(),
+                20
+        );
+        RecommendContext context = new RecommendContext("timeout", new RecommendRequest(1L, "mall", 1));
+
+        assertThrows(RequestTimeoutException.class, () -> executor.execute(context));
+        executor.close();
     }
 
     private Operator namedOperator(String name, List<String> completed) {

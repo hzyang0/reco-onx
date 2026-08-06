@@ -1,7 +1,10 @@
 package io.github.hzyang0.minireco.service.data;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.flywaydb.core.Flyway;
+
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,11 +22,28 @@ import java.util.Optional;
  * layer so a future RPC/feature-store client can replace it without changing
  * Operators or the DAG.</p>
  */
-public final class JdbcDataRepository {
+public final class JdbcDataRepository implements AutoCloseable {
     private final DatabaseConfig config;
+    private final HikariDataSource dataSource;
 
     public JdbcDataRepository(DatabaseConfig config) {
         this.config = config;
+        HikariConfig poolConfig = new HikariConfig();
+        poolConfig.setJdbcUrl(config.jdbcUrl());
+        poolConfig.setUsername(config.username());
+        poolConfig.setPassword(config.password());
+        poolConfig.setMaximumPoolSize(config.maximumPoolSize());
+        poolConfig.setMinimumIdle(Math.min(2, config.maximumPoolSize()));
+        poolConfig.setConnectionTimeout(config.connectionTimeoutMs());
+        poolConfig.setValidationTimeout(Math.min(config.connectionTimeoutMs(), 1_000));
+        poolConfig.setPoolName("mini-reco-db");
+        this.dataSource = new HikariDataSource(poolConfig);
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations(config.flywayLocations().split(","))
+                .validateMigrationNaming(true)
+                .load()
+                .migrate();
     }
 
     public void verifyConnection() {
@@ -34,6 +54,25 @@ public final class JdbcDataRepository {
         } catch (SQLException e) {
             throw databaseFailure("verify database connection", e);
         }
+    }
+
+    public boolean isHealthy() {
+        try (Connection connection = openConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT 1");
+             ResultSet result = statement.executeQuery()) {
+            return result.next() && result.getInt(1) == 1;
+        } catch (SQLException ignored) {
+            return false;
+        }
+    }
+
+    public PoolStats poolStats() {
+        return new PoolStats(
+                dataSource.getHikariPoolMXBean().getActiveConnections(),
+                dataSource.getHikariPoolMXBean().getIdleConnections(),
+                dataSource.getHikariPoolMXBean().getThreadsAwaitingConnection(),
+                dataSource.getHikariPoolMXBean().getTotalConnections()
+        );
     }
 
     public Optional<UserProfile> findUser(long userId) {
@@ -159,7 +198,7 @@ public final class JdbcDataRepository {
 
     public List<UserEvent> findEvents(long userId) {
         String sql = "SELECT user_id, category, event_type, event_time "
-                + "FROM user_events WHERE user_id = ? ORDER BY event_time DESC";
+                + "FROM user_events WHERE user_id = ? ORDER BY event_time DESC LIMIT 500";
         List<UserEvent> events = new ArrayList<>();
         try (Connection connection = openConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -203,24 +242,33 @@ public final class JdbcDataRepository {
         }
     }
 
-    public List<CatalogItem> findCatalogBySource(String source) {
-        String sql = "SELECT item_id, title, source, category, base_score, recall_reason, room_id, creative_id "
-                + "FROM catalog_items WHERE source = ? ORDER BY base_score DESC";
+    public List<CatalogItem> findCatalogBySource(String source, String preferredCategory, int limit) {
+        int preferredLimit = Math.max(1, limit * 3 / 4);
+        int explorationLimit = limit - preferredLimit;
+        String columns = "item_id, title, source, category, base_score, recall_reason ";
+        String sql = "(SELECT " + columns + "FROM catalog_items "
+                + "WHERE source = ? AND category = ? ORDER BY base_score DESC LIMIT ?) "
+                + "UNION ALL "
+                + "(SELECT " + columns + "FROM catalog_items "
+                + "WHERE source = ? AND category <> ? ORDER BY base_score DESC LIMIT ?)";
         List<CatalogItem> items = new ArrayList<>();
         try (Connection connection = openConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+            PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, source);
+            statement.setString(2, preferredCategory);
+            statement.setInt(3, preferredLimit);
+            statement.setString(4, source);
+            statement.setString(5, preferredCategory);
+            statement.setInt(6, explorationLimit);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
                     items.add(new CatalogItem(
                             result.getLong("item_id"),
                             result.getString("title"),
                             result.getString("source"),
-                            result.getString("category"),
-                            result.getDouble("base_score"),
-                            result.getString("recall_reason"),
-                            result.getString("room_id"),
-                            result.getString("creative_id")
+                        result.getString("category"),
+                        result.getDouble("base_score"),
+                        result.getString("recall_reason")
                     ));
                 }
             }
@@ -230,39 +278,26 @@ public final class JdbcDataRepository {
         }
     }
 
-    public Optional<Inventory> findInventory(long itemId) {
-        String sql = "SELECT item_id, price, stock, status FROM inventory_snapshots WHERE item_id = ?";
-        try (Connection connection = openConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, itemId);
-            try (ResultSet result = statement.executeQuery()) {
-                if (!result.next()) {
-                    return Optional.empty();
-                }
-                return Optional.of(new Inventory(
-                        result.getLong("item_id"),
-                        result.getInt("price"),
-                        result.getInt("stock"),
-                        result.getString("status")
-                ));
-            }
-        } catch (SQLException e) {
-            throw databaseFailure("load inventory", e);
-        }
-    }
-
     /**
-     * Loads the inventory for all candidates in one SQL round trip.
-     * This avoids the N+1 query pattern in the online-feature stage.
+     * Loads source-specific online state for all candidates in one SQL round trip.
+     * This avoids N+1 queries while keeping goods, live and ad semantics separate.
      */
-    public Map<Long, Inventory> findInventoryByItemIds(List<Long> itemIds) {
+    public Map<Long, OnlineSnapshot> findOnlineSnapshots(List<Long> itemIds) {
         if (itemIds.isEmpty()) {
             return Map.of();
         }
         String placeholders = String.join(",", java.util.Collections.nCopies(itemIds.size(), "?"));
-        String sql = "SELECT item_id, price, stock, status FROM inventory_snapshots "
-                + "WHERE item_id IN (" + placeholders + ")";
-        Map<Long, Inventory> inventoryByItemId = new HashMap<>();
+        String sql = "SELECT c.item_id, c.source, "
+                + "g.price, g.stock, g.sale_status, "
+                + "l.room_id, l.anchor_id, l.heat, l.live_status, "
+                + "a.creative_id, a.campaign_id, a.promoted_item_id, a.bid_cents, "
+                + "a.remaining_budget_cents, a.delivery_status "
+                + "FROM catalog_items c "
+                + "LEFT JOIN goods_details g ON g.item_id = c.item_id "
+                + "LEFT JOIN live_details l ON l.item_id = c.item_id "
+                + "LEFT JOIN ad_creatives a ON a.item_id = c.item_id "
+                + "WHERE c.item_id IN (" + placeholders + ")";
+        Map<Long, OnlineSnapshot> snapshots = new HashMap<>();
         try (Connection connection = openConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             for (int index = 0; index < itemIds.size(); index++) {
@@ -271,26 +306,103 @@ public final class JdbcDataRepository {
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
                     long itemId = result.getLong("item_id");
-                    inventoryByItemId.put(itemId, new Inventory(
+                    snapshots.put(itemId, new OnlineSnapshot(
                             itemId,
-                            result.getInt("price"),
-                            result.getInt("stock"),
-                            result.getString("status")
+                            result.getString("source"),
+                            nullableInt(result, "price"),
+                            nullableInt(result, "stock"),
+                            result.getString("sale_status"),
+                            result.getString("room_id"),
+                            result.getString("anchor_id"),
+                            nullableInt(result, "heat"),
+                            result.getString("live_status"),
+                            result.getString("creative_id"),
+                            result.getString("campaign_id"),
+                            nullableLong(result, "promoted_item_id"),
+                            nullableInt(result, "bid_cents"),
+                            nullableLong(result, "remaining_budget_cents"),
+                            result.getString("delivery_status")
                     ));
                 }
             }
-            return Map.copyOf(inventoryByItemId);
+            return Map.copyOf(snapshots);
         } catch (SQLException e) {
-            throw databaseFailure("load inventory batch", e);
+            throw databaseFailure("load online snapshots", e);
         }
     }
 
+    public int appendUserEvents(
+            long userId,
+            List<Long> itemIds,
+            String eventType,
+            String requestId,
+            String scene,
+            long eventTime
+    ) {
+        String sql = "INSERT IGNORE INTO user_events "
+                + "(user_id, item_id, category, event_type, event_time, request_id, scene) "
+                + "SELECT ?, c.item_id, c.category, ?, ?, ?, ? FROM catalog_items c WHERE c.item_id = ?";
+        try (Connection connection = openConnection()) {
+            connection.setAutoCommit(false);
+            try (PreparedStatement statement = connection.prepareStatement(sql);
+                 PreparedStatement activateUser = connection.prepareStatement(
+                         "UPDATE user_profiles p JOIN catalog_items c ON c.item_id = ? "
+                                 + "SET p.new_user = FALSE, p.default_category = c.category WHERE p.user_id = ?"
+                 )) {
+                for (Long itemId : itemIds) {
+                    statement.setLong(1, userId);
+                    statement.setString(2, eventType);
+                    statement.setLong(3, eventTime);
+                    statement.setString(4, requestId);
+                    statement.setString(5, scene);
+                    statement.setLong(6, itemId);
+                    statement.addBatch();
+                }
+                int inserted = 0;
+                for (int count : statement.executeBatch()) {
+                    if (count > 0) {
+                        inserted += count;
+                    }
+                }
+                if (!"exposure".equals(eventType) && inserted > 0) {
+                    activateUser.setLong(1, itemIds.get(itemIds.size() - 1));
+                    activateUser.setLong(2, userId);
+                    activateUser.executeUpdate();
+                }
+                connection.commit();
+                return inserted;
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw databaseFailure("append user events", e);
+        }
+    }
+
+    private Integer nullableInt(ResultSet result, String name) throws SQLException {
+        int value = result.getInt(name);
+        return result.wasNull() ? null : value;
+    }
+
+    private Long nullableLong(ResultSet result, String name) throws SQLException {
+        long value = result.getLong(name);
+        return result.wasNull() ? null : value;
+    }
+
     private Connection openConnection() throws SQLException {
-        return DriverManager.getConnection(config.jdbcUrl(), config.username(), config.password());
+        return dataSource.getConnection();
     }
 
     private IllegalStateException databaseFailure(String operation, SQLException cause) {
         return new IllegalStateException(operation + " failed: " + cause.getMessage(), cause);
+    }
+
+    @Override
+    public void close() {
+        dataSource.close();
     }
 
     public record UserProfile(
@@ -328,12 +440,29 @@ public final class JdbcDataRepository {
             String source,
             String category,
             double baseScore,
-            String recallReason,
-            String roomId,
-            String creativeId
+            String recallReason
     ) {
     }
 
-    public record Inventory(long itemId, int price, int stock, String status) {
+    public record OnlineSnapshot(
+            long itemId,
+            String source,
+            Integer price,
+            Integer stock,
+            String goodsStatus,
+            String roomId,
+            String anchorId,
+            Integer heat,
+            String liveStatus,
+            String creativeId,
+            String campaignId,
+            Long promotedItemId,
+            Integer bidCents,
+            Long remainingBudgetCents,
+            String adStatus
+    ) {
+    }
+
+    public record PoolStats(int active, int idle, int pending, int total) {
     }
 }

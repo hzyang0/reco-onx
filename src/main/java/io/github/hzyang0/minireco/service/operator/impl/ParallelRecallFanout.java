@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ParallelRecallFanout {
+public class ParallelRecallFanout implements AutoCloseable {
     private final List<RecallService> recallServices;
     private final RecallFanoutConfig config;
     private final MetricsRegistry metricsRegistry;
@@ -317,6 +317,11 @@ public class ParallelRecallFanout {
 
     private long elapsedMs(long startNanos) {
         return (System.nanoTime() - startNanos) / 1_000_000;
+    }
+
+    @Override
+    public void close() {
+        executor.shutdownNow();
     }
 
     public record FanoutResult(List<Item> items, Map<String, Object> debug) {

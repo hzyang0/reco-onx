@@ -11,9 +11,10 @@
 - `RecommendServiceTest`：使用 Mockito 替代下游服务，验证正常链路和非法场景。
 - `RecallOperatorTest`：验证三路并行、单路失败保留部分结果和总超时。
 - `PostProcessOperatorTest`：验证商城、视频流和买家首页的来源比例及广告槽位。
-- `ParallelDagOperatorExecutorTest`：验证 DAG 中独立节点可以并发执行。
+- `ParallelDagOperatorExecutorTest`：验证 DAG 中独立节点可以并发执行，以及请求总预算会取消慢节点。
 - `DashboardHttpHandlerTest`：验证控制台页面、静态资源和 HTTP 方法限制。
 - `MetricsRegistryTest`：验证指标计数与隔离。
+- `JdbcDataRepositoryIntegrationTest`：当 `RUN_TESTCONTAINERS=true` 时由 Testcontainers 启动 MySQL 8.4，验证 Flyway、三张来源详情表和反馈闭环；GitHub Actions 会启用，本地默认由下一节的 Compose 集成脚本覆盖。
 
 JUnit 负责运行测试和断言；Mockito 负责制造“可控的假下游”。例如 `when(service.getUserFeature(123L)).thenReturn(...)` 规定假服务的返回值，再用 `assertEquals` 判断业务结果。
 
@@ -23,7 +24,7 @@ JUnit 负责运行测试和断言；Mockito 负责制造“可控的假下游”
 ./scripts/run-database-integration-test.ps1
 ```
 
-脚本会构建 JAR、启动 Compose 中的 MySQL，再以临时端口启动 JAR，检查：5 张表均使用 InnoDB、两个业务索引存在、至少 5 个差异化画像和 300 条候选已初始化、goods/live/ad 各 100 条、每个“来源×类目”桶各 20 条、每路 100 个标题均唯一且来源之间没有标题重叠、三路实际召回为 20/20/20、三种场景的来源比例与广告槽位、中文种子数据没有乱码、`/api/console-data` 计数正确、推荐结果不含代码兜底/无货/下线 Item、控制台和指标接口可访问。它还会通过 `POST /api/users` 创建一个高意向运动用户，验证4条行为入库和 sports 推荐，最后自动删除该测试用户，不影响手工创建的画像。
+脚本会构建 JAR、启动 Compose 中的 MySQL，再以临时端口启动 JAR，检查：7 张业务表、Flyway 历史和 3 个业务索引；三张来源详情表各 100 行；至少 5 个画像和 300 条候选；标题唯一性、20/20/20 召回、场景槽位、中文编码、来源专属可用性过滤、数据库健康和 Prometheus 指标。脚本还会创建 sports 用户，再通过 `POST /api/events` 写入 3 次 digital 购买，验证后续推荐从 sports 切换到 digital，最后自动清理测试用户。
 
 ## 完整 Compose 验证
 

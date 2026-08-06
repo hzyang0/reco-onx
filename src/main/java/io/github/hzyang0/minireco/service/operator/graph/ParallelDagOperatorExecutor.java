@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ParallelDagOperatorExecutor implements ExecutionEngine {
@@ -28,9 +29,10 @@ public class ParallelDagOperatorExecutor implements ExecutionEngine {
     private final Map<String, OperatorConfig> configByName;
     private final ExecutorService executorService;
     private final MetricsRegistry metricsRegistry;
+    private final long overallTimeoutMs;
 
     public ParallelDagOperatorExecutor(DagGraph graph, List<OperatorConfig> configs, int parallelism) {
-        this(graph, configs, parallelism, MetricsRegistry.global());
+        this(graph, configs, parallelism, MetricsRegistry.global(), envLong("REQUEST_TIMEOUT_MS", 500));
     }
 
     public ParallelDagOperatorExecutor(
@@ -39,12 +41,26 @@ public class ParallelDagOperatorExecutor implements ExecutionEngine {
             int parallelism,
             MetricsRegistry metricsRegistry
     ) {
+        this(graph, configs, parallelism, metricsRegistry, envLong("REQUEST_TIMEOUT_MS", 500));
+    }
+
+    public ParallelDagOperatorExecutor(
+            DagGraph graph,
+            List<OperatorConfig> configs,
+            int parallelism,
+            MetricsRegistry metricsRegistry,
+            long overallTimeoutMs
+    ) {
         if (parallelism <= 0) {
             throw new IllegalArgumentException("parallelism must be positive");
+        }
+        if (overallTimeoutMs <= 0) {
+            throw new IllegalArgumentException("overallTimeoutMs must be positive");
         }
         this.graph = graph;
         validateAcyclic(graph);
         this.metricsRegistry = metricsRegistry;
+        this.overallTimeoutMs = overallTimeoutMs;
         this.configByName = new LinkedHashMap<>();
         for (OperatorConfig config : configs) {
             this.configByName.put(config.getName(), config);
@@ -54,6 +70,7 @@ public class ParallelDagOperatorExecutor implements ExecutionEngine {
 
     @Override
     public void execute(RecommendContext context) {
+        long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(overallTimeoutMs);
         Map<String, Integer> remainingDependencies = new LinkedHashMap<>();
         Map<String, List<String>> dependents = buildDependents(graph, remainingDependencies);
 
@@ -81,7 +98,17 @@ public class ParallelDagOperatorExecutor implements ExecutionEngine {
 
             String completedNodeName;
             try {
-                completedNodeName = completionService.take().get();
+                long remainingNanos = deadlineNanos - System.nanoTime();
+                if (remainingNanos <= 0) {
+                    cancelSubmitted(submittedFutures);
+                    throw new RequestTimeoutException("recommendation request exceeded " + overallTimeoutMs + " ms");
+                }
+                Future<String> completedFuture = completionService.poll(remainingNanos, TimeUnit.NANOSECONDS);
+                if (completedFuture == null) {
+                    cancelSubmitted(submittedFutures);
+                    throw new RequestTimeoutException("recommendation request exceeded " + overallTimeoutMs + " ms");
+                }
+                completedNodeName = completedFuture.get();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 cancelSubmitted(submittedFutures);
@@ -194,5 +221,21 @@ public class ParallelDagOperatorExecutor implements ExecutionEngine {
 
     private long toMs(long nanos) {
         return nanos / 1_000_000;
+    }
+
+    @Override
+    public void close() {
+        for (DagNode node : graph.nodes()) {
+            node.operator().close();
+        }
+        executorService.shutdownNow();
+    }
+
+    private static long envLong(String name, long defaultValue) {
+        String raw = System.getenv(name);
+        if (raw == null || raw.isBlank()) {
+            return defaultValue;
+        }
+        return Long.parseLong(raw);
     }
 }

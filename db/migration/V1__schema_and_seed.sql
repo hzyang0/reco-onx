@@ -14,13 +14,18 @@ CREATE TABLE user_profiles (
 CREATE TABLE user_events (
     event_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
+    item_id BIGINT,
     category VARCHAR(32) NOT NULL,
-    event_type VARCHAR(16) NOT NULL CHECK (event_type IN ('view', 'click', 'cart', 'purchase')),
+    event_type VARCHAR(16) NOT NULL CHECK (event_type IN ('exposure', 'view', 'click', 'cart', 'purchase')),
     event_time BIGINT NOT NULL,
+    request_id VARCHAR(64),
+    scene VARCHAR(32),
     CONSTRAINT fk_user_events_user
         FOREIGN KEY (user_id) REFERENCES user_profiles(user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 CREATE INDEX idx_user_events_user_time ON user_events(user_id, event_time DESC);
+CREATE UNIQUE INDEX uk_user_event_request_item_type
+    ON user_events(user_id, request_id, item_id, event_type);
 
 CREATE TABLE experiment_assignments (
     user_id BIGINT NOT NULL,
@@ -38,21 +43,48 @@ CREATE TABLE catalog_items (
     source VARCHAR(16) NOT NULL CHECK (source IN ('goods', 'live', 'ad')),
     category VARCHAR(32) NOT NULL,
     base_score DOUBLE NOT NULL,
-    recall_reason VARCHAR(64) NOT NULL,
-    room_id VARCHAR(32),
-    creative_id VARCHAR(32)
+    recall_reason VARCHAR(64) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 CREATE INDEX idx_catalog_items_source_score ON catalog_items(source, base_score DESC);
 
-CREATE TABLE inventory_snapshots (
+CREATE TABLE goods_details (
     item_id BIGINT PRIMARY KEY,
     price INTEGER NOT NULL CHECK (price >= 0),
     stock INTEGER NOT NULL CHECK (stock >= 0),
-    status VARCHAR(16) NOT NULL CHECK (status IN ('ONLINE', 'OFFLINE')),
+    sale_status VARCHAR(16) NOT NULL CHECK (sale_status IN ('ONLINE', 'OFFLINE')),
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_inventory_item
+    CONSTRAINT fk_goods_item
         FOREIGN KEY (item_id) REFERENCES catalog_items(item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE live_details (
+    item_id BIGINT PRIMARY KEY,
+    room_id VARCHAR(32) NOT NULL UNIQUE,
+    anchor_id VARCHAR(32) NOT NULL,
+    heat INTEGER NOT NULL CHECK (heat >= 0),
+    live_status VARCHAR(16) NOT NULL CHECK (live_status IN ('ONLINE', 'OFFLINE')),
+    start_time TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_live_item
+        FOREIGN KEY (item_id) REFERENCES catalog_items(item_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE ad_creatives (
+    item_id BIGINT PRIMARY KEY,
+    creative_id VARCHAR(32) NOT NULL UNIQUE,
+    campaign_id VARCHAR(32) NOT NULL,
+    promoted_item_id BIGINT,
+    bid_cents INTEGER NOT NULL CHECK (bid_cents >= 0),
+    remaining_budget_cents BIGINT NOT NULL CHECK (remaining_budget_cents >= 0),
+    delivery_status VARCHAR(16) NOT NULL CHECK (delivery_status IN ('ONLINE', 'OFFLINE')),
+    landing_url VARCHAR(255) NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ad_item FOREIGN KEY (item_id) REFERENCES catalog_items(item_id),
+    CONSTRAINT fk_ad_promoted_goods FOREIGN KEY (promoted_item_id) REFERENCES catalog_items(item_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE user_events ADD CONSTRAINT fk_user_events_item
+    FOREIGN KEY (item_id) REFERENCES catalog_items(item_id);
 
 INSERT INTO user_profiles (
     user_id, age, new_user, default_category, province, city, persona_name, persona_summary
@@ -191,7 +223,7 @@ INSERT INTO seed_goods (item_id, title, category, base_score, price) VALUES
     (11420, '防雾泳镜套装', 'sports', 0.80, 129);
 
 INSERT INTO catalog_items (
-    item_id, title, source, category, base_score, recall_reason, room_id, creative_id
+    item_id, title, source, category, base_score, recall_reason
 )
 SELECT
     g.item_id,
@@ -199,9 +231,7 @@ SELECT
     'goods',
     g.category,
     g.base_score,
-    'preferred_category',
-    NULL,
-    NULL
+    'preferred_category'
 FROM seed_goods g;
 
 CREATE TEMPORARY TABLE seed_live (
@@ -314,9 +344,9 @@ INSERT INTO seed_live (item_id, title, category, base_score) VALUES
     (21420, '赛后恢复拉伸课堂', 'sports', 0.80);
 
 INSERT INTO catalog_items (
-    item_id, title, source, category, base_score, recall_reason, room_id, creative_id
+    item_id, title, source, category, base_score, recall_reason
 )
-SELECT item_id, title, 'live', category, base_score, 'live_hot', CONCAT('9', item_id), NULL
+SELECT item_id, title, 'live', category, base_score, 'live_hot'
 FROM seed_live;
 
 CREATE TEMPORARY TABLE seed_ad (
@@ -429,12 +459,12 @@ INSERT INTO seed_ad (item_id, title, category, base_score) VALUES
     (31420, '年度户外品牌盛典', 'sports', 0.71);
 
 INSERT INTO catalog_items (
-    item_id, title, source, category, base_score, recall_reason, room_id, creative_id
+    item_id, title, source, category, base_score, recall_reason
 )
-SELECT item_id, title, 'ad', category, base_score, 'commercial', NULL, CONCAT('8', item_id)
+SELECT item_id, title, 'ad', category, base_score, 'commercial'
 FROM seed_ad;
 
-INSERT INTO inventory_snapshots (item_id, price, stock, status)
+INSERT INTO goods_details (item_id, price, stock, sale_status)
 SELECT
     g.item_id,
     g.price,
@@ -444,13 +474,28 @@ SELECT
          THEN 'OFFLINE' ELSE 'ONLINE' END
 FROM seed_goods g;
 
-INSERT INTO inventory_snapshots (item_id, price, stock, status)
+INSERT INTO live_details (item_id, room_id, anchor_id, heat, live_status, start_time)
 SELECT item_id,
-       CASE source WHEN 'live' THEN 0 ELSE 79 + MOD(item_id, 12) * 50 END,
-       CASE WHEN MOD(item_id, 19) = 0 THEN 0 ELSE 30 + MOD(item_id, 70) END,
-       CASE WHEN MOD(item_id, 31) = 0 THEN 'OFFLINE' ELSE 'ONLINE' END
-FROM catalog_items
-WHERE source IN ('live', 'ad');
+       CONCAT('9', item_id),
+       CONCAT('anchor-', MOD(item_id, 37) + 1),
+       CASE WHEN MOD(item_id, 19) = 0 THEN 0 ELSE 3000 + MOD(item_id, 7000) END,
+       CASE WHEN MOD(item_id, 31) = 0 THEN 'OFFLINE' ELSE 'ONLINE' END,
+       TIMESTAMPADD(MINUTE, -MOD(item_id, 180), CURRENT_TIMESTAMP)
+FROM seed_live;
+
+INSERT INTO ad_creatives (
+    item_id, creative_id, campaign_id, promoted_item_id, bid_cents,
+    remaining_budget_cents, delivery_status, landing_url
+)
+SELECT item_id,
+       CONCAT('8', item_id),
+       CONCAT('campaign-', category),
+       item_id - 20000,
+       80 + MOD(item_id, 120),
+       CASE WHEN MOD(item_id, 23) = 0 THEN 0 ELSE 100000 + MOD(item_id, 50) * 10000 END,
+       CASE WHEN MOD(item_id, 31) = 0 THEN 'OFFLINE' ELSE 'ONLINE' END,
+       CONCAT('https://example.invalid/campaign/', item_id)
+FROM seed_ad;
 
 DROP TEMPORARY TABLE seed_goods;
 DROP TEMPORARY TABLE seed_live;

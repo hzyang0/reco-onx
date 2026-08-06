@@ -43,7 +43,8 @@ class DashboardHttpHandlerTest {
         assertTrue(response.body().contains("/assets/dashboard.js"));
         assertTrue(response.body().contains("id=\"userProfile\""));
         assertTrue(response.body().contains("id=\"profileForm\""));
-        assertTrue(response.body().contains("dashboard.js?v=3"));
+        assertTrue(response.body().contains("dashboard.js?v=4"));
+        assertTrue(response.body().contains("id=\"feedbackStatus\""));
         assertTrue(response.headers().firstValue("Content-Security-Policy").isPresent());
     }
 
@@ -64,6 +65,7 @@ class DashboardHttpHandlerTest {
         assertTrue(javascript.body().contains("/api/users"));
         assertTrue(javascript.body().contains("itemAttributeCells"));
         assertTrue(javascript.body().contains("创意 ID"));
+        assertTrue(javascript.body().contains("/api/events"));
         assertEquals(200, favicon.statusCode());
         assertEquals("image/svg+xml", favicon.headers().firstValue("Content-Type").orElseThrow());
         assertTrue(favicon.body().contains("<svg"));

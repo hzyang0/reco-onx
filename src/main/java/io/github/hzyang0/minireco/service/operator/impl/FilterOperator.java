@@ -23,17 +23,26 @@ public class FilterOperator implements Operator {
                 : context.getRankedItems();
         List<Item> result = new ArrayList<>();
         for (Item item : sourceItems) {
-            int stock = item.findAttr(AttrName.STOCK)
-                    .map(Integer::parseInt)
-                    .orElse(0);
             String status = item.findAttr(AttrName.STATUS)
                     .orElse("UNKNOWN");
 
-            if (stock > 0 && "ONLINE".equals(status)) {
+            if ("ONLINE".equals(status) && hasAvailableCapacity(item)) {
                 result.add(item);
             }
         }
         context.setFilteredItems(result);
         context.putDebug("filteredItemCount", result.size());
+    }
+
+    private boolean hasAvailableCapacity(Item item) {
+        AttrName attribute = switch (item.getSource()) {
+            case "goods" -> AttrName.STOCK;
+            case "live" -> AttrName.HEAT;
+            case "ad" -> AttrName.REMAINING_BUDGET_CENTS;
+            default -> null;
+        };
+        return attribute != null && item.findAttr(attribute)
+                .map(Long::parseLong)
+                .orElse(0L) > 0;
     }
 }

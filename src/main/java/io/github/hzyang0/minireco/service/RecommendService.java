@@ -70,4 +70,9 @@ public class RecommendService implements RecommendationFacade {
     private long toMs(long nanos) {
         return nanos / 1_000_000;
     }
+
+    @Override
+    public void close() {
+        executionEngine.close();
+    }
 }

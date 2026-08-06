@@ -18,7 +18,11 @@ public record RecallFanoutConfig(
     }
 
     public static RecallFanoutConfig defaults() {
-        return new RecallFanoutConfig(envLong("RECALL_FANOUT_TIMEOUT_MS", 120), 3, 16);
+        return new RecallFanoutConfig(
+                envLong("RECALL_FANOUT_TIMEOUT_MS", 120),
+                envInt("RECALL_FANOUT_PARALLELISM", 3),
+                envInt("RECALL_FANOUT_QUEUE_CAPACITY", 64)
+        );
     }
 
     private static long envLong(String name, long defaultValue) {
@@ -27,6 +31,10 @@ public record RecallFanoutConfig(
         long value = Long.parseLong(raw);
         if (value <= 0) { throw new IllegalArgumentException(name + " must be positive"); }
         return value;
+    }
+
+    private static int envInt(String name, int defaultValue) {
+        return Math.toIntExact(envLong(name, defaultValue));
     }
 
     public Map<String, Object> toMap() {

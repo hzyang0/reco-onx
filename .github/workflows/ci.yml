@@ -25,6 +25,8 @@ jobs:
           cache: maven
 
       - name: Test and package
+        env:
+          RUN_TESTCONTAINERS: "true"
         run: mvn --batch-mode --no-transfer-progress clean verify
 
       - name: Build container image

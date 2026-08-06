@@ -57,8 +57,12 @@ try {
     $imbalancedSourceCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM (SELECT source FROM catalog_items GROUP BY source HAVING COUNT(*) <> 100) source_counts" mini_reco).Trim()
     $imbalancedCategorySourceCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM (SELECT source,category FROM catalog_items GROUP BY source,category HAVING COUNT(*) <> 20) bucket_counts" mini_reco).Trim()
     $variantSuffixCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items WHERE source='goods' AND (title LIKE '%轻享款%' OR title LIKE '%进阶款%' OR title LIKE '%旗舰款%')" mini_reco).Trim()
-    $innodbTableCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM information_schema.tables WHERE table_schema='mini_reco' AND engine='InnoDB'" mini_reco).Trim()
-    $businessIndexCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='mini_reco' AND index_name IN ('idx_user_events_user_time','idx_catalog_items_source_score')" mini_reco).Trim()
+    $businessTableCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='mini_reco' AND table_name IN ('user_profiles','user_events','experiment_assignments','catalog_items','goods_details','live_details','ad_creatives')" mini_reco).Trim()
+    $businessIndexCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='mini_reco' AND index_name IN ('idx_user_events_user_time','uk_user_event_request_item_type','idx_catalog_items_source_score')" mini_reco).Trim()
+    $goodsDetailCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM goods_details" mini_reco).Trim()
+    $liveDetailCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM live_details" mini_reco).Trim()
+    $adDetailCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM ad_creatives" mini_reco).Trim()
+    $flywayMigrationCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM flyway_schema_history WHERE success=1" mini_reco).Trim()
     $firstTitleUtf8Hex = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT HEX(title) FROM catalog_items WHERE item_id=11001" mini_reco).Trim()
     if ([int]$profileCount -lt 5 -or [int]$catalogCount -ne 300) {
         throw "Expected at least 5 user profiles and 300 catalog items, got user_profiles=$profileCount catalog_items=$catalogCount."
@@ -72,8 +76,11 @@ try {
     if ([int]$imbalancedSourceCount -ne 0 -or [int]$imbalancedCategorySourceCount -ne 0) {
         throw "Expected goods/live/ad to have 100 candidates each and every source-category bucket to have 20."
     }
-    if ([int]$innodbTableCount -ne 5 -or [int]$businessIndexCount -ne 2) {
-        throw "Expected 5 InnoDB tables and 2 business indexes, got tables=$innodbTableCount indexes=$businessIndexCount."
+    if ([int]$businessTableCount -ne 7 -or [int]$businessIndexCount -ne 3) {
+        throw "Expected 7 business tables and 3 business indexes, got tables=$businessTableCount indexes=$businessIndexCount."
+    }
+    if ([int]$goodsDetailCount -ne 100 -or [int]$liveDetailCount -ne 100 -or [int]$adDetailCount -ne 100 -or [int]$flywayMigrationCount -lt 1) {
+        throw "Expected independent 100-row source detail tables managed by Flyway."
     }
 
     $dashboard = Invoke-WebRequest "http://localhost:$port/" -UseBasicParsing -TimeoutSec 5
@@ -84,9 +91,14 @@ try {
     $buyerHomeResponse = Invoke-RestMethod "http://localhost:$port/recommend?userId=2024&scene=buy_first&limit=10" -TimeoutSec 5
     $coldStartResponse = Invoke-RestMethod "http://localhost:$port/recommend?userId=1000&scene=mall&limit=5" -TimeoutSec 5
     $metrics = Invoke-RestMethod "http://localhost:$port/metrics" -TimeoutSec 5
+    $prometheus = Invoke-WebRequest "http://localhost:$port/metrics/prometheus" -UseBasicParsing -TimeoutSec 5
+    $liveness = Invoke-RestMethod "http://localhost:$port/live" -TimeoutSec 5
 
     if ($response.items.Count -ne 5) {
         throw "Expected 5 recommended items, got $($response.items.Count)."
+    }
+    if ($health.database -ne "UP" -or $health.pool.total -lt 1 -or $liveness.status -ne "UP") {
+        throw "Expected database-aware readiness, pool stats, and process liveness to be UP."
     }
     $sourceRecallCounts = $response.debug.recallFanout.itemCountBySource
     if ($sourceRecallCounts.goods -ne 20 -or $sourceRecallCounts.live -ne 20 -or $sourceRecallCounts.ad -ne 20) {
@@ -111,10 +123,19 @@ try {
         throw "Expected item 11001 and valid UTF-8 title bytes, got itemId=$($response.items[0].itemId) hex=$firstTitleUtf8Hex."
     }
     $invalidItems = @($response.items | Where-Object {
-        $_.source -eq "fallback" -or $_.attrs.status -ne "ONLINE" -or [int]$_.attrs.stock -le 0
+        $_.source -eq "fallback" -or $_.attrs.status -ne "ONLINE" -or
+        ($_.source -eq "goods" -and [int]$_.attrs.stock -le 0) -or
+        ($_.source -eq "live" -and [int]$_.attrs.heat -le 0) -or
+        ($_.source -eq "ad" -and [long]$_.attrs.remaining_budget_cents -le 0)
     })
     if ($invalidItems.Count -ne 0) {
         throw "Recommendation contained fallback, offline, or out-of-stock items."
+    }
+    $sampleLive = @($videoResponse.items | Where-Object { $_.source -eq "live" })[0]
+    $sampleAd = @($mallResponse.items | Where-Object { $_.source -eq "ad" })[0]
+    if ([int]$sampleLive.attrs.heat -le 0 -or -not $sampleLive.attrs.room_id -or
+        [long]$sampleAd.attrs.remaining_budget_cents -le 0 -or -not $sampleAd.attrs.campaign_id) {
+        throw "Source-specific live/ad attributes were not populated from their detail tables."
     }
     if ($dashboard.Content -notmatch 'id="recommendForm"') {
         throw "Dashboard HTML did not contain the recommendation form."
@@ -125,6 +146,9 @@ try {
     $personaNames = @($consoleData.users | ForEach-Object { $_.personaName } | Select-Object -Unique)
     if ($personaNames.Count -lt 5) {
         throw "Expected at least five distinct user personas, got $($personaNames.Count)."
+    }
+    if ($prometheus.Content -notmatch 'request_success_total' -or $prometheus.Content -notmatch 'db_pool_connections') {
+        throw "Prometheus endpoint did not expose request and connection-pool metrics."
     }
 
     docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "DELETE FROM user_events WHERE user_id=$testUserId; DELETE FROM experiment_assignments WHERE user_id=$testUserId; DELETE FROM user_profiles WHERE user_id=$testUserId" mini_reco
@@ -148,8 +172,38 @@ try {
     $createdRecommendation = Invoke-RestMethod `
             "http://localhost:$port/recommend?userId=$testUserId&scene=mall&limit=5" `
             -TimeoutSec 5
+    $feedback = Invoke-RestMethod `
+            "http://localhost:$port/api/events" `
+            -Method Post `
+            -ContentType "application/x-www-form-urlencoded" `
+            -Body @{
+                userId = $testUserId
+                itemIds = "11101,11102,11103"
+                eventType = "purchase"
+                requestId = "database-integration-feedback"
+                scene = "mall"
+            } `
+            -TimeoutSec 5
+    $feedbackRecommendation = Invoke-RestMethod `
+            "http://localhost:$port/recommend?userId=$testUserId&scene=mall&limit=5" `
+            -TimeoutSec 5
+    $duplicateFeedback = Invoke-RestMethod `
+            "http://localhost:$port/api/events" `
+            -Method Post `
+            -ContentType "application/x-www-form-urlencoded" `
+            -Body @{
+                userId = $testUserId
+                itemIds = "11101,11102,11103"
+                eventType = "purchase"
+                requestId = "database-integration-feedback"
+                scene = "mall"
+            } `
+            -TimeoutSec 5
     $createdEventCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM user_events WHERE user_id=$testUserId" mini_reco).Trim()
-    if (-not $createdUser.created -or $createdRecommendation.items[0].category -ne "sports" -or [int]$createdEventCount -ne 4) {
+    if (-not $createdUser.created -or $createdRecommendation.items[0].category -ne "sports" -or
+        $feedback.inserted -ne 3 -or $duplicateFeedback.inserted -ne 0 -or
+        $feedbackRecommendation.items[0].category -ne "digital" -or
+        [int]$createdEventCount -ne 7) {
         throw "Created profile did not persist or affect recommendation as expected."
     }
 
@@ -168,7 +222,9 @@ try {
         buyerHomeLayout = $buyerHomeSources
         coldStartPolicy = "OK"
         generatedVariants = [int]$variantSuffixCount
-        innodbTables = [int]$innodbTableCount
+        businessTables = [int]$businessTableCount
+        sourceDetailRows = "$goodsDetailCount/$liveDetailCount/$adDetailCount"
+        flywayMigrations = [int]$flywayMigrationCount
         businessIndexes = [int]$businessIndexCount
         returnedItems = $response.items.Count
         firstItemId = $response.items[0].itemId
@@ -179,6 +235,10 @@ try {
         catalogCandidates = $consoleData.catalogCount
         profileCreation = "OK"
         createdBehaviorEvents = [int]$createdEventCount
+        feedbackLoop = "sports->digital"
+        feedbackIdempotency = "OK"
+        livenessReadiness = "OK"
+        prometheus = "OK"
     }
 } finally {
     if ($null -ne $process -and -not $process.HasExited) {

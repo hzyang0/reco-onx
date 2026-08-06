@@ -6,7 +6,7 @@
     <meta name="description" content="Mini Reco 推荐请求编排控制台">
     <title>Mini Reco 控制台</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=3">
+    <link rel="stylesheet" href="/assets/dashboard.css?v=4">
 </head>
 <body>
 <div class="page-shell">
@@ -21,6 +21,7 @@
         <nav class="top-actions" aria-label="服务链接">
             <a href="/health" target="_blank" rel="noreferrer">Health JSON</a>
             <a href="/metrics" target="_blank" rel="noreferrer">Metrics JSON</a>
+            <a href="/metrics/prometheus" target="_blank" rel="noreferrer">Prometheus</a>
             <span id="healthBadge" class="status-badge status-pending">
                 <span class="status-dot" aria-hidden="true"></span>
                 检查服务中
@@ -276,6 +277,7 @@
                 <div>
                     <p class="section-kicker">RECOMMENDATION RESULT</p>
                     <h2>推荐结果</h2>
+                    <p id="feedbackStatus" class="feedback-status">曝光会自动记录；点击卡片操作可影响后续画像与推荐。</p>
                 </div>
                 <p id="resultCaption">运行请求后展示 Item</p>
             </div>
@@ -323,11 +325,11 @@
     </main>
 
     <footer>
-        <span>Mini Reco · Java 17 Standard Library</span>
-        <span>HTTP · Operator · DAG · Future</span>
+        <span>Mini Reco · Java 17 · MySQL · HikariCP · Flyway</span>
+        <span>HTTP · Operator · DAG · Feedback Loop</span>
     </footer>
 </div>
 
-<script src="/assets/dashboard.js?v=3" defer></script>
+<script src="/assets/dashboard.js?v=4" defer></script>
 </body>
 </html>

@@ -14,7 +14,6 @@ services:
       - "3307:3306"
     volumes:
       - mini-reco-mysql-data:/var/lib/mysql
-      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-umini_reco", "-pmini_reco"]
       interval: 3s
@@ -26,14 +25,20 @@ services:
     build:
       context: .
     environment:
-      JDBC_URL: jdbc:mysql://db:3306/mini_reco?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+      JDBC_URL: jdbc:mysql://db:3306/mini_reco?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&connectTimeout=2000&socketTimeout=1000
       DB_USER: mini_reco
       DB_PASSWORD: mini_reco
+      DB_POOL_SIZE: 12
+      FLYWAY_LOCATIONS: filesystem:/app/db/migration
+      REQUEST_TIMEOUT_MS: 500
+      RECALL_FANOUT_PARALLELISM: 3
+      RECALL_FANOUT_QUEUE_CAPACITY: 64
     ports:
       - "18081:8080"
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   mini-reco-mysql-data:

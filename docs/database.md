@@ -2,7 +2,7 @@
 
 ## 为什么使用 MySQL
 
-项目使用 MySQL 8.4 保存用户画像、行为、实验分组、召回候选和库存快照。对这个规模的 Java 后端来说，MySQL 的使用门槛低、生态成熟，也更容易在本地和常见服务器环境中部署。
+项目使用 MySQL 8.4 保存用户画像、行为、实验分组、召回候选和三类来源专属在线状态。对这个规模的 Java 后端来说，MySQL 的使用门槛低、生态成熟，也更容易在本地和常见服务器环境中部署。
 
 仓库中的数据是可重复初始化的示例数据，不是生产用户数据；但应用访问的是实际运行的 MySQL，而不是在 Java 代码中临时生成结果。
 
@@ -11,14 +11,16 @@
 | 表 | 主要字段 | 用途 |
 | --- | --- | --- |
 | `user_profiles` | `age`、`new_user`、`default_category`、地址 | 构造用户画像和默认地址 |
-| `user_events` | `category`、`event_type`、`event_time` | 按行为权重推断偏好类目 |
+| `user_events` | `item_id`、`category`、`event_type`、`request_id` | 曝光追踪与按行为权重推断偏好 |
 | `experiment_assignments` | `scene`、`recall_exp`、`rank_exp` | 获取用户在场景下的实验分组 |
 | `catalog_items` | `source`、`category`、`base_score` | goods/live/ad 三路召回候选 |
-| `inventory_snapshots` | `price`、`stock`、`status` | 补充在线特征并过滤无货、下线 Item |
+| `goods_details` | `price`、`stock`、`sale_status` | 商品价格、库存和售卖状态 |
+| `live_details` | `room_id`、`anchor_id`、`heat`、`live_status` | 直播专属在线状态 |
+| `ad_creatives` | `creative_id`、`campaign_id`、`bid_cents`、`remaining_budget_cents` | 广告创意、出价和预算 |
 
-初始化文件是 `db/init/001-schema-and-seed.sql`。新的 MySQL 数据卷第一次启动时会自动执行，创建 5 张表、索引、外键、5 个差异化用户画像和 300 条候选记录。goods、live、ad 各有 100 条；每一路在五个类目中各有 20 条。goods 是具体商品，live 是直播/视频主题，ad 是营销活动；每一路内部标题唯一，来源之间也不复用标题。
+迁移文件是 `db/migration/V1__schema_and_seed.sql`。应用启动时 Flyway 校验并执行尚未应用的版本，创建 7 张业务表、索引、外键、5 个差异化用户画像和 300 条候选记录；执行历史保存在 `flyway_schema_history`。goods、live、ad 各有 100 条，每一路内部标题唯一，来源之间也不复用标题。
 
-三种来源共享 Item 主结构，但保留来源专属字段：goods 使用价格和库存，live 使用 `room_id`，ad 使用 `creative_id`。控制台因此会为商品显示价格/库存，为直播显示直播间/热度，为广告显示创意 ID/召回方式。
+三种来源共享候选主结构，但专属状态位于不同表中。Repository 通过一次批量 JOIN 读取并转换成接入层统一 Item；控制台因此会为商品显示价格/库存，为直播显示直播间/热度，为广告显示创意 ID/广告计划。
 
 5 个画像分别覆盖居家、数码、美食、穿搭和运动偏好，其中潮流新用户没有历史行为，用于展示冷启动；其余用户具有不同的浏览、点击、加购或购买序列。实验表中的默认场景只使用 `mall`、`video_feed` 和 `buy_first`；新用户由画像字段表示，不作为场景。控制台通过 `/api/console-data` 实时读取这些画像和候选总数，不在前端硬编码用户列表。
 
@@ -42,7 +44,7 @@
 
 库存查询使用一个 `IN (?, ?, ...)` 语句批量查询候选，避免 N 个 Item 发出 N 条 SQL 的 N+1 问题。`user_events(user_id, event_time)` 与 `catalog_items(source, base_score)` 建有组合索引。
 
-当前版本为了让数据链路容易阅读，仍使用 `DriverManager` 按操作获取连接。更高并发的生产实现应增加 HikariCP 连接池、连接与查询超时、慢 SQL 监控、缓存以及数据库降级策略。
+当前版本使用 HikariCP，默认最大连接数为 12，连接获取超时为 2 秒；JDBC URL 还设置连接和 socket 超时。生产环境仍需根据压测调整池大小，并接入慢 SQL、缓存、读写分离和数据库降级策略。
 
 ## 常用 SQL
 
@@ -56,7 +58,7 @@ docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco mini_reco
 SELECT * FROM user_profiles WHERE user_id = 123;
 SELECT * FROM user_events WHERE user_id = 123 ORDER BY event_time DESC;
 SELECT item_id, title, source, base_score FROM catalog_items ORDER BY base_score DESC;
-SELECT c.title, i.price, i.stock, i.status
-FROM catalog_items c JOIN inventory_snapshots i USING (item_id)
+SELECT c.title, g.price, g.stock, g.sale_status
+FROM catalog_items c JOIN goods_details g USING (item_id)
 ORDER BY c.item_id;
 ```

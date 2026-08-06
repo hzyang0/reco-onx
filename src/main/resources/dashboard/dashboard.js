@@ -31,6 +31,7 @@ const elements = {
     recallSources: document.querySelector("#recallSources"),
     resultCaption: document.querySelector("#resultCaption"),
     itemsGrid: document.querySelector("#itemsGrid"),
+    feedbackStatus: document.querySelector("#feedbackStatus"),
     metricsBody: document.querySelector("#metricsBody"),
     refreshMetrics: document.querySelector("#refreshMetrics"),
     rawJson: document.querySelector("#rawJson")
@@ -43,6 +44,7 @@ const sceneHints = {
     buy_first: "买家首页综合承接商品与直播，并在第 4、9 位穿插广告"
 };
 let consoleUsers = [];
+let lastResponse = null;
 
 async function requestJson(path, options = {}) {
     const response = await fetch(path, {
@@ -176,11 +178,14 @@ async function runRecommendation() {
     resetStageNodes();
     try {
         const response = await requestJson(currentPath());
+        lastResponse = response;
         renderSummary(response);
         renderStages(response.debug?.stageCostMs || {});
         renderRecall(response.debug?.recallFanout || {});
         renderItems(response.items || []);
         elements.rawJson.textContent = JSON.stringify(response, null, 2);
+        recordEvents("exposure", (response.items || []).map((item) => item.itemId), response)
+            .catch(() => undefined);
         await loadMetrics();
     } catch (error) {
         showError(error.message);
@@ -285,7 +290,9 @@ function renderItems(items) {
         attributes.className = "attribute-grid";
         attributes.append(...itemAttributeCells(item));
 
-        card.append(topLine, title, id, attributes);
+        const actions = feedbackActions(item);
+
+        card.append(topLine, title, id, attributes, actions);
         elements.itemsGrid.append(card);
     });
 }
@@ -294,14 +301,14 @@ function itemAttributeCells(item) {
     if (item.source === "live") {
         return [
             attributeCell("直播间", item.attrs?.room_id ?? "—"),
-            attributeCell("热度", item.attrs?.stock ?? "—"),
+            attributeCell("热度", item.attrs?.heat ?? "—"),
             attributeCell("状态", item.attrs?.status ?? "—")
         ];
     }
     if (item.source === "ad") {
         return [
             attributeCell("创意 ID", item.attrs?.creative_id ?? "—"),
-            attributeCell("召回方式", item.attrs?.recall_reason ?? "—"),
+            attributeCell("广告计划", item.attrs?.campaign_id ?? "—"),
             attributeCell("状态", item.attrs?.status ?? "—")
         ];
     }
@@ -310,6 +317,57 @@ function itemAttributeCells(item) {
         attributeCell("库存", item.attrs?.stock ?? "—"),
         attributeCell("状态", item.attrs?.status ?? "—")
     ];
+}
+
+function feedbackActions(item) {
+    const actions = document.createElement("div");
+    actions.className = "feedback-actions";
+    const eventTypes = item.source === "goods"
+        ? [["click", "点击"], ["cart", "加购"], ["purchase", "购买"]]
+        : [["click", "感兴趣"]];
+    eventTypes.forEach(([eventType, label]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.addEventListener("click", () => submitFeedback(item, eventType, button));
+        actions.append(button);
+    });
+    return actions;
+}
+
+async function submitFeedback(item, eventType, button) {
+    if (!lastResponse) {
+        return;
+    }
+    button.disabled = true;
+    try {
+        await recordEvents(eventType, [item.itemId], lastResponse);
+        elements.feedbackStatus.textContent = `已记录 ${eventType}：${item.title}；画像已更新，正在重新推荐。`;
+        await loadConsoleData(elements.userId.value);
+        await runRecommendation();
+    } catch (error) {
+        showError(`行为上报失败：${error.message}`);
+    } finally {
+        button.disabled = false;
+    }
+}
+
+async function recordEvents(eventType, itemIds, response) {
+    if (!itemIds.length) {
+        return null;
+    }
+    const body = new URLSearchParams({
+        userId: String(response.userId),
+        itemIds: itemIds.join(","),
+        eventType,
+        requestId: response.requestId,
+        scene: response.scene
+    });
+    return requestJson("/api/events", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+        body
+    });
 }
 
 function attributeCell(label, value) {

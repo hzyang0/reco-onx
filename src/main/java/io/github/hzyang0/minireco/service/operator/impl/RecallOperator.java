@@ -36,4 +36,9 @@ public class RecallOperator implements Operator {
         context.putDebug("recallItemCount", result.items().size());
         context.putDebug("recallFanout", result.debug());
     }
+
+    @Override
+    public void close() {
+        parallelRecallFanout.close();
+    }
 }

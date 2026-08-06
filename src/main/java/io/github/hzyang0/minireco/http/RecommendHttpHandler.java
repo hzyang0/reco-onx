@@ -4,6 +4,8 @@ import io.github.hzyang0.minireco.domain.RecommendRequest;
 import io.github.hzyang0.minireco.domain.RecommendResponse;
 import io.github.hzyang0.minireco.observability.MetricsRegistry;
 import io.github.hzyang0.minireco.service.RecommendationFacade;
+import io.github.hzyang0.minireco.service.data.UserNotFoundException;
+import io.github.hzyang0.minireco.service.operator.graph.RequestTimeoutException;
 import io.github.hzyang0.minireco.util.JsonUtil;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -42,8 +44,16 @@ public class RecommendHttpHandler implements HttpHandler {
             RecommendRequest request = new RecommendRequest(userId, scene, limit);
             RecommendResponse response = recommendService.recommend(request);
             writeJson(exchange, 200, JsonUtil.responseToJson(response));
-        } catch (Exception e) {
+        } catch (UserNotFoundException e) {
+            writeJson(exchange, 404, JsonUtil.errorToJson(e.getMessage()));
+        } catch (RequestTimeoutException e) {
+            writeJson(exchange, 504, JsonUtil.errorToJson(e.getMessage()));
+        } catch (IllegalArgumentException e) {
             writeJson(exchange, 400, JsonUtil.errorToJson(e.getMessage()));
+        } catch (IllegalStateException e) {
+            writeJson(exchange, 503, JsonUtil.errorToJson("recommendation dependency unavailable"));
+        } catch (RuntimeException e) {
+            writeJson(exchange, 500, JsonUtil.errorToJson("internal server error"));
         }
     }
 
