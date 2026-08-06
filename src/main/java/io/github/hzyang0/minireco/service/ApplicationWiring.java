@@ -1,14 +1,14 @@
 package io.github.hzyang0.minireco.service;
 
+import io.github.hzyang0.minireco.service.data.DatabaseConfig;
+import io.github.hzyang0.minireco.service.data.JdbcDataRepository;
 import io.github.hzyang0.minireco.service.downstream.RecallService;
-import io.github.hzyang0.minireco.service.downstream.impl.AdRecallService;
-import io.github.hzyang0.minireco.service.downstream.impl.DemoAbService;
-import io.github.hzyang0.minireco.service.downstream.impl.DemoAddressService;
-import io.github.hzyang0.minireco.service.downstream.impl.DemoMixRankService;
-import io.github.hzyang0.minireco.service.downstream.impl.DemoOnlineFeatureService;
-import io.github.hzyang0.minireco.service.downstream.impl.DemoUserFeatureService;
-import io.github.hzyang0.minireco.service.downstream.impl.GoodsRecallService;
-import io.github.hzyang0.minireco.service.downstream.impl.LiveRecallService;
+import io.github.hzyang0.minireco.service.downstream.impl.JdbcAbService;
+import io.github.hzyang0.minireco.service.downstream.impl.JdbcAddressService;
+import io.github.hzyang0.minireco.service.downstream.impl.JdbcOnlineFeatureService;
+import io.github.hzyang0.minireco.service.downstream.impl.JdbcRecallService;
+import io.github.hzyang0.minireco.service.downstream.impl.JdbcUserFeatureService;
+import io.github.hzyang0.minireco.service.downstream.impl.RuleBasedMixRankService;
 import io.github.hzyang0.minireco.service.operator.Operator;
 import io.github.hzyang0.minireco.service.operator.OperatorConfig;
 import io.github.hzyang0.minireco.service.operator.graph.DagGraph;
@@ -23,25 +23,28 @@ import io.github.hzyang0.minireco.service.operator.impl.RecallOperator;
 
 import java.util.List;
 
-public final class DemoWiring {
-    private DemoWiring() {
+/** Builds the production object graph used by the HTTP application. */
+public final class ApplicationWiring {
+    private ApplicationWiring() {
     }
 
     public static RecommendationFacade createRecommendService() {
-        List<RecallService> recallServices = List.of(
-                new GoodsRecallService(),
-                new LiveRecallService(),
-                new AdRecallService()
-        );
+        JdbcDataRepository repository = new JdbcDataRepository(DatabaseConfig.fromEnvironment());
+        repository.verifyConnection();
 
+        List<RecallService> recallServices = List.of(
+                new JdbcRecallService("goods", 12, repository),
+                new JdbcRecallService("live", 8, repository),
+                new JdbcRecallService("ad", 5, repository)
+        );
         Operator prepare = new PrepareOperator(
-                new DemoUserFeatureService(),
-                new DemoAbService(),
-                new DemoAddressService()
+                new JdbcUserFeatureService(repository),
+                new JdbcAbService(repository),
+                new JdbcAddressService(repository)
         );
         Operator recall = new RecallOperator(recallServices);
-        Operator onlineFeature = new OnlineFeatureOperator(new DemoOnlineFeatureService());
-        Operator mixRank = new MixRankOperator(new DemoMixRankService());
+        Operator onlineFeature = new OnlineFeatureOperator(new JdbcOnlineFeatureService(repository));
+        Operator mixRank = new MixRankOperator(new RuleBasedMixRankService());
         Operator filter = new FilterOperator();
         Operator postProcess = new PostProcessOperator();
 
@@ -53,7 +56,6 @@ public final class DemoWiring {
                 OperatorConfig.enabled(FilterOperator.NAME),
                 OperatorConfig.enabled(PostProcessOperator.NAME)
         );
-
         DagGraph graph = new DagGraph(List.of(
                 DagNode.of(prepare),
                 DagNode.of(recall, PrepareOperator.NAME),
@@ -62,7 +64,6 @@ public final class DemoWiring {
                 DagNode.of(filter, OnlineFeatureOperator.NAME, MixRankOperator.NAME),
                 DagNode.of(postProcess, FilterOperator.NAME)
         ));
-
         return new RecommendService(new ParallelDagOperatorExecutor(graph, configs, 4));
     }
 }

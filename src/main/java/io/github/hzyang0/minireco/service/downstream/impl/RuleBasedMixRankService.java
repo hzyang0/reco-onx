@@ -4,16 +4,18 @@ import io.github.hzyang0.minireco.domain.Item;
 import io.github.hzyang0.minireco.domain.UserFeature;
 import io.github.hzyang0.minireco.service.context.RecommendContext;
 import io.github.hzyang0.minireco.service.downstream.MixRankService;
-import io.github.hzyang0.minireco.util.SimulatedLatency;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-public class DemoMixRankService implements MixRankService {
+/**
+ * A deterministic local ranking policy. It is a replaceable boundary for a
+ * future model-serving client, rather than a fabricated score generator.
+ */
+public final class RuleBasedMixRankService implements MixRankService {
     @Override
     public List<Item> rank(List<Item> items, RecommendContext context, int limit) {
-        SimulatedLatency.sleepMs(120);
         UserFeature feature = context.getUserFeature();
         Map<String, String> abParams = context.getAbParams();
 

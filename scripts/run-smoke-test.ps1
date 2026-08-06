@@ -13,6 +13,10 @@ $portProbe.Start()
 $port = ([System.Net.IPEndPoint]$portProbe.LocalEndpoint).Port
 $portProbe.Stop()
 
+if (-not (Test-NetConnection -ComputerName "localhost" -Port 5432 -InformationLevel Quiet)) {
+    throw "PostgreSQL is not reachable on localhost:5432. Run 'docker compose up -d db' first."
+}
+
 if (-not (Test-Path -LiteralPath $jar)) {
     throw "Missing application JAR. Run 'mvn -DskipTests package' first."
 }

@@ -3,7 +3,7 @@ package io.github.hzyang0.minireco;
 import io.github.hzyang0.minireco.http.DashboardHttpHandler;
 import io.github.hzyang0.minireco.http.RecommendHttpHandler;
 import io.github.hzyang0.minireco.observability.MetricsRegistry;
-import io.github.hzyang0.minireco.service.DemoWiring;
+import io.github.hzyang0.minireco.service.ApplicationWiring;
 import io.github.hzyang0.minireco.service.RecommendationFacade;
 import io.github.hzyang0.minireco.util.JsonUtil;
 import com.sun.net.httpserver.HttpExchange;
@@ -21,7 +21,7 @@ public class MiniRecoApplication {
 
     public static void main(String[] args) throws IOException {
         int port = resolvePort(args);
-        RecommendationFacade recommendationFacade = DemoWiring.createRecommendService();
+        RecommendationFacade recommendationFacade = ApplicationWiring.createRecommendService();
         MetricsRegistry metricsRegistry = MetricsRegistry.global();
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);

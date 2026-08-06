@@ -26,7 +26,10 @@ public class MixRankOperator implements Operator {
         List<Item> candidates = context.getFilteredItems().isEmpty()
                 ? context.getRecalledItems()
                 : context.getFilteredItems();
-        List<Item> rankedItems = mixRankService.rank(candidates, context, context.getLimit());
+        // Rank a wider window before stock/status filtering. Otherwise a sold-out
+        // item near the top could leave too few valid database candidates.
+        int rankWindow = Math.max(context.getLimit() * 3, 10);
+        List<Item> rankedItems = mixRankService.rank(candidates, context, rankWindow);
         context.setRankedItems(rankedItems);
     }
 }

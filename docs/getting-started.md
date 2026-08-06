@@ -1,123 +1,65 @@
 # 开始运行
 
-## 1. 准备环境
+## 1. 一键体验
 
-确认已安装 JDK 17 和 Maven：
-
-```powershell
-java -version
-mvn -version
-```
-
-## 2. 测试与打包
-
-在项目根目录执行：
+安装 Docker Desktop、JDK 17 和 Maven 3.9+ 后，在项目根目录执行：
 
 ```powershell
-.\scripts\run-tests.ps1
 mvn -DskipTests package
+docker compose up --build -d
 ```
 
-生成文件：
+Compose 会先启动 PostgreSQL，执行 `db/init/001-schema-and-seed.sql` 建表和写入示例数据；数据库健康后才启动应用。应用对外端口是 `18080`，避免与本地其他 8080 服务冲突。
 
-```text
-target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar
-```
+浏览器打开 <http://localhost:18080/>，填写 `userId=123`、`scene=mall`、`limit=5`，点击运行推荐。
 
-## 3. 启动服务
+## 2. 接口验证
 
 ```powershell
+Invoke-RestMethod "http://localhost:18080/health"
+Invoke-RestMethod "http://localhost:18080/recommend?userId=123&scene=mall&limit=5"
+Invoke-RestMethod "http://localhost:18080/metrics"
+```
+
+`/recommend` 返回 JSON。重点看：
+
+- `items`：最终通过库存和状态过滤后的结果；
+- `debug.operatorCostMs`：各个 Operator 的耗时；
+- `debug.recallFanout`：三路召回的完成、超时或失败状态；
+- 每个 Item 的 `attrs`：召回原因、价格、库存、商品状态等。
+
+## 3. 本地调试 Java 进程
+
+先只启动数据库：
+
+```powershell
+docker compose up -d db
+mvn clean test
+mvn -DskipTests package
 java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar
 ```
 
-也可以指定端口：
+或执行 `./scripts/start-local.ps1` 在后台启动，并等待 `/health` 返回 `UP`。
+
+这时服务端口是默认的 `8080`，控制台地址为 <http://localhost:8080/>。
+
+数据库连接配置来自环境变量：
+
+| 变量 | 默认值 | 作用 |
+| --- | --- | --- |
+| `JDBC_URL` | `jdbc:postgresql://localhost:5432/mini_reco` | JDBC 连接地址 |
+| `DB_USER` | `mini_reco` | 数据库用户名 |
+| `DB_PASSWORD` | `mini_reco` | 数据库密码 |
+| `RECALL_FANOUT_TIMEOUT_MS` | `120` | 三路召回共享的超时预算（毫秒） |
+| `LOG_LEVEL` | `INFO` | 结构化日志级别 |
+
+## 4. 常用排查命令
 
 ```powershell
-java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar 18080
+docker compose ps
+docker compose logs -f app
+docker compose logs -f db
+docker compose exec db psql -U mini_reco -d mini_reco -c "SELECT item_id, title, stock, status FROM catalog_items JOIN inventory_snapshots USING (item_id) ORDER BY item_id LIMIT 5"
 ```
 
-## 4. 调用接口
-
-先在浏览器打开：
-
-```text
-http://localhost:8080/
-```
-
-控制台会自动检查服务状态，并发起一条默认推荐请求。修改 `userId`、场景和返回数量后点击“运行推荐”，可以观察：
-
-- 请求编号、总耗时、召回数和最终返回数；
-- Prepare、Recall、OnlineFeature、MixRank、Filter、PostProcess 各阶段耗时；
-- goods、live、ad 三路召回的完成、超时或失败状态；
-- 最终 Item 的来源、分数和在线属性；
-- 请求、算子与召回指标；
-- 后端返回的原始 JSON。
-
-三个后端接口仍可单独调用：
-
-```powershell
-Invoke-RestMethod "http://localhost:8080/health"
-Invoke-RestMethod "http://localhost:8080/recommend?userId=123&scene=mall&limit=5"
-Invoke-RestMethod "http://localhost:8080/metrics"
-```
-
-推荐响应包含：
-
-- `requestId`：本次请求的唯一标识；
-- `userId`、`scene`：原始请求信息；
-- `costMs`：整条链路耗时；
-- `items`：最终结果；
-- `debug`：算子耗时、召回完成情况和结果数量。
-
-## 5. 一键冒烟测试
-
-打包后执行：
-
-```powershell
-.\scripts\run-smoke-test.ps1
-```
-
-脚本会：
-
-1. 选择一个本机空闲端口并启动 JAR；
-2. 等待健康检查成功；
-3. 校验控制台 HTML 和 JavaScript 资源；
-4. 调用推荐和指标接口；
-5. 校验返回 5 个 Item；
-6. 停止测试进程。
-
-## 6. 代码阅读顺序
-
-不要从目录第一行开始逐个文件阅读。沿着一次请求阅读：
-
-1. `resources/dashboard/index.html` 与 `dashboard.js`
-2. `http/DashboardHttpHandler.java`
-3. `domain/RecommendRequest.java`
-4. `http/RecommendHttpHandler.java`
-5. `service/RecommendService.java`
-6. `service/context/RecommendContext.java`
-7. `service/operator/Operator.java`
-8. `service/operator/impl` 下的六个算子
-9. `service/DemoWiring.java`
-10. `service/operator/graph/ParallelDagOperatorExecutor.java`
-11. `service/operator/impl/ParallelRecallFanout.java`
-12. `domain/RecommendResponse.java`
-
-每个阶段只需先回答四个问题：
-
-- 输入从哪里读取？
-- 做了什么处理？
-- 输出写到哪里？
-- 失败或超时会怎样？
-
-## 7. 本地调试建议
-
-在以下位置设置断点即可观察完整链路：
-
-- `RecommendHttpHandler.handle`
-- `RecommendService.recommend`
-- `ParallelDagOperatorExecutor.execute`
-- 六个 Operator 的 `execute`
-- `ParallelRecallFanout.collectUntilDeadline`
-
-修改 `GoodsRecallService`、`LiveRecallService` 或 `AdRecallService` 的模拟延迟，可以观察并行召回和整体截止时间的行为。
+首次建库只会执行一次初始化 SQL。若希望完全重新创建本地示例数据，请明确执行 `docker compose down -v` 后再 `up`；这会删除 Docker 卷中的全部本地数据库数据。

@@ -1,17 +1,16 @@
-# Mini Reco 文档
+# 文档索引
 
-当前文档只描述仓库中正在运行的实现。
+建议按下面顺序阅读：
 
-建议阅读顺序：
+1. [开始运行](getting-started.md)：启动数据库和服务，调用接口。
+2. [架构与请求链路](architecture.md)：理解 Context、Operator、DAG 和并行关系。
+3. [数据库与数据边界](database.md)：理解表、SQL、配置和数据来源。
+4. [代码导读](code-walkthrough.md)：沿一条请求阅读关键文件。
+5. [测试说明](testing.md)：理解单元测试、Mock 和数据库集成验证。
 
-1. [开始运行](getting-started.md)：环境、启动、接口调用和代码阅读入口；
-2. [架构与请求链路](architecture.md)：Context、Operator、DAG、并行召回和异常处理；
-3. [测试说明](testing.md)：JUnit、Mockito、并行测试和验收命令。
-4. [代码导读](code-walkthrough.md)：从一条请求出发的推荐阅读路线、模块职责和练习。
+应用入口是 `MiniRecoApplication`，提供：
 
-项目入口为 `MiniRecoApplication`，默认注册：
-
-- `GET /`（内置控制台）
-- `GET /recommend`
-- `GET /health`
-- `GET /metrics`
+- `GET /`：内置控制台。
+- `GET /recommend`：推荐接口。
+- `GET /health`：服务状态。
+- `GET /metrics`：进程内指标。

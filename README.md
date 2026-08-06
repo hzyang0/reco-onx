@@ -1,149 +1,79 @@
 # Mini Reco
 
-Mini Reco 是一个轻量级 Java 推荐请求编排服务。它接收用户和场景参数，通过 DAG 组织参数准备、多路召回、在线特征、混排、过滤和后处理，并返回最终推荐结果。
+一个轻量级 Java 推荐请求编排服务。它接收用户和场景参数，使用 DAG 组织参数准备、多路召回、在线特征、混排、过滤和后处理，并返回 JSON 推荐结果。
 
-项目聚焦请求编排本身。商品、直播和广告召回均使用本地可重复的模拟实现，不依赖外部数据库或推荐模型。
+当前运行时会连接 PostgreSQL。用户画像、行为、实验分组、候选商品和库存都从数据库读取；这些是仓库内置的示例数据，方便在本地重复运行，不是生产用户数据。
 
-## 核心能力
-
-- 使用强类型 `RecommendContext` 保存一次请求的参数、特征和中间结果；
-- 将推荐流程拆分为职责独立的 `Operator`；
-- 使用 DAG 表达算子依赖、分支和汇合；
-- 并行执行商品、直播和广告三路召回；
-- 并行执行互不依赖的在线特征与混排节点；
-- 为多路召回设置整体截止时间，保留已成功返回的部分结果；
-- 输出结构化日志、请求指标和算子指标；
-- 提供随 JAR 打包的轻量级控制台，可直接观察推荐结果、DAG 耗时和指标；
-- 提供 JUnit 5、Mockito、Maven、Docker 和 GitHub Actions 验证链路。
-
-## 请求流程
+## 运行链路
 
 ```text
 HTTP /recommend
-  -> Prepare
-  -> Recall
-       ├─ goods
-       ├─ live
-       └─ ad
-  -> OnlineFeature ─┐
-                    ├─ Filter
-  -> MixRank ───────┘
-  -> PostProcess
-  -> JSON response
+  -> Prepare (画像、行为、AB、地址)
+  -> Recall (goods / live / ad 并行)
+  -> OnlineFeature (批量读取库存) --+
+  -> MixRank (规则混排)           --+-> Filter -> PostProcess -> JSON
 ```
 
-`Recall` 内部使用 `ExecutorCompletionService` 并行收集三路结果。DAG 执行器根据节点依赖调度任务，因此 `OnlineFeature` 和 `MixRank` 可以同时执行，`Filter` 会等待两者完成。
+## 快速启动
 
-## 环境要求
-
-- JDK 17
-- Maven 3.9+
-- 可选：Docker 或 Docker Compose
-
-## 快速运行
+需要 Docker Desktop、JDK 17 和 Maven 3.9+。以下命令会打包应用、启动 PostgreSQL、初始化示例数据，并启动应用：
 
 ```powershell
+mvn -DskipTests package
+docker compose up --build -d
+```
+
+打开内置控制台：<http://localhost:18080/>。
+
+也可以调用接口：
+
+```powershell
+Invoke-RestMethod "http://localhost:18080/recommend?userId=123&scene=mall&limit=5"
+Invoke-RestMethod "http://localhost:18080/health"
+Invoke-RestMethod "http://localhost:18080/metrics"
+```
+
+停止容器但保留数据库数据：
+
+```powershell
+docker compose down
+```
+
+## 本地开发
+
+需要 JDK 17、Maven 3.9+ 和 Docker Desktop。
+
+```powershell
+docker compose up -d db
 mvn clean test
 mvn -DskipTests package
 java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT.jar
 ```
 
-浏览器打开 `http://localhost:8080/`，可以在内置控制台中修改用户、场景和返回数量，发起推荐请求并观察完整结果。
+也可在后台启动并等待健康检查：`./scripts/start-local.ps1`。
 
-请求推荐结果：
+独立启动 JAR 时默认连接 `jdbc:postgresql://localhost:5432/mini_reco`。可使用 `JDBC_URL`、`DB_USER` 和 `DB_PASSWORD` 环境变量覆盖，示例见 [.env.example](.env.example)。
 
-```powershell
-Invoke-RestMethod "http://localhost:8080/recommend?userId=123&scene=mall&limit=5"
-```
-
-查看服务状态和指标：
+## 验证
 
 ```powershell
-Invoke-RestMethod "http://localhost:8080/health"
-Invoke-RestMethod "http://localhost:8080/metrics"
+./scripts/run-tests.ps1
+./scripts/run-database-integration-test.ps1
 ```
 
-也可以使用脚本：
-
-```powershell
-.\scripts\run-tests.ps1
-mvn -DskipTests package
-.\scripts\run-smoke-test.ps1
-```
-
-## HTTP API
-
-### `GET /`
-
-返回内置控制台页面。页面使用原生 HTML、CSS 和 JavaScript，资源随 JAR 一起打包，不需要额外安装 Node.js 或启动前端服务。
-
-### `GET /recommend`
-
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `userId` | long | 必填 | 正整数用户标识 |
-| `scene` | string | `mall` | 支持 `mall`、`buy_first`、`single_column`、`double_column`、`new_user_card` |
-| `limit` | int | `10` | 返回数量，范围 1～50 |
-
-### `GET /health`
-
-返回服务状态和当前时间。
-
-### `GET /metrics`
-
-返回请求、算子和召回阶段的内存指标快照。
-
-## 配置
-
-| 环境变量 | 默认值 | 说明 |
-| --- | ---: | --- |
-| `RECALL_FANOUT_TIMEOUT_MS` | `120` | 多路召回整体截止时间 |
-| `LOG_LEVEL` | `INFO` | 结构化日志级别 |
-
-## Docker
-
-```powershell
-mvn -DskipTests package
-docker build -t mini-reco:local .
-docker run --rm -p 8080:8080 mini-reco:local
-```
-
-或使用 Compose：
-
-```powershell
-docker compose up --build
-```
-
-## 代码结构
-
-```text
-src/main/java/io/github/hzyang0/minireco
-├─ domain                 请求、响应、Item 和属性模型
-├─ http                   HTTP 参数解析和请求处理
-├─ observability          结构化日志和内存指标
-├─ service/context        单次请求上下文
-├─ service/downstream     下游接口和本地实现
-├─ service/operator       算子接口与配置
-├─ service/operator/graph DAG 模型与并行执行器
-├─ service/operator/impl  六个业务算子和并行召回
-└─ util                   JSON 与延迟模拟工具
-
-src/main/resources/dashboard
-├─ index.html             控制台页面结构
-├─ dashboard.css          页面样式与响应式布局
-└─ dashboard.js           接口调用与结果渲染
-```
+前者是无需数据库的单元测试；后者会启动 Compose 中的 PostgreSQL，并通过真实 HTTP 请求和 SQL 查询验证数据库版本。
 
 ## 文档
 
 - [开始运行](docs/getting-started.md)
 - [架构与请求链路](docs/architecture.md)
+- [数据库与数据边界](docs/database.md)
 - [测试说明](docs/testing.md)
 - [代码导读](docs/code-walkthrough.md)
 
-## 实现边界
+## 当前边界
 
-- 召回、特征和混排服务在进程内模拟；
-- 排序逻辑为可解释规则，不包含机器学习模型；
-- 指标保存在单进程内存中；
-- 当前实现用于演示请求编排与并发控制，不包含持久化和分布式部署。
+- PostgreSQL 中存储可重复运行的示例数据；并没有接入真实用户数据、实时消息流或外部模型服务。
+- `JdbcDataRepository` 是数据边界；将来替换成 RPC、特征库或 MySQL 时，不需要改动 Operator 和 DAG。
+- 混排是可解释的本地规则，不是机器学习模型。
+- 指标当前保存在进程内存中，重启后会清空。
