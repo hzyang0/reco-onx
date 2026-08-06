@@ -29,9 +29,16 @@ public final class ApplicationWiring {
     }
 
     public static RecommendationFacade createRecommendService() {
+        return createRecommendService(createRepository());
+    }
+
+    public static JdbcDataRepository createRepository() {
         JdbcDataRepository repository = new JdbcDataRepository(DatabaseConfig.fromEnvironment());
         repository.verifyConnection();
+        return repository;
+    }
 
+    public static RecommendationFacade createRecommendService(JdbcDataRepository repository) {
         List<RecallService> recallServices = List.of(
                 new JdbcRecallService("goods", 12, repository),
                 new JdbcRecallService("live", 8, repository),

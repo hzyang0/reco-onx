@@ -1,6 +1,10 @@
 const elements = {
     form: document.querySelector("#recommendForm"),
     userId: document.querySelector("#userId"),
+    catalogBadge: document.querySelector("#catalogBadge"),
+    personaName: document.querySelector("#personaName"),
+    personaSummary: document.querySelector("#personaSummary"),
+    personaMeta: document.querySelector("#personaMeta"),
     scene: document.querySelector("#scene"),
     limit: document.querySelector("#limit"),
     limitOutput: document.querySelector("#limitOutput"),
@@ -24,6 +28,7 @@ const elements = {
 };
 
 const sourceOrder = ["goods", "live", "ad"];
+let consoleUsers = [];
 
 async function requestJson(path) {
     const response = await fetch(path, {
@@ -53,6 +58,47 @@ async function loadHealth() {
         elements.healthBadge.innerHTML = '<span class="status-dot" aria-hidden="true"></span>服务异常';
         elements.healthBadge.title = error.message;
     }
+}
+
+async function loadConsoleData() {
+    const response = await requestJson("/api/console-data");
+    consoleUsers = response.users || [];
+    if (!consoleUsers.length) {
+        throw new Error("MySQL 中没有可用的示例用户");
+    }
+
+    elements.userId.replaceChildren();
+    consoleUsers.forEach((user) => {
+        const option = document.createElement("option");
+        option.value = String(user.userId);
+        option.textContent = `${user.userId} · ${user.personaName}（${user.personaSummary}）`;
+        elements.userId.append(option);
+    });
+    elements.catalogBadge.textContent = `MySQL · ${response.userCount} 用户 · ${response.catalogCount} 候选`;
+    renderSelectedUser(true);
+}
+
+function renderSelectedUser(syncScene) {
+    const user = consoleUsers.find((profile) => String(profile.userId) === elements.userId.value);
+    if (!user) {
+        return;
+    }
+    elements.personaName.textContent = `${user.personaName}（${user.personaSummary}）`;
+    elements.personaSummary.textContent = `用户 ${user.userId} · ${user.location}`;
+    elements.personaMeta.replaceChildren(
+        profileTag(`${user.age} 岁`),
+        profileTag(user.newUser ? "新用户 / 冷启动" : "有行为用户"),
+        profileTag(`偏好 ${user.preferredCategory}`)
+    );
+    if (syncScene) {
+        elements.scene.value = user.defaultScene;
+    }
+}
+
+function profileTag(text) {
+    const tag = document.createElement("span");
+    tag.textContent = text;
+    return tag;
 }
 
 function currentPath() {
@@ -294,10 +340,24 @@ elements.form.addEventListener("submit", (event) => {
     runRecommendation();
 });
 elements.limit.addEventListener("input", updateRequestPreview);
-elements.userId.addEventListener("input", updateRequestPreview);
+elements.userId.addEventListener("change", () => {
+    renderSelectedUser(true);
+    updateRequestPreview();
+});
 elements.scene.addEventListener("change", updateRequestPreview);
 elements.refreshMetrics.addEventListener("click", loadMetrics);
 
-updateRequestPreview();
-loadHealth();
-runRecommendation();
+async function initializeConsole() {
+    updateRequestPreview();
+    loadHealth();
+    try {
+        await loadConsoleData();
+        updateRequestPreview();
+        await runRecommendation();
+    } catch (error) {
+        showError(`控制台初始化失败：${error.message}`);
+        elements.catalogBadge.textContent = "MySQL · 数据不可用";
+    }
+}
+
+initializeConsole();

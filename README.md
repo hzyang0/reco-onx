@@ -2,7 +2,7 @@
 
 一个轻量级 Java 推荐请求编排服务。它接收用户和场景参数，使用 DAG 组织参数准备、多路召回、在线特征、混排、过滤和后处理，并返回 JSON 推荐结果。
 
-当前运行时会连接 MySQL 8.4。用户画像、行为、实验分组、候选商品和库存都从数据库读取；这些是仓库内置的示例数据，方便在本地重复运行，不是生产用户数据。
+当前运行时会连接 MySQL 8.4。用户画像、行为、实验分组、候选商品和库存都从数据库读取；这些是仓库内置的示例数据，方便在本地重复运行，不是生产用户数据。数据集包含 5 个特点鲜明的用户画像和 100 条商品、直播、广告候选。
 
 ## 运行链路
 
@@ -25,12 +25,15 @@ docker compose up --build -d
 
 打开内置控制台：<http://localhost:18081/>。
 
+控制台会从 MySQL 加载全部示例用户，可直接切换居家品质党、数码发烧友、美食探索家、潮流新用户和运动健康型用户，并自动选择各自的默认场景。
+
 也可以调用接口：
 
 ```powershell
 Invoke-RestMethod "http://localhost:18081/recommend?userId=123&scene=mall&limit=5"
 Invoke-RestMethod "http://localhost:18081/health"
 Invoke-RestMethod "http://localhost:18081/metrics"
+Invoke-RestMethod "http://localhost:18081/api/console-data"
 ```
 
 停止容器但保留数据库数据：

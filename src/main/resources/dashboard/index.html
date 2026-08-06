@@ -42,6 +42,7 @@
                     <span>Operator</span>
                     <span>DAG</span>
                     <span>Parallel Fan-out</span>
+                    <span id="catalogBadge">MySQL · 读取候选中</span>
                 </div>
             </div>
 
@@ -55,9 +56,19 @@
                 </div>
 
                 <label>
-                    <span>用户 ID</span>
-                    <input id="userId" name="userId" type="number" min="1" value="123" required>
+                    <span>示例用户</span>
+                    <select id="userId" name="userId" required>
+                        <option value="123">正在从 MySQL 读取用户…</option>
+                    </select>
                 </label>
+
+                <div id="userProfile" class="user-profile-card" aria-live="polite">
+                    <div>
+                        <strong id="personaName">读取用户画像中</strong>
+                        <span id="personaSummary">—</span>
+                    </div>
+                    <div id="personaMeta" class="persona-meta"></div>
+                </div>
 
                 <label>
                     <span>推荐场景</span>

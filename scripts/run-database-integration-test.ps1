@@ -51,14 +51,15 @@ try {
     $innodbTableCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM information_schema.tables WHERE table_schema='mini_reco' AND engine='InnoDB'" mini_reco).Trim()
     $businessIndexCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='mini_reco' AND index_name IN ('idx_user_events_user_time','idx_catalog_items_source_score')" mini_reco).Trim()
     $firstTitleUtf8Hex = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT HEX(title) FROM catalog_items WHERE item_id=11001" mini_reco).Trim()
-    if ([int]$profileCount -lt 1 -or [int]$catalogCount -lt 1) {
-        throw "Expected seeded database records, got user_profiles=$profileCount catalog_items=$catalogCount."
+    if ([int]$profileCount -ne 5 -or [int]$catalogCount -ne 100) {
+        throw "Expected 5 user profiles and 100 catalog items, got user_profiles=$profileCount catalog_items=$catalogCount."
     }
     if ([int]$innodbTableCount -ne 5 -or [int]$businessIndexCount -ne 2) {
         throw "Expected 5 InnoDB tables and 2 business indexes, got tables=$innodbTableCount indexes=$businessIndexCount."
     }
 
     $dashboard = Invoke-WebRequest "http://localhost:$port/" -UseBasicParsing -TimeoutSec 5
+    $consoleData = Invoke-RestMethod "http://localhost:$port/api/console-data" -TimeoutSec 5
     $response = Invoke-RestMethod "http://localhost:$port/recommend?userId=123&scene=mall&limit=5" -TimeoutSec 5
     $metrics = Invoke-RestMethod "http://localhost:$port/metrics" -TimeoutSec 5
 
@@ -77,6 +78,13 @@ try {
     if ($dashboard.Content -notmatch 'id="recommendForm"') {
         throw "Dashboard HTML did not contain the recommendation form."
     }
+    if ($consoleData.userCount -ne 5 -or $consoleData.catalogCount -ne 100) {
+        throw "Console data endpoint returned unexpected counts."
+    }
+    $personaNames = @($consoleData.users | ForEach-Object { $_.personaName } | Select-Object -Unique)
+    if ($personaNames.Count -ne 5) {
+        throw "Expected five distinct user personas, got $($personaNames.Count)."
+    }
 
     [pscustomobject]@{
         health = $health.status
@@ -89,6 +97,8 @@ try {
         utf8Title = "OK"
         metricGroups = $metrics.PSObject.Properties.Name.Count
         console = "OK"
+        consoleUsers = $consoleData.userCount
+        catalogCandidates = $consoleData.catalogCount
     }
 } finally {
     if ($null -ne $process -and -not $process.HasExited) {

@@ -11,12 +11,13 @@ docker compose up --build -d
 
 Compose 会先启动 MySQL 8.4，执行 `db/init/001-schema-and-seed.sql` 建表和写入示例数据；数据库健康后才启动应用。MySQL 映射到本机 `3307`，应用映射到 `18081`，避免与已有服务冲突。
 
-浏览器打开 <http://localhost:18081/>，填写 `userId=123`、`scene=mall`、`limit=5`，点击运行推荐。
+浏览器打开 <http://localhost:18081/>，从 5 个差异化用户画像中选择一个。页面会自动填入该用户的默认场景；设置返回数量后点击运行推荐。
 
 ## 2. 接口验证
 
 ```powershell
 Invoke-RestMethod "http://localhost:18081/health"
+Invoke-RestMethod "http://localhost:18081/api/console-data"
 Invoke-RestMethod "http://localhost:18081/recommend?userId=123&scene=mall&limit=5"
 Invoke-RestMethod "http://localhost:18081/metrics"
 ```

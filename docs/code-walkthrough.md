@@ -5,9 +5,10 @@
 ## 第一轮：跑通请求
 
 1. `MiniRecoApplication.java`：HTTP 服务在哪里注册。
-2. `http/RecommendHttpHandler.java`：URL 参数如何变成 `RecommendRequest`。
-3. `service/RecommendService.java`：请求如何创建 Context 并调用执行器。
-4. `domain/RecommendResponse.java`：最终 JSON 的数据来自哪里。
+2. `http/ConsoleDataHttpHandler.java`：控制台如何读取用户画像和候选总数。
+3. `http/RecommendHttpHandler.java`：URL 参数如何变成 `RecommendRequest`。
+4. `service/RecommendService.java`：请求如何创建 Context 并调用执行器。
+5. `domain/RecommendResponse.java`：最终 JSON 的数据来自哪里。
 
 完成这一轮后，应能解释 `/recommend?userId=123&scene=mall&limit=5` 的输入和输出。
 

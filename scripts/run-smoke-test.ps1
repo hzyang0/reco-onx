@@ -47,6 +47,7 @@ try {
 
     $dashboard = Invoke-WebRequest "http://localhost:$port/" -UseBasicParsing -TimeoutSec 5
     $dashboardJs = Invoke-WebRequest "http://localhost:$port/assets/dashboard.js" -UseBasicParsing -TimeoutSec 5
+    $consoleData = Invoke-RestMethod "http://localhost:$port/api/console-data" -TimeoutSec 5
     $response = Invoke-RestMethod `
         "http://localhost:$port/recommend?userId=123&scene=mall&limit=5" `
         -TimeoutSec 5
@@ -64,12 +65,17 @@ try {
     if ($dashboardJs.Content -notmatch "runRecommendation") {
         throw "Dashboard JavaScript did not contain the request flow."
     }
+    if ($consoleData.userCount -ne 5 -or $consoleData.catalogCount -ne 100) {
+        throw "Expected 5 console users and 100 catalog candidates."
+    }
 
     [pscustomobject]@{
         health = $health.status
         dashboard = "OK"
         returnedItems = $response.items.Count
         metricGroups = $metrics.PSObject.Properties.Name.Count
+        consoleUsers = $consoleData.userCount
+        catalogCandidates = $consoleData.catalogCount
     }
 } finally {
     if ($null -ne $process -and -not $process.HasExited) {

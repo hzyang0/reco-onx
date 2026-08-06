@@ -16,6 +16,8 @@ Browser / API client
 
 `MiniRecoApplication` 负责 HTTP；`ApplicationWiring` 负责把实现装配成一张图；业务顺序由 DAG 表达，而不是散落在一个很长的方法里。
 
+控制台启动时先调用 `/api/console-data`，由 `ConsoleDataHttpHandler` 通过 `JdbcDataRepository` 返回 5 个用户画像和候选总数；选择用户后才调用 `/recommend`。因此用户列表和“100 条候选”统计来自 MySQL，不是前端常量。
+
 ## 一条请求如何流动
 
 1. `RecommendHttpHandler` 校验 query 参数并创建 `RecommendRequest`。

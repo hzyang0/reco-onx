@@ -269,6 +269,47 @@ main {
     background: #fbfcfe;
 }
 
+.user-profile-card {
+    margin: 12px 0 18px;
+    padding: 13px 14px;
+    border: 1px solid rgba(47, 111, 237, 0.16);
+    border-radius: 11px;
+    background: var(--blue-soft);
+}
+
+.user-profile-card strong,
+.user-profile-card > div > span {
+    display: block;
+}
+
+.user-profile-card strong {
+    color: var(--navy);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.user-profile-card > div > span {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.persona-meta {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.persona-meta span {
+    padding: 4px 7px;
+    border-radius: 6px;
+    color: var(--blue);
+    background: rgba(255, 255, 255, 0.78);
+    font-size: 9px;
+    font-weight: 750;
+}
+
 .request-panel input:focus,
 .request-panel select:focus {
     border-color: var(--blue);

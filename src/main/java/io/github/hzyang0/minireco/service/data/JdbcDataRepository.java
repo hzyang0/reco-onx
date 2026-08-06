@@ -59,6 +59,47 @@ public final class JdbcDataRepository {
         }
     }
 
+    public List<ConsoleUserProfile> findAllConsoleUsers() {
+        String sql = "SELECT p.user_id, p.age, p.new_user, p.default_category, "
+                + "p.province, p.city, p.persona_name, p.persona_summary, "
+                + "COALESCE(e.scene, 'mall') AS default_scene "
+                + "FROM user_profiles p LEFT JOIN experiment_assignments e ON e.user_id = p.user_id "
+                + "ORDER BY p.user_id";
+        List<ConsoleUserProfile> profiles = new ArrayList<>();
+        try (Connection connection = openConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet result = statement.executeQuery()) {
+            while (result.next()) {
+                profiles.add(new ConsoleUserProfile(
+                        result.getLong("user_id"),
+                        result.getInt("age"),
+                        result.getBoolean("new_user"),
+                        result.getString("default_category"),
+                        result.getString("province"),
+                        result.getString("city"),
+                        result.getString("persona_name"),
+                        result.getString("persona_summary"),
+                        result.getString("default_scene")
+                ));
+            }
+            return List.copyOf(profiles);
+        } catch (SQLException e) {
+            throw databaseFailure("load console user profiles", e);
+        }
+    }
+
+    public long countCatalogItems() {
+        String sql = "SELECT COUNT(*) FROM catalog_items";
+        try (Connection connection = openConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet result = statement.executeQuery()) {
+            result.next();
+            return result.getLong(1);
+        } catch (SQLException e) {
+            throw databaseFailure("count catalog items", e);
+        }
+    }
+
     public List<UserEvent> findEvents(long userId) {
         String sql = "SELECT user_id, category, event_type, event_time "
                 + "FROM user_events WHERE user_id = ? ORDER BY event_time DESC";
@@ -206,6 +247,19 @@ public final class JdbcDataRepository {
     }
 
     public record UserEvent(long userId, String category, String eventType, long eventTime) {
+    }
+
+    public record ConsoleUserProfile(
+            long userId,
+            int age,
+            boolean newUser,
+            String preferredCategory,
+            String province,
+            String city,
+            String personaName,
+            String personaSummary,
+            String defaultScene
+    ) {
     }
 
     public record ExperimentAssignment(long userId, String scene, String recallExp, String rankExp) {
