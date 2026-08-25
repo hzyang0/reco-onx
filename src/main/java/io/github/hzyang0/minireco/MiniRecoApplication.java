@@ -7,6 +7,9 @@ import io.github.hzyang0.minireco.http.PrometheusHttpHandler;
 import io.github.hzyang0.minireco.http.RecommendHttpHandler;
 import io.github.hzyang0.minireco.http.UserEventHttpHandler;
 import io.github.hzyang0.minireco.http.UserProfileHttpHandler;
+import io.github.hzyang0.minireco.http.AgentHttpHandler;
+import io.github.hzyang0.minireco.agent.AgentIntentParser;
+import io.github.hzyang0.minireco.agent.RecommendationAgentService;
 import io.github.hzyang0.minireco.observability.MetricsRegistry;
 import io.github.hzyang0.minireco.service.ApplicationWiring;
 import io.github.hzyang0.minireco.service.RecommendationFacade;
@@ -30,6 +33,9 @@ public class MiniRecoApplication {
         int port = resolvePort(args);
         JdbcDataRepository repository = ApplicationWiring.createRepository();
         RecommendationFacade recommendationFacade = ApplicationWiring.createRecommendService(repository);
+        RecommendationAgentService agentService = new RecommendationAgentService(
+                recommendationFacade, repository, new AgentIntentParser()
+        );
         MetricsRegistry metricsRegistry = MetricsRegistry.global();
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -46,6 +52,8 @@ public class MiniRecoApplication {
         server.createContext("/api/console-data", new ConsoleDataHttpHandler(repository));
         server.createContext("/api/users", new UserProfileHttpHandler(repository));
         server.createContext("/api/events", new UserEventHttpHandler(repository));
+        server.createContext("/api/agent/chat", new AgentHttpHandler(agentService, false));
+        server.createContext("/api/agent/diagnose", new AgentHttpHandler(agentService, true));
         server.createContext("/metrics/prometheus", new PrometheusHttpHandler(metricsRegistry, repository));
         server.createContext("/", new DashboardHttpHandler());
         ExecutorService httpExecutor = Executors.newFixedThreadPool(16);
@@ -65,6 +73,7 @@ public class MiniRecoApplication {
         System.out.printf("Health: http://localhost:%d/health%n", port);
         System.out.printf("Metrics: http://localhost:%d/metrics%n", port);
         System.out.printf("Prometheus: http://localhost:%d/metrics/prometheus%n", port);
+        System.out.printf("Agent: POST http://localhost:%d/api/agent/chat%n", port);
     }
 
     private static int resolvePort(String[] args) {

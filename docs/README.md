@@ -9,6 +9,7 @@
 5. [测试说明](testing.md)：理解单元测试、Mock 和数据库集成验证。
 6. [性能压测](performance.md)：复现串行和并行召回对照。
 7. [生产化边界](production-readiness.md)：区分已实现能力和外部平台能力。
+8. [智能推荐 Agent](agent-guide.md)：理解自然语言意图、工具调用、推荐解释与诊断 Agent。
 
 应用入口是 `MiniRecoApplication`，提供：
 
@@ -20,3 +21,5 @@
 - `GET /metrics/prometheus`：Prometheus 文本指标。
 - `POST /api/users`：创建用户画像。
 - `POST /api/events`：上报曝光、点击、加购和购买行为。
+- `POST /api/agent/chat`：对话式推荐 Agent。
+- `GET /api/agent/diagnose`：推荐诊断 Agent。

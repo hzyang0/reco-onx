@@ -32,6 +32,13 @@ const elements = {
     resultCaption: document.querySelector("#resultCaption"),
     itemsGrid: document.querySelector("#itemsGrid"),
     feedbackStatus: document.querySelector("#feedbackStatus"),
+    agentForm: document.querySelector("#agentForm"),
+    agentMessage: document.querySelector("#agentMessage"),
+    agentSubmit: document.querySelector("#agentSubmit"),
+    runDiagnosis: document.querySelector("#runDiagnosis"),
+    agentAnswer: document.querySelector("#agentAnswer"),
+    agentTools: document.querySelector("#agentTools"),
+    agentItems: document.querySelector("#agentItems"),
     metricsBody: document.querySelector("#metricsBody"),
     refreshMetrics: document.querySelector("#refreshMetrics"),
     rawJson: document.querySelector("#rawJson")
@@ -352,6 +359,80 @@ async function submitFeedback(item, eventType, button) {
     }
 }
 
+async function runAgent(event) {
+    event.preventDefault();
+    elements.agentSubmit.disabled = true;
+    elements.agentSubmit.firstElementChild.textContent = "Agent 思考中…";
+    elements.agentAnswer.textContent = "正在解析意图并调用推荐工具…";
+    elements.agentTools.replaceChildren();
+    elements.agentItems.replaceChildren();
+    try {
+        const body = new URLSearchParams({
+            userId: elements.userId.value,
+            sessionId: `console-${elements.userId.value}`,
+            message: elements.agentMessage.value
+        });
+        const response = await requestJson("/api/agent/chat", {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+            body
+        });
+        renderAgentResponse(response);
+    } catch (error) {
+        elements.agentAnswer.textContent = `Agent 请求失败：${error.message}`;
+    } finally {
+        elements.agentSubmit.disabled = false;
+        elements.agentSubmit.firstElementChild.textContent = "让 Agent 推荐";
+    }
+}
+
+function renderAgentResponse(response) {
+    elements.agentAnswer.textContent = response.answer || "Agent 未生成回答";
+    elements.agentTools.replaceChildren();
+    (response.tools || []).forEach((tool) => {
+        const chip = document.createElement("span");
+        chip.textContent = `Tool · ${tool}`;
+        elements.agentTools.append(chip);
+    });
+    elements.agentItems.replaceChildren();
+    const intent = response.intent || {};
+    (response.items || []).forEach((item) => {
+        const line = document.createElement("article");
+        line.className = "agent-item";
+        const title = document.createElement("strong");
+        title.textContent = item.title;
+        const meta = document.createElement("span");
+        meta.textContent = `${item.source} · ${item.category} · score ${Number(item.score).toFixed(3)}`;
+        const reason = document.createElement("small");
+        const price = item.attrs?.price ? `，价格 ¥${item.attrs.price}` : "";
+        reason.textContent = `符合条件：${intent.preferredCategory || "当前用户画像"}${price}`;
+        line.append(title, meta, reason);
+        elements.agentItems.append(line);
+    });
+}
+
+async function runDiagnosis() {
+    elements.runDiagnosis.disabled = true;
+    elements.runDiagnosis.textContent = "诊断中…";
+    try {
+        const query = new URLSearchParams({userId: elements.userId.value, scene: elements.scene.value});
+        const response = await requestJson(`/api/agent/diagnose?${query}`);
+        elements.agentAnswer.textContent = (response.findings || []).join(" ");
+        elements.agentTools.replaceChildren();
+        (response.tools || []).forEach((tool) => {
+            const chip = document.createElement("span");
+            chip.textContent = `Tool · ${tool}`;
+            elements.agentTools.append(chip);
+        });
+        elements.agentItems.replaceChildren();
+    } catch (error) {
+        elements.agentAnswer.textContent = `诊断失败：${error.message}`;
+    } finally {
+        elements.runDiagnosis.disabled = false;
+        elements.runDiagnosis.textContent = "诊断当前用户推荐";
+    }
+}
+
 async function recordEvents(eventType, itemIds, response) {
     if (!itemIds.length) {
         return null;
@@ -484,6 +565,8 @@ elements.openProfileCreator.addEventListener("click", openProfileCreator);
 elements.closeProfileCreator.addEventListener("click", closeProfileCreator);
 elements.cancelProfileCreator.addEventListener("click", closeProfileCreator);
 elements.profileForm.addEventListener("submit", createProfile);
+elements.agentForm.addEventListener("submit", runAgent);
+elements.runDiagnosis.addEventListener("click", runDiagnosis);
 
 async function initializeConsole() {
     updateRequestPreview();
