@@ -36,6 +36,7 @@ TOOL_DEFINITIONS = [
     {"name": "recommend", "description": "Run Java DAG with parallel goods/live/ad recall", "requiredArguments": ["userId", "scene"]},
     {"name": "filter_candidates", "description": "Apply price/category/source/ad constraints to real candidates", "requiredArguments": []},
     {"name": "generate_grounded_answer", "description": "Generate an answer only from real filtered candidates", "requiredArguments": []},
+    {"name": "answer_general_question", "description": "Answer a non-recommendation question with an LLM or the local knowledge fallback", "requiredArguments": []},
 ]
 
 
@@ -65,6 +66,7 @@ class AgentState(TypedDict, total=False):
     tool_trace: list[dict[str, Any]]
     retry_count: int
     planner: str
+    request_mode: str
 
 
 def db_connection():
@@ -171,8 +173,48 @@ async def llm_intent(message: str, memory: dict[str, str], short: list[dict[str,
     return json.loads(calls[0].function.arguments)
 
 
+def request_mode(message: str) -> Literal["recommendation", "general"]:
+    """Keep recommendation execution explicit; everything else is normal Q&A."""
+    recommendation_words = ["推荐", "商品", "直播", "视频", "广告", "预算", "购买", "加购", "数码", "家居", "美食", "咖啡", "穿搭", "运动", "跑步", "露营", "美妆", "护肤", "我的偏好", "为什么给我"]
+    return "recommendation" if any(word in message.lower() for word in recommendation_words) else "general"
+
+
+def local_general_answer(message: str) -> str:
+    text = message.lower()
+    if any(word in text for word in ["agent", "智能体", "作用", "怎么工作"]):
+        return "这个 Agent 将自然语言需求路由到不同工作流：推荐问题会调用画像、召回、过滤等 Tool；非推荐问题进入常规问答分支。LangGraph 负责记忆、分支和持久化，Java 推荐服务负责真实候选。"
+    if any(word in text for word in ["记忆", "上下文", "恢复"]):
+        return "短期上下文保存在 Redis，并在键丢失时由 MySQL 对话审计恢复；长期记忆只保存明确的品类、预算、去广告等偏好。页面刷新可恢复已完成对话。"
+    if any(word in text for word in ["推荐", "召回", "混排"]):
+        return "推荐问题会复用 Java 后端的多路召回、混排和过滤链路；Agent 负责把自然语言约束变成受控 Tool 调用，并只根据真实候选生成答案。"
+    return "当前未配置外部 LLM，因此本地常规问答仅覆盖本项目、推荐链路、Agent、记忆与使用方式。配置支持聊天的 OpenAI 兼容模型后，可回答更开放的常规问题。"
+
+
+async def llm_general_answer(message: str, short: list[dict[str, str]]) -> str:
+    client = AsyncOpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
+    response = await client.chat.completions.create(
+        model=LLM_MODEL, temperature=0.3,
+        messages=[
+            {"role": "system", "content": "You are a helpful general assistant. Answer the user directly and concisely. Do not claim access to private data, databases, tools, browsing, or real-time facts unless supplied in context."},
+            *[{"role": item["role"], "content": item["content"]} for item in short[-6:]],
+            {"role": "user", "content": message},
+        ])
+    answer = response.choices[0].message.content
+    if not answer:
+        raise RuntimeError("model returned empty general answer")
+    return answer
+
+
 async def load_memory_node(state: AgentState):
     return {"short_memory": short_memory(state["session_id"]), "long_memory": long_memory(state["user_id"]), "tool_trace": [], "retry_count": 0}
+
+
+async def route_request_node(state: AgentState):
+    return {"request_mode": request_mode(state["message"])}
+
+
+def route_request(state: AgentState) -> Literal["recommendation", "general"]:
+    return state["request_mode"]
 
 
 async def plan_node(state: AgentState):
@@ -195,6 +237,20 @@ def clarification_route(state: AgentState) -> Literal["clarify", "profile"]:
 
 async def clarification_node(state: AgentState):
     return {"answer": "请补充品类、预算或内容类型，例如：预算 500 的数码商品，或想看运动直播。"}
+
+
+async def general_answer_node(state: AgentState):
+    if PLANNER_MODE == "openai" and LLM_API_KEY:
+        try:
+            answer, planner = await llm_general_answer(state["message"], state["short_memory"]), "openai-general-chat"
+        except Exception:
+            answer, planner = local_general_answer(state["message"]), "local-general-fallback"
+    else:
+        answer, planner = local_general_answer(state["message"]), "local-general-knowledge"
+    trace = state["tool_trace"] + [{"tool": "answer_general_question", "status": "success", "resultSummary": {"mode": planner}}]
+    # Explicitly clear recommendation-only state that may exist in the in-memory
+    # LangGraph checkpoint of an earlier turn in the same conversation.
+    return {"answer": answer, "planner": planner, "tool_trace": trace, "items": [], "intent": {}, "request_id": None}
 
 
 async def profile_node(state: AgentState):
@@ -248,7 +304,7 @@ async def answer_node(state: AgentState):
 
 async def persist_node(state: AgentState):
     # Do not turn a vague request into a durable preference such as "mall".
-    durable_intent = None if state.get("intent", {}).get("needs_clarification") else state.get("intent")
+    durable_intent = state.get("intent") if state.get("request_mode") == "recommendation" and not state.get("intent", {}).get("needs_clarification") else None
     if durable_intent:
         persist_preferences(state["user_id"], durable_intent)
     persist_memory(state["user_id"], state["session_id"], "assistant", state["answer"])
@@ -256,14 +312,15 @@ async def persist_node(state: AgentState):
 
 
 workflow = StateGraph(AgentState)
-workflow.add_node("load_memory", load_memory_node); workflow.add_node("plan", plan_node); workflow.add_node("clarify", clarification_node)
+workflow.add_node("load_memory", load_memory_node); workflow.add_node("route_request", route_request_node); workflow.add_node("plan", plan_node); workflow.add_node("clarify", clarification_node)
 workflow.add_node("load_profile", profile_node); workflow.add_node("run_recommendation", recommend_node); workflow.add_node("filter_candidates", filter_node)
-workflow.add_node("relax", relax_node); workflow.add_node("build_answer", answer_node); workflow.add_node("persist", persist_node)
-workflow.add_edge(START, "load_memory"); workflow.add_edge("load_memory", "plan")
+workflow.add_node("relax", relax_node); workflow.add_node("build_answer", answer_node); workflow.add_node("answer_general", general_answer_node); workflow.add_node("persist", persist_node)
+workflow.add_edge(START, "load_memory"); workflow.add_edge("load_memory", "route_request")
+workflow.add_conditional_edges("route_request", route_request, {"recommendation": "plan", "general": "answer_general"})
 workflow.add_conditional_edges("plan", clarification_route, {"clarify": "clarify", "profile": "load_profile"})
 workflow.add_edge("load_profile", "run_recommendation"); workflow.add_edge("run_recommendation", "filter_candidates")
 workflow.add_conditional_edges("filter_candidates", filter_route, {"answer": "build_answer", "relax": "relax"}); workflow.add_edge("relax", "run_recommendation")
-workflow.add_edge("clarify", "persist"); workflow.add_edge("build_answer", "persist"); workflow.add_edge("persist", END)
+workflow.add_edge("clarify", "persist"); workflow.add_edge("build_answer", "persist"); workflow.add_edge("answer_general", "persist"); workflow.add_edge("persist", END)
 graph = workflow.compile(checkpointer=MemorySaver())
 
 app = FastAPI(title="Mini Reco LangGraph Agent")
@@ -275,7 +332,7 @@ async def execute(request: ChatRequest) -> dict[str, Any]:
     # dies mid-run, the next login can restore this question and let the user retry.
     persist_memory(request.user_id, session_id, "user", request.message)
     state = await graph.ainvoke({"user_id": request.user_id, "message": request.message, "session_id": session_id}, config={"configurable": {"thread_id": session_id}})
-    return {"agent": "langgraph-reco-agent", "planner": state.get("planner"), "sessionId": session_id, "intent": state.get("intent", {}), "answer": state.get("answer"), "items": state.get("items", []), "tools": TOOL_DEFINITIONS, "toolTrace": state.get("tool_trace", []), "recommendationRequestId": state.get("request_id")}
+    return {"agent": "langgraph-reco-agent", "mode": state.get("request_mode"), "planner": state.get("planner"), "sessionId": session_id, "intent": state.get("intent", {}), "answer": state.get("answer"), "items": state.get("items", []), "tools": TOOL_DEFINITIONS, "toolTrace": state.get("tool_trace", []), "recommendationRequestId": state.get("request_id")}
 
 @app.get("/")
 async def console(): return FileResponse("app/static/index.html")

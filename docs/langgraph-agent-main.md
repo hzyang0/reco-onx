@@ -10,6 +10,8 @@
 
 用户输入：`给我推荐预算 500 元以内的数码商品，不要广告`。
 
+在进入推荐图之前，`route_request` 会做意图路由。命中商品、直播、品类、预算、广告等词的请求进入推荐工作流；其他请求进入 `answer_general_question`。当配置 `AGENT_PLANNER=openai` 和模型密钥时，后者使用独立的聊天调用处理开放问答；未配置模型时则只回答项目内置知识，明确提示能力边界，不伪造通用答案。
+
 ```text
 FastAPI POST /api/chat 或 WebSocket /ws/chat
   -> Redis 读取同 session 最近消息

@@ -20,6 +20,8 @@ Java 推荐后端 :18082（内部工具服务）
 
 LangGraph 状态图为：`load_memory -> plan -> (clarify | load_profile -> recommend -> filter -> (answer | relax -> recommend)) -> persist`。当长期偏好与本轮约束冲突导致无结果时，图会走 `relax` 分支，有选择地放宽旧偏好后再次调用推荐工具。
 
+请求会先经过意图路由：推荐问题进入真实 Tool 链路；其他问题进入 `answer_general_question` 常规问答分支。配置 LLM 后可处理开放问答；未配置模型时，只回答项目、Agent、记忆和推荐机制相关问题，并明确提示能力边界。
+
 ## 实际技术栈
 
 - Agent：Python 3.11、FastAPI、LangGraph、OpenAI Python SDK（可选 Function Calling）、WebSocket
