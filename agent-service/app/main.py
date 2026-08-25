@@ -175,18 +175,23 @@ async def llm_intent(message: str, memory: dict[str, str], short: list[dict[str,
 
 def request_mode(message: str) -> Literal["recommendation", "general"]:
     """Keep recommendation execution explicit; everything else is normal Q&A."""
+    # Explanation questions contain recommendation vocabulary, but they should
+    # explain the system rather than accidentally invoke a fresh recommendation.
+    explanation_words = ["推荐链路", "推荐系统", "推荐机制", "召回", "混排", "在线特征", "dag", "d a g", "架构", "怎么工作", "如何工作"]
+    if any(word in message.lower() for word in explanation_words):
+        return "general"
     recommendation_words = ["推荐", "商品", "直播", "视频", "广告", "预算", "购买", "加购", "数码", "家居", "美食", "咖啡", "穿搭", "运动", "跑步", "露营", "美妆", "护肤", "我的偏好", "为什么给我"]
     return "recommendation" if any(word in message.lower() for word in recommendation_words) else "general"
 
 
 def local_general_answer(message: str) -> str:
     text = message.lower()
-    if any(word in text for word in ["agent", "智能体", "作用", "怎么工作"]):
+    if any(word in text for word in ["agent", "智能体", "作用", "怎么工作", "你是谁"]):
         return "这个 Agent 将自然语言需求路由到不同工作流：推荐问题会调用画像、召回、过滤等 Tool；非推荐问题进入常规问答分支。LangGraph 负责记忆、分支和持久化，Java 推荐服务负责真实候选。"
     if any(word in text for word in ["记忆", "上下文", "恢复"]):
         return "短期上下文保存在 Redis，并在键丢失时由 MySQL 对话审计恢复；长期记忆只保存明确的品类、预算、去广告等偏好。页面刷新可恢复已完成对话。"
-    if any(word in text for word in ["推荐", "召回", "混排"]):
-        return "推荐问题会复用 Java 后端的多路召回、混排和过滤链路；Agent 负责把自然语言约束变成受控 Tool 调用，并只根据真实候选生成答案。"
+    if any(word in text for word in ["推荐", "召回", "混排", "dag", "在线特征"]):
+        return "推荐链路分为：准备用户画像、AB 参数等上下文；goods/live/ad 三路并行召回；补齐价格、库存等在线特征；混排与过滤；最后返回真实候选。Agent 只负责理解问题、选择工具和编排分支，Java 后端负责这条确定性的推荐 DAG。"
     return "当前未配置外部 LLM，因此本地常规问答仅覆盖本项目、推荐链路、Agent、记忆与使用方式。配置支持聊天的 OpenAI 兼容模型后，可回答更开放的常规问题。"
 
 
