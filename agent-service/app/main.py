@@ -77,19 +77,22 @@ def long_memory(user_id: int) -> dict[str, str]:
         return {key: value for key, value in cur.fetchall()}
 
 
-def persist_memory(user_id: int, session_id: str, role: str, text: str, intent: dict[str, Any] | None = None):
+def persist_preferences(user_id: int, intent: dict[str, Any]):
+    with db_connection() as conn, conn.cursor() as cur:
+        pairs = {"last_scene": intent.get("scene"), "preferred_category": intent.get("preferred_category"),
+                 "preferred_source": intent.get("preferred_source"), "max_price": str(intent["max_price"]) if intent.get("max_price") else None,
+                 "exclude_ads": "true" if intent.get("exclude_ads") else None}
+        for memory_key, memory_value in pairs.items():
+            if memory_value:
+                cur.execute("INSERT INTO agent_long_term_memories (user_id,memory_key,memory_value,confidence,source_name) VALUES (%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE memory_value=VALUES(memory_value), confidence=VALUES(confidence), source_name=VALUES(source_name), updated_at=CURRENT_TIMESTAMP", (user_id, memory_key, memory_value, 0.8, "langgraph_agent"))
+
+
+def persist_memory(user_id: int, session_id: str, role: str, text: str):
     key = f"agent:session:{session_id}"
     redis_client.rpush(key, json.dumps({"role": role, "content": text}, ensure_ascii=False))
     redis_client.expire(key, SHORT_TTL)
     with db_connection() as conn, conn.cursor() as cur:
         cur.execute("INSERT INTO agent_conversations (session_id,user_id,role_name,content,expires_at) VALUES (%s,%s,%s,%s,TIMESTAMPADD(SECOND,%s,CURRENT_TIMESTAMP))", (session_id, user_id, role, text, SHORT_TTL))
-        if intent:
-            pairs = {"last_scene": intent.get("scene"), "preferred_category": intent.get("preferred_category"),
-                     "preferred_source": intent.get("preferred_source"), "max_price": str(intent["max_price"]) if intent.get("max_price") else None,
-                     "exclude_ads": "true" if intent.get("exclude_ads") else None}
-            for memory_key, memory_value in pairs.items():
-                if memory_value:
-                    cur.execute("INSERT INTO agent_long_term_memories (user_id,memory_key,memory_value,confidence,source_name) VALUES (%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE memory_value=VALUES(memory_value), confidence=VALUES(confidence), source_name=VALUES(source_name), updated_at=CURRENT_TIMESTAMP", (user_id, memory_key, memory_value, 0.8, "langgraph_agent"))
 
 
 def short_memory(session_id: str) -> list[dict[str, str]]:
@@ -246,7 +249,8 @@ async def answer_node(state: AgentState):
 async def persist_node(state: AgentState):
     # Do not turn a vague request into a durable preference such as "mall".
     durable_intent = None if state.get("intent", {}).get("needs_clarification") else state.get("intent")
-    persist_memory(state["user_id"], state["session_id"], "user", state["message"], durable_intent)
+    if durable_intent:
+        persist_preferences(state["user_id"], durable_intent)
     persist_memory(state["user_id"], state["session_id"], "assistant", state["answer"])
     return {}
 
@@ -267,6 +271,9 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
 async def execute(request: ChatRequest) -> dict[str, Any]:
     session_id = request.session_id or f"web-{request.user_id}"
+    # The incoming message is durable before orchestration starts. If a worker
+    # dies mid-run, the next login can restore this question and let the user retry.
+    persist_memory(request.user_id, session_id, "user", request.message)
     state = await graph.ainvoke({"user_id": request.user_id, "message": request.message, "session_id": session_id}, config={"configurable": {"thread_id": session_id}})
     return {"agent": "langgraph-reco-agent", "planner": state.get("planner"), "sessionId": session_id, "intent": state.get("intent", {}), "answer": state.get("answer"), "items": state.get("items", []), "tools": TOOL_DEFINITIONS, "toolTrace": state.get("tool_trace", []), "recommendationRequestId": state.get("request_id")}
 

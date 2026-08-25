@@ -73,6 +73,8 @@ FastAPI POST /api/chat 或 WebSocket /ws/chat
 1. 浏览器刷新：浏览器保存体验会话信息，重新进入后查询 MySQL `agent_conversations`，恢复历史气泡。
 2. Redis 键失效或重启：`short_memory` 发现 Redis 没有会话键后，从有效期内的 MySQL 审计记录读取最近 8 条消息，写回 Redis，再交给 Planner 使用。
 
+用户消息会在工作流开始前写入审计，因此 Agent 执行中断时，重新登录仍能看到最后一个问题并重新发送。当前 `MemorySaver` 是进程内检查点，未实现“从中断节点自动继续执行”；生产环境应换成 MySQL/Redis/Postgres 等持久化 LangGraph checkpointer，并给每个 Tool 调用增加幂等键、超时、重试和执行状态表。
+
 这里的“短期记忆”是最近会话上下文，不应无限累积；“长期记忆”是用户明确说出的、可覆盖更新的偏好键值，例如数码、预算 500、不要广告。两者混在一起会造成上下文膨胀和偏好污染。
 
 ## 6. LLM 在哪里、为什么可选
