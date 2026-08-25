@@ -1,5 +1,7 @@
 target/
 .idea/
+__pycache__/
+*.py[cod]
 .vscode/
 *.iml
 *.log

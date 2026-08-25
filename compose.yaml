@@ -33,18 +33,50 @@ services:
       REQUEST_TIMEOUT_MS: 500
       RECALL_FANOUT_PARALLELISM: 3
       RECALL_FANOUT_QUEUE_CAPACITY: 64
-      AGENT_MODE: ${AGENT_MODE:-local}
-      AGENT_SHORT_MEMORY_TTL_HOURS: ${AGENT_SHORT_MEMORY_TTL_HOURS:-24}
-      AGENT_MAX_TOOL_STEPS: ${AGENT_MAX_TOOL_STEPS:-4}
-      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
-      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
-      LLM_API_KEY: ${LLM_API_KEY:-}
     ports:
-      - "18081:8080"
+      - "18082:8080"
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
 
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - mini-reco-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  agent:
+    build:
+      context: ./agent-service
+    environment:
+      RECO_BACKEND_URL: http://app:8080
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: mini_reco
+      MYSQL_USER: mini_reco
+      MYSQL_PASSWORD: mini_reco
+      REDIS_URL: redis://redis:6379/0
+      AGENT_PLANNER: ${AGENT_PLANNER:-local}
+      AGENT_SHORT_MEMORY_TTL_SECONDS: ${AGENT_SHORT_MEMORY_TTL_SECONDS:-86400}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    ports:
+      - "18081:8000"
+    depends_on:
+      app:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   mini-reco-mysql-data:
+  mini-reco-redis-data:
