@@ -3,6 +3,7 @@ import json
 import os
 import re
 import time
+import uuid
 from typing import Any, AsyncIterator, Literal, TypedDict
 
 import httpx
@@ -42,6 +43,11 @@ class ChatRequest(BaseModel):
     user_id: int = Field(gt=0)
     message: str = Field(min_length=1, max_length=1000)
     session_id: str | None = Field(default=None, max_length=64)
+
+
+class LoginRequest(BaseModel):
+    user_id: int = Field(gt=0)
+    resume_session_id: str | None = Field(default=None, max_length=64)
 
 
 class AgentState(TypedDict, total=False):
@@ -88,7 +94,51 @@ def persist_memory(user_id: int, session_id: str, role: str, text: str, intent: 
 
 def short_memory(session_id: str) -> list[dict[str, str]]:
     values = redis_client.lrange(f"agent:session:{session_id}", -8, -1)
-    return [json.loads(value) for value in values]
+    if values:
+        return [json.loads(value) for value in values]
+    # Redis is the hot session store. If it was restarted/evicted, restore the
+    # recent context from the durable MySQL audit log and warm Redis again.
+    with db_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT role_name, content FROM agent_conversations WHERE session_id=%s AND expires_at > CURRENT_TIMESTAMP ORDER BY message_id DESC LIMIT 8", (session_id,))
+        restored = [{"role": role, "content": content} for role, content in reversed(cur.fetchall())]
+    if restored:
+        key = f"agent:session:{session_id}"
+        redis_client.rpush(key, *[json.dumps(message, ensure_ascii=False) for message in restored])
+        redis_client.expire(key, SHORT_TTL)
+    return restored
+
+
+def conversation_history(session_id: str, user_id: int) -> list[dict[str, str]]:
+    with db_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT role_name, content, created_at FROM agent_conversations WHERE session_id=%s AND user_id=%s AND expires_at > CURRENT_TIMESTAMP ORDER BY message_id ASC LIMIT 50", (session_id, user_id))
+        return [{"role": role, "content": content, "createdAt": created.isoformat()} for role, content, created in cur.fetchall()]
+
+
+async def available_users() -> list[dict[str, Any]]:
+    async with httpx.AsyncClient(timeout=3) as client:
+        data = (await client.get(f"{BACKEND_URL}/api/console-data")).json()
+    return data.get("users", [])
+
+
+async def issue_demo_session(user_id: int, resume_session_id: str | None = None) -> dict[str, str | int]:
+    user = next((item for item in await available_users() if int(item["userId"]) == user_id), None)
+    if not user:
+        raise HTTPException(404, "user not found")
+    session_id = resume_session_id or f"chat-{uuid.uuid4().hex[:20]}"
+    token = uuid.uuid4().hex
+    payload = {"user_id": user_id, "session_id": session_id, "display_name": user.get("personaName", user.get("nickname", f"用户 {user_id}"))}
+    redis_client.setex(f"agent:auth:{token}", SHORT_TTL, json.dumps(payload, ensure_ascii=False))
+    return {"token": token, "sessionId": session_id, "userId": user_id, "displayName": payload["display_name"]}
+
+
+def resolve_demo_session(token: str | None) -> dict[str, Any]:
+    if not token:
+        raise HTTPException(401, "login required")
+    payload = redis_client.get(f"agent:auth:{token}")
+    if not payload:
+        raise HTTPException(401, "session expired; sign in again")
+    redis_client.expire(f"agent:auth:{token}", SHORT_TTL)
+    return json.loads(payload)
 
 
 def local_intent(message: str, remembered: dict[str, str]) -> dict[str, Any]:
@@ -237,13 +287,44 @@ async def chat(request: ChatRequest): return await execute(request)
 @app.get("/api/memory/{user_id}")
 async def memory(user_id: int): return {"userId": user_id, "longTermMemory": long_memory(user_id)}
 
+@app.get("/api/users")
+async def users():
+    """Demo identity options. A production deployment must replace this with real SSO/OIDC."""
+    return {"users": await available_users()}
+
+@app.post("/api/auth/login")
+async def login(request: LoginRequest):
+    return await issue_demo_session(request.user_id, request.resume_session_id)
+
+@app.get("/api/auth/session")
+async def current_session(token: str):
+    return resolve_demo_session(token)
+
+@app.post("/api/auth/new-conversation")
+async def new_conversation(token: str):
+    current = resolve_demo_session(token)
+    return await issue_demo_session(int(current["user_id"]))
+
+@app.get("/api/conversations/{session_id}")
+async def conversations(session_id: str, token: str):
+    current = resolve_demo_session(token)
+    if session_id != current["session_id"]:
+        raise HTTPException(403, "session does not belong to current login")
+    return {"sessionId": session_id, "messages": conversation_history(session_id, int(current["user_id"]))}
+
 @app.websocket("/ws/chat")
 async def chat_ws(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            payload = await websocket.receive_json(); request = ChatRequest.model_validate(payload)
-            await websocket.send_json({"event": "agent_started", "sessionId": request.session_id or f"web-{request.user_id}"})
+            payload = await websocket.receive_json()
+            try:
+                current = resolve_demo_session(payload.get("token"))
+            except HTTPException as exc:
+                await websocket.send_json({"event": "agent_error", "message": exc.detail})
+                continue
+            request = ChatRequest(user_id=int(current["user_id"]), message=payload.get("message", ""), session_id=current["session_id"])
+            await websocket.send_json({"event": "agent_started", "sessionId": request.session_id})
             result = await execute(request)
             for trace in result["toolTrace"]:
                 await websocket.send_json({"event": "tool_completed", "data": trace})

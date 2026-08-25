@@ -62,6 +62,19 @@ FastAPI POST /api/chat 或 WebSocket /ws/chat
 
 选择 MySQL 并不表示 Redis 不重要：MySQL 是事实与审计层，Redis 是热状态层。相比 SQLite，MySQL 更适合多容器共享、连接并发和现有业务数据共存；相比向量数据库，它更适合本项目的精确结构化条件查询。
 
+### 对话、上下文与中断恢复
+
+页面登录后会生成并保存一个 `sessionId`，后续每一轮 WebSocket 消息都由服务端从登录会话中取出该 ID，而不是相信浏览器传来的 userId。相同 `sessionId` 表示同一段多轮对话；“新建对话”会显式生成新的 ID，避免旧上下文影响新问题。
+
+用户界面不展示原始 JSON：聊天区渲染用户气泡、Agent 的自然语言回答和推荐卡片；右侧单独显示长期偏好与工具执行轨迹；左侧摘要显示最近短期上下文。后端仍返回结构化结果，目的是让前端可稳定渲染、测试与追溯。
+
+中断恢复分两层：
+
+1. 浏览器刷新：浏览器保存体验会话信息，重新进入后查询 MySQL `agent_conversations`，恢复历史气泡。
+2. Redis 键失效或重启：`short_memory` 发现 Redis 没有会话键后，从有效期内的 MySQL 审计记录读取最近 8 条消息，写回 Redis，再交给 Planner 使用。
+
+这里的“短期记忆”是最近会话上下文，不应无限累积；“长期记忆”是用户明确说出的、可覆盖更新的偏好键值，例如数码、预算 500、不要广告。两者混在一起会造成上下文膨胀和偏好污染。
+
 ## 6. LLM 在哪里、为什么可选
 
 没有 `LLM_API_KEY` 时，项目仍是一个完整可运行的 Agent：本地 Planner 产出结构化意图，LangGraph 调 Tools、记忆与分支仍真实执行。配置模型后，OpenAI SDK 通过 Function Calling 限制模型只能调用 `plan_recommendation`，返回 JSON 意图。
