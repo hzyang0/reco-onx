@@ -57,7 +57,7 @@ try {
     $imbalancedSourceCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM (SELECT source FROM catalog_items GROUP BY source HAVING COUNT(*) <> 100) source_counts" mini_reco).Trim()
     $imbalancedCategorySourceCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM (SELECT source,category FROM catalog_items GROUP BY source,category HAVING COUNT(*) <> 20) bucket_counts" mini_reco).Trim()
     $variantSuffixCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(*) FROM catalog_items WHERE source='goods' AND (title LIKE '%轻享款%' OR title LIKE '%进阶款%' OR title LIKE '%旗舰款%')" mini_reco).Trim()
-    $businessTableCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='mini_reco' AND table_name IN ('user_profiles','user_events','experiment_assignments','catalog_items','goods_details','live_details','ad_creatives')" mini_reco).Trim()
+    $businessTableCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='mini_reco' AND table_name IN ('user_profiles','user_events','experiment_assignments','catalog_items','goods_details','live_details','ad_creatives','agent_conversations','agent_long_term_memories')" mini_reco).Trim()
     $businessIndexCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT count(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='mini_reco' AND index_name IN ('idx_user_events_user_time','uk_user_event_request_item_type','idx_catalog_items_source_score')" mini_reco).Trim()
     $goodsDetailCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM goods_details" mini_reco).Trim()
     $liveDetailCount = (docker compose exec -T -e MYSQL_PWD=mini_reco db mysql -umini_reco -Nse "SELECT COUNT(*) FROM live_details" mini_reco).Trim()
@@ -76,8 +76,8 @@ try {
     if ([int]$imbalancedSourceCount -ne 0 -or [int]$imbalancedCategorySourceCount -ne 0) {
         throw "Expected goods/live/ad to have 100 candidates each and every source-category bucket to have 20."
     }
-    if ([int]$businessTableCount -ne 7 -or [int]$businessIndexCount -ne 3) {
-        throw "Expected 7 business tables and 3 business indexes, got tables=$businessTableCount indexes=$businessIndexCount."
+    if ([int]$businessTableCount -ne 9 -or [int]$businessIndexCount -ne 3) {
+        throw "Expected 9 business tables and 3 core recommendation indexes, got tables=$businessTableCount indexes=$businessIndexCount."
     }
     if ([int]$goodsDetailCount -ne 100 -or [int]$liveDetailCount -ne 100 -or [int]$adDetailCount -ne 100 -or [int]$flywayMigrationCount -lt 1) {
         throw "Expected independent 100-row source detail tables managed by Flyway."
@@ -92,10 +92,15 @@ try {
     $coldStartResponse = Invoke-RestMethod "http://localhost:$port/recommend?userId=1000&scene=mall&limit=5" -TimeoutSec 5
     $metrics = Invoke-RestMethod "http://localhost:$port/metrics" -TimeoutSec 5
     $prometheus = Invoke-WebRequest "http://localhost:$port/metrics/prometheus" -UseBasicParsing -TimeoutSec 5
+    $agentChat = Invoke-RestMethod "http://localhost:$port/api/agent/chat" -Method POST -Body @{ userId = 456; sessionId = 'database-integration-agent'; message = '预算 500 的数码商品，不要广告' } -TimeoutSec 5
+    $agentMemory = Invoke-RestMethod "http://localhost:$port/api/agent/memory?userId=456" -TimeoutSec 5
     $liveness = Invoke-RestMethod "http://localhost:$port/live" -TimeoutSec 5
 
     if ($response.items.Count -ne 5) {
         throw "Expected 5 recommended items, got $($response.items.Count)."
+    }
+    if ($agentChat.tools.Count -ne 4 -or $agentChat.toolTrace.Count -ne 4 -or $agentMemory.longTermMemory.max_price -ne '500') {
+        throw "Expected Agent tool calling trace and persisted MySQL long-term memory."
     }
     if ($health.database -ne "UP" -or $health.pool.total -lt 1 -or $liveness.status -ne "UP") {
         throw "Expected database-aware readiness, pool stats, and process liveness to be UP."
@@ -238,6 +243,7 @@ try {
         feedbackLoop = "sports->digital"
         feedbackIdempotency = "OK"
         livenessReadiness = "OK"
+        agentMemory = "OK"
         prometheus = "OK"
     }
 } finally {

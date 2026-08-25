@@ -8,6 +8,7 @@ import io.github.hzyang0.minireco.http.RecommendHttpHandler;
 import io.github.hzyang0.minireco.http.UserEventHttpHandler;
 import io.github.hzyang0.minireco.http.UserProfileHttpHandler;
 import io.github.hzyang0.minireco.http.AgentHttpHandler;
+import io.github.hzyang0.minireco.http.AgentMemoryHttpHandler;
 import io.github.hzyang0.minireco.agent.AgentIntentParser;
 import io.github.hzyang0.minireco.agent.RecommendationAgentService;
 import io.github.hzyang0.minireco.observability.MetricsRegistry;
@@ -54,6 +55,7 @@ public class MiniRecoApplication {
         server.createContext("/api/events", new UserEventHttpHandler(repository));
         server.createContext("/api/agent/chat", new AgentHttpHandler(agentService, false));
         server.createContext("/api/agent/diagnose", new AgentHttpHandler(agentService, true));
+        server.createContext("/api/agent/memory", new AgentMemoryHttpHandler(repository));
         server.createContext("/metrics/prometheus", new PrometheusHttpHandler(metricsRegistry, repository));
         server.createContext("/", new DashboardHttpHandler());
         ExecutorService httpExecutor = Executors.newFixedThreadPool(16);

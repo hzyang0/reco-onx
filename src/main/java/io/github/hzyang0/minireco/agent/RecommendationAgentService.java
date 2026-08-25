@@ -14,55 +14,93 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Coordinates intent parsing, recommendation tools, deterministic filtering and grounded explanation. */
 public final class RecommendationAgentService {
-    private static final int MAX_HISTORY = 8;
+    private static final int SHORT_CONTEXT_LIMIT = 8;
+    private static final List<AgentToolDefinition> TOOL_DEFINITIONS = List.of(
+            new AgentToolDefinition("get_user_profile", "Read the current user profile from MySQL.", List.of("userId")),
+            new AgentToolDefinition("recommend", "Call the real recommendation DAG.", List.of("userId", "scene")),
+            new AgentToolDefinition("filter_candidates", "Filter returned candidates by source, category, price and ad policy.", List.of()),
+            new AgentToolDefinition("generate_grounded_explanation", "Explain only the filtered real candidates.", List.of())
+    );
     private final RecommendationFacade recommendationFacade;
     private final JdbcDataRepository repository;
     private final AgentIntentParser intentParser;
-    private final Map<String, SessionMemory> sessions = new ConcurrentHashMap<>();
+    private final AgentRuntimeConfig config;
+    private final AgentPlanner localPlanner;
+    private final AgentPlanner llmPlanner;
 
     public RecommendationAgentService(
             RecommendationFacade recommendationFacade,
             JdbcDataRepository repository,
             AgentIntentParser intentParser
     ) {
+        this(recommendationFacade, repository, intentParser, AgentRuntimeConfig.fromEnvironment());
+    }
+
+    public RecommendationAgentService(
+            RecommendationFacade recommendationFacade,
+            JdbcDataRepository repository,
+            AgentIntentParser intentParser,
+            AgentRuntimeConfig config
+    ) {
         this.recommendationFacade = recommendationFacade;
         this.repository = repository;
         this.intentParser = intentParser;
+        this.config = config;
+        this.localPlanner = new RuleBasedAgentPlanner();
+        this.llmPlanner = new OpenAiCompatibleAgentPlanner(config);
     }
 
     public Map<String, Object> chat(long userId, String sessionId, String message) {
         ensureUser(userId);
         String resolvedSessionId = sessionId == null || sessionId.isBlank() ? "web-" + userId : sessionId;
-        SessionMemory memory = sessions.computeIfAbsent(resolvedSessionId, ignored -> new SessionMemory());
-        AgentIntent intent = intentParser.parse(userId, message, memory.lastScene);
+        List<JdbcDataRepository.AgentConversation> conversation = repository
+                .findRecentAgentConversation(resolvedSessionId, SHORT_CONTEXT_LIMIT);
+        Map<String, String> longTermMemory = repository.findAgentLongTermMemories(userId);
+        String rememberedScene = longTermMemory.getOrDefault("last_scene", "mall");
+        PlannerSelection selection = plan(userId, message, rememberedScene, longTermMemory, conversation);
+        AgentIntent intent = selection.intent();
         MetricsRegistry.global().increment("agent.chat.request", Map.of("scene", intent.scene()));
-        List<String> tools = new ArrayList<>(List.of("get_user_profile", "recommend"));
+        repository.appendAgentConversation(resolvedSessionId, userId, "user", message, config.shortMemoryTtlHours());
+        List<String> tools = new ArrayList<>();
+        List<Map<String, Object>> toolTrace = new ArrayList<>();
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("agent", "mini-reco-agent");
-        response.put("mode", "local-tool-agent");
+        response.put("mode", selection.planner().name());
         response.put("sessionId", resolvedSessionId);
         response.put("intent", intentToMap(intent));
+        response.put("toolDefinitions", TOOL_DEFINITIONS.stream().map(AgentToolDefinition::toMap).toList());
         if (intent.needsClarification()) {
             MetricsRegistry.global().increment("agent.chat.clarification", Map.of("scene", intent.scene()));
-            remember(memory, message, intent.scene());
             response.put("tools", tools);
             response.put("answer", intent.clarificationQuestion());
             response.put("items", List.of());
+            repository.appendAgentConversation(resolvedSessionId, userId, "assistant", intent.clarificationQuestion(), config.shortMemoryTtlHours());
             return response;
         }
 
+        JdbcDataRepository.UserProfile profile = repository.findUser(userId).orElseThrow();
+        tools.add("get_user_profile");
+        toolTrace.add(trace("get_user_profile", Map.of("userId", userId), Map.of("category", profile.defaultCategory(), "newUser", profile.newUser())));
+        if (tools.size() >= config.maxToolSteps()) throw new IllegalStateException("agent tool step limit exceeded");
         RecommendResponse raw = recommendationFacade.recommend(new RecommendRequest(userId, intent.scene(), 20));
-        tools.add("filter_candidates");
+        tools.add("recommend");
+        toolTrace.add(trace("recommend", Map.of("scene", intent.scene(), "limit", 20),
+                Map.of("requestId", raw.getRequestId(), "candidateCount", raw.getItems().size())));
         List<Item> items = applyConstraints(raw.getItems(), intent);
+        tools.add("filter_candidates");
+        toolTrace.add(trace("filter_candidates", intentToMap(intent), Map.of("returnedCount", items.size())));
         tools.add("generate_grounded_explanation");
-        remember(memory, message, intent.scene());
+        String answer = explain(intent, items);
+        toolTrace.add(trace("generate_grounded_explanation", Map.of("itemCount", items.size()), Map.of("grounded", true)));
+        persistLongTermMemory(userId, intent);
+        repository.appendAgentConversation(resolvedSessionId, userId, "assistant", answer, config.shortMemoryTtlHours());
         response.put("tools", tools);
+        response.put("toolTrace", toolTrace);
         response.put("recommendationRequestId", raw.getRequestId());
-        response.put("answer", explain(intent, items));
+        response.put("answer", answer);
         response.put("items", items.stream().map(this::itemToMap).toList());
         response.put("trace", Map.of("sourceRequestId", raw.getRequestId(), "costMs", raw.getCostMs(),
                 "time", Instant.now().toString()));
@@ -144,14 +182,30 @@ public final class RecommendationAgentService {
         if (repository.findUser(userId).isEmpty()) throw new IllegalArgumentException("user not found: " + userId);
     }
 
-    private void remember(SessionMemory memory, String message, String scene) {
-        memory.lastScene = scene;
-        memory.messages.add(message == null ? "" : message);
-        while (memory.messages.size() > MAX_HISTORY) memory.messages.remove(0);
+    private PlannerSelection plan(long userId, String message, String rememberedScene, Map<String, String> longTermMemory,
+                                  List<JdbcDataRepository.AgentConversation> conversation) {
+        List<String> context = conversation.stream().map(item -> item.role() + ": " + item.content()).toList();
+        if (config.llmEnabled()) {
+            try {
+                return new PlannerSelection(llmPlanner, llmPlanner.plan(userId, message, rememberedScene, longTermMemory, TOOL_DEFINITIONS, context));
+            } catch (IllegalStateException ignored) {
+                MetricsRegistry.global().increment("agent.planner.fallback", Map.of("reason", "llm_unavailable"));
+            }
+        }
+        return new PlannerSelection(localPlanner, localPlanner.plan(userId, message, rememberedScene, longTermMemory, TOOL_DEFINITIONS, context));
     }
 
-    private static final class SessionMemory {
-        private String lastScene = "mall";
-        private final List<String> messages = new ArrayList<>();
+    private void persistLongTermMemory(long userId, AgentIntent intent) {
+        repository.upsertAgentLongTermMemory(userId, "last_scene", intent.scene(), 1.0, "agent_intent");
+        if (intent.preferredCategory() != null) repository.upsertAgentLongTermMemory(userId, "preferred_category", intent.preferredCategory(), 0.8, "agent_intent");
+        if (intent.preferredSource() != null) repository.upsertAgentLongTermMemory(userId, "preferred_source", intent.preferredSource(), 0.8, "agent_intent");
+        if (intent.maxPrice() != null) repository.upsertAgentLongTermMemory(userId, "max_price", String.valueOf(intent.maxPrice()), 0.6, "agent_intent");
+        if (intent.excludeAds()) repository.upsertAgentLongTermMemory(userId, "exclude_ads", "true", 0.8, "agent_intent");
     }
+
+    private Map<String, Object> trace(String tool, Map<String, ?> arguments, Map<String, ?> summary) {
+        return Map.of("tool", tool, "arguments", arguments, "resultSummary", summary, "status", "success");
+    }
+
+    private record PlannerSelection(AgentPlanner planner, AgentIntent intent) { }
 }

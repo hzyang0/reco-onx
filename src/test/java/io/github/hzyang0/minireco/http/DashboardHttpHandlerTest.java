@@ -43,9 +43,10 @@ class DashboardHttpHandlerTest {
         assertTrue(response.body().contains("/assets/dashboard.js"));
         assertTrue(response.body().contains("id=\"userProfile\""));
         assertTrue(response.body().contains("id=\"profileForm\""));
-        assertTrue(response.body().contains("dashboard.js?v=5"));
+        assertTrue(response.body().contains("dashboard.js?v=6"));
         assertTrue(response.body().contains("id=\"feedbackStatus\""));
         assertTrue(response.body().contains("id=\"agentForm\""));
+        assertTrue(response.body().contains("id=\"agentMemory\""));
         assertTrue(response.headers().firstValue("Content-Security-Policy").isPresent());
     }
 
@@ -69,6 +70,7 @@ class DashboardHttpHandlerTest {
         assertTrue(javascript.body().contains("/api/events"));
         assertTrue(javascript.body().contains("/api/agent/chat"));
         assertTrue(javascript.body().contains("runDiagnosis"));
+        assertTrue(javascript.body().contains("/api/agent/memory"));
         assertEquals(200, favicon.statusCode());
         assertEquals("image/svg+xml", favicon.headers().firstValue("Content-Type").orElseThrow());
         assertTrue(favicon.body().contains("<svg"));

@@ -1,6 +1,6 @@
 # Mini Reco
 
-一个轻量级 Java 推荐请求编排服务。它接收用户和场景参数，使用 DAG 组织参数准备、多路召回、在线特征、混排、过滤和后处理，并返回 JSON 推荐结果。项目还内置了对话式推荐 Agent 与推荐诊断 Agent：自然语言只负责理解需求，用户画像、候选召回、过滤和最终结果仍由真实本地服务与 MySQL 数据驱动。
+一个轻量级 Java 推荐请求编排服务。它接收用户和场景参数，使用 DAG 组织参数准备、多路召回、在线特征、混排、过滤和后处理，并返回 JSON 推荐结果。项目还内置完整的对话式推荐 Agent 与推荐诊断 Agent：可选 LLM Function Calling 负责规划，服务端 Tool Calling、MySQL 短期/长期记忆、真实推荐数据和安全降级负责执行。
 
 当前运行时会连接 MySQL 8.4，并通过 Flyway 管理数据库版本、HikariCP 复用连接。用户画像、行为、实验分组、候选内容和在线状态都从数据库读取；这些是仓库内置的示例数据，方便在本地重复运行，不是生产用户数据。数据集包含 5 个特点鲜明的用户画像，以及 goods、live、ad 各 100 条候选，共 300 条。统一候选表只保存公共字段，商品、直播和广告分别拥有独立详情表，三路标题互不复用。
 
@@ -41,6 +41,7 @@ Invoke-RestMethod "http://localhost:18081/api/console-data"
 $body = @{ userId = 456; sessionId = 'demo-456'; message = '给我推荐预算 500 以内的数码商品，不要广告' }
 Invoke-RestMethod "http://localhost:18081/api/agent/chat" -Method Post -Body $body
 Invoke-RestMethod "http://localhost:18081/api/agent/diagnose?userId=456&scene=mall"
+Invoke-RestMethod "http://localhost:18081/api/agent/memory?userId=456"
 ```
 
 创建接口为 `POST /api/users`，行为上报接口为 `POST /api/events`。行为支持曝光、浏览、点击、加购和购买；曝光不改变偏好，显式反馈会退出冷启动并参与后续偏好计算。
@@ -90,6 +91,7 @@ java -jar target/mini-reco-access-layer-0.1.0-SNAPSHOT-all.jar
 ## 当前边界
 
 - MySQL 中存储可重复运行的示例数据；并没有接入真实用户数据、实时消息流或外部模型服务。
+- Agent 默认运行在本地规则规划模式；配置支持 Function Calling 的 OpenAI 兼容模型后可启用 LLM 规划，模型不可用时自动降级。
 - `JdbcDataRepository` 是数据边界；将来替换成 RPC 或特征库时，不需要改动 Operator 和 DAG。
 - 混排是可解释的本地规则，不是机器学习模型。
 - 场景编排采用固定、可测试的来源槽位；生产系统通常会把它替换成可配置策略或模型约束。

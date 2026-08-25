@@ -17,8 +17,10 @@
 | `goods_details` | `price`、`stock`、`sale_status` | 商品价格、库存和售卖状态 |
 | `live_details` | `room_id`、`anchor_id`、`heat`、`live_status` | 直播专属在线状态 |
 | `ad_creatives` | `creative_id`、`campaign_id`、`bid_cents`、`remaining_budget_cents` | 广告创意、出价和预算 |
+| `agent_conversations` | `session_id`、`role_name`、`content`、`expires_at` | 带 TTL 的短期对话记忆 |
+| `agent_long_term_memories` | `memory_key`、`memory_value`、`confidence`、`source_name` | 用户长期偏好和来源审计 |
 
-迁移文件是 `db/migration/V1__schema_and_seed.sql`。应用启动时 Flyway 校验并执行尚未应用的版本，创建 7 张业务表、索引、外键、5 个差异化用户画像和 300 条候选记录；执行历史保存在 `flyway_schema_history`。goods、live、ad 各有 100 条，每一路内部标题唯一，来源之间也不复用标题。
+迁移文件是 `db/migration/V1__schema_and_seed.sql` 与 `V2__add_agent_memory.sql`。应用启动时 Flyway 校验并执行尚未应用的版本，创建 9 张业务表、索引、外键、5 个差异化用户画像和 300 条候选记录；执行历史保存在 `flyway_schema_history`。goods、live、ad 各有 100 条，每一路内部标题唯一，来源之间也不复用标题。
 
 三种来源共享候选主结构，但专属状态位于不同表中。Repository 通过一次批量 JOIN 读取并转换成接入层统一 Item；控制台因此会为商品显示价格/库存，为直播显示直播间/热度，为广告显示创意 ID/广告计划。
 

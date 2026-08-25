@@ -26,12 +26,19 @@
 
 ## 第三轮：理解数据库边界
 
-1. `db/migration/V1__schema_and_seed.sql`：Flyway 如何创建公共候选和三类专属详情表。
+1. `db/migration/V1__schema_and_seed.sql`、`V2__add_agent_memory.sql`：Flyway 如何创建推荐数据与 Agent 短期/长期记忆表。
 2. `service/data/DatabaseConfig.java`：连接池、迁移和超时配置从哪里来。
 3. `service/data/JdbcDataRepository.java`：所有 SQL、事务和 HikariCP 为什么集中在这里。
 4. `service/downstream/impl/Jdbc*.java`：数据库记录如何映射成领域对象。
 
 `JdbcOnlineFeatureService` 值得重点阅读：它先收集全部 itemId，再调用 `findOnlineSnapshots` 做一条批量 SQL，避免每个候选各查一次在线状态。goods、live、ad 从各自详情表读取后转换成同一 Item 主结构。混排会保留三路排序候选，过滤掉不可用候选后，`PostProcessOperator` 再按商城、视频流或买家首页的来源槽位组装结果。
+
+## 第四轮：理解 Agent
+
+1. `agent/AgentRuntimeConfig.java`：本地规划和 OpenAI 兼容 Function Calling 如何切换。
+2. `agent/OpenAiCompatibleAgentPlanner.java`：模型只能产出受约束的推荐计划，不能直接执行工具。
+3. `agent/RecommendationAgentService.java`：允许哪些工具、如何写入短期/长期记忆、如何记录 Tool Trace。
+4. `http/AgentHttpHandler.java`、`http/AgentMemoryHttpHandler.java`：Agent 的输入边界与记忆透明接口。
 
 ## 建议练习
 

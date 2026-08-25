@@ -33,6 +33,12 @@ services:
       REQUEST_TIMEOUT_MS: 500
       RECALL_FANOUT_PARALLELISM: 3
       RECALL_FANOUT_QUEUE_CAPACITY: 64
+      AGENT_MODE: ${AGENT_MODE:-local}
+      AGENT_SHORT_MEMORY_TTL_HOURS: ${AGENT_SHORT_MEMORY_TTL_HOURS:-24}
+      AGENT_MAX_TOOL_STEPS: ${AGENT_MAX_TOOL_STEPS:-4}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_API_KEY: ${LLM_API_KEY:-}
     ports:
       - "18081:8080"
     depends_on:

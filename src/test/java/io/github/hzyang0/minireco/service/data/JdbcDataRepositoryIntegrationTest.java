@@ -56,6 +56,8 @@ class JdbcDataRepositoryIntegrationTest {
         assertEquals(100, count("goods_details"));
         assertEquals(100, count("live_details"));
         assertEquals(100, count("ad_creatives"));
+        assertEquals(0, count("agent_conversations"));
+        assertEquals(0, count("agent_long_term_memories"));
         assertTrue(repository.isHealthy());
     }
 
@@ -75,6 +77,15 @@ class JdbcDataRepositoryIntegrationTest {
         assertEquals(1, inserted);
         assertFalse(feature.isNewUser());
         assertEquals("digital", feature.getPreferredCategory());
+    }
+
+    @Test
+    void agentMemoryShouldPersistConversationAndPreference() {
+        repository.appendAgentConversation("integration-agent", 456L, "user", "预算 500 的数码商品", 24);
+        repository.upsertAgentLongTermMemory(456L, "max_price", "500", 0.8, "test");
+
+        assertEquals(1, repository.findRecentAgentConversation("integration-agent", 8).size());
+        assertEquals("500", repository.findAgentLongTermMemories(456L).get("max_price"));
     }
 
     private static long count(String table) throws Exception {

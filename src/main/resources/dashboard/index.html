@@ -279,7 +279,10 @@
                     <h2>智能推荐与诊断 Agent</h2>
                     <p class="feedback-status">用自然语言表达需求；Agent 解析约束后调用真实用户画像、推荐 DAG 与候选过滤工具。</p>
                 </div>
-                <button id="runDiagnosis" class="secondary-button" type="button">诊断当前用户推荐</button>
+                <div class="agent-actions">
+                    <button id="showAgentMemory" class="secondary-button" type="button">查看长期记忆</button>
+                    <button id="runDiagnosis" class="secondary-button" type="button">诊断当前用户推荐</button>
+                </div>
             </div>
             <form id="agentForm" class="agent-form">
                 <label for="agentMessage">你想找什么？</label>
@@ -293,6 +296,7 @@
             </form>
             <div id="agentAnswer" class="agent-answer" aria-live="polite">等待 Agent 请求…</div>
             <div id="agentTools" class="agent-tools"></div>
+            <div id="agentMemory" class="agent-memory" hidden></div>
             <div id="agentItems" class="agent-items"></div>
         </section>
 
@@ -354,6 +358,6 @@
     </footer>
 </div>
 
-<script src="/assets/dashboard.js?v=5" defer></script>
+<script src="/assets/dashboard.js?v=6" defer></script>
 </body>
 </html>

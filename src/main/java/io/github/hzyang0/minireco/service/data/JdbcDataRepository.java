@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -382,6 +383,85 @@ public final class JdbcDataRepository implements AutoCloseable {
         }
     }
 
+    /** Short-term conversation memory. Expiry keeps the table bounded without a separate cache. */
+    public List<AgentConversation> findRecentAgentConversation(String sessionId, int limit) {
+        String sql = "SELECT role_name, content, created_at FROM agent_conversations "
+                + "WHERE session_id = ? AND expires_at > CURRENT_TIMESTAMP ORDER BY message_id DESC LIMIT ?";
+        List<AgentConversation> result = new ArrayList<>();
+        try (Connection connection = openConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, sessionId);
+            statement.setInt(2, limit);
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    result.add(new AgentConversation(rows.getString("role_name"), rows.getString("content"),
+                            rows.getTimestamp("created_at").toInstant()));
+                }
+            }
+            java.util.Collections.reverse(result);
+            return List.copyOf(result);
+        } catch (SQLException e) {
+            throw databaseFailure("load agent conversation", e);
+        }
+    }
+
+    public void appendAgentConversation(String sessionId, long userId, String role, String content, int ttlHours) {
+        String sql = "INSERT INTO agent_conversations (session_id, user_id, role_name, content, expires_at) "
+                + "VALUES (?, ?, ?, ?, TIMESTAMPADD(HOUR, ?, CURRENT_TIMESTAMP))";
+        try (Connection connection = openConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, sessionId);
+            statement.setLong(2, userId);
+            statement.setString(3, role);
+            statement.setString(4, content);
+            statement.setInt(5, ttlHours);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw databaseFailure("append agent conversation", e);
+        }
+    }
+
+    public Map<String, String> findAgentLongTermMemories(long userId) {
+        String sql = "SELECT memory_key, memory_value FROM agent_long_term_memories WHERE user_id = ? "
+                + "AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)";
+        Map<String, String> result = new LinkedHashMap<>();
+        try (Connection connection = openConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, userId);
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) result.put(rows.getString("memory_key"), rows.getString("memory_value"));
+            }
+            return Map.copyOf(result);
+        } catch (SQLException e) {
+            throw databaseFailure("load agent long-term memories", e);
+        }
+    }
+
+    public void upsertAgentLongTermMemory(long userId, String key, String value, double confidence, String source) {
+        String sql = "INSERT INTO agent_long_term_memories (user_id, memory_key, memory_value, confidence, source_name) "
+                + "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE memory_value = VALUES(memory_value), "
+                + "confidence = VALUES(confidence), source_name = VALUES(source_name), updated_at = CURRENT_TIMESTAMP";
+        try (Connection connection = openConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, userId);
+            statement.setString(2, key);
+            statement.setString(3, value);
+            statement.setDouble(4, confidence);
+            statement.setString(5, source);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw databaseFailure("upsert agent long-term memory", e);
+        }
+    }
+
+    public int deleteExpiredAgentMemories() {
+        try (Connection connection = openConnection();
+             PreparedStatement conversation = connection.prepareStatement(
+                     "DELETE FROM agent_conversations WHERE expires_at <= CURRENT_TIMESTAMP");
+             PreparedStatement longTerm = connection.prepareStatement(
+                     "DELETE FROM agent_long_term_memories WHERE expires_at IS NOT NULL AND expires_at <= CURRENT_TIMESTAMP")) {
+            return conversation.executeUpdate() + longTerm.executeUpdate();
+        } catch (SQLException e) {
+            throw databaseFailure("clean expired agent memories", e);
+        }
+    }
+
     private Integer nullableInt(ResultSet result, String name) throws SQLException {
         int value = result.getInt(name);
         return result.wasNull() ? null : value;
@@ -464,5 +544,8 @@ public final class JdbcDataRepository implements AutoCloseable {
     }
 
     public record PoolStats(int active, int idle, int pending, int total) {
+    }
+
+    public record AgentConversation(String role, String content, Instant createdAt) {
     }
 }

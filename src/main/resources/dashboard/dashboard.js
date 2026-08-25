@@ -36,8 +36,10 @@ const elements = {
     agentMessage: document.querySelector("#agentMessage"),
     agentSubmit: document.querySelector("#agentSubmit"),
     runDiagnosis: document.querySelector("#runDiagnosis"),
+    showAgentMemory: document.querySelector("#showAgentMemory"),
     agentAnswer: document.querySelector("#agentAnswer"),
     agentTools: document.querySelector("#agentTools"),
+    agentMemory: document.querySelector("#agentMemory"),
     agentItems: document.querySelector("#agentItems"),
     metricsBody: document.querySelector("#metricsBody"),
     refreshMetrics: document.querySelector("#refreshMetrics"),
@@ -378,11 +380,38 @@ async function runAgent(event) {
             body
         });
         renderAgentResponse(response);
+        await loadAgentMemory();
     } catch (error) {
         elements.agentAnswer.textContent = `Agent 请求失败：${error.message}`;
     } finally {
         elements.agentSubmit.disabled = false;
         elements.agentSubmit.firstElementChild.textContent = "让 Agent 推荐";
+    }
+}
+
+async function loadAgentMemory() {
+    try {
+        const response = await requestJson(`/api/agent/memory?userId=${encodeURIComponent(elements.userId.value)}`);
+        const entries = Object.entries(response.longTermMemory || {});
+        elements.agentMemory.hidden = false;
+        elements.agentMemory.replaceChildren();
+        const label = document.createElement("strong");
+        label.textContent = "长期记忆（MySQL）";
+        elements.agentMemory.append(label);
+        if (!entries.length) {
+            const empty = document.createElement("span");
+            empty.textContent = "暂无已确认的长期偏好";
+            elements.agentMemory.append(empty);
+            return;
+        }
+        entries.forEach(([key, value]) => {
+            const chip = document.createElement("span");
+            chip.textContent = `${key}=${value}`;
+            elements.agentMemory.append(chip);
+        });
+    } catch (error) {
+        elements.agentMemory.hidden = false;
+        elements.agentMemory.textContent = `记忆读取失败：${error.message}`;
     }
 }
 
@@ -567,6 +596,7 @@ elements.cancelProfileCreator.addEventListener("click", closeProfileCreator);
 elements.profileForm.addEventListener("submit", createProfile);
 elements.agentForm.addEventListener("submit", runAgent);
 elements.runDiagnosis.addEventListener("click", runDiagnosis);
+elements.showAgentMemory.addEventListener("click", loadAgentMemory);
 
 async function initializeConsole() {
     updateRequestPreview();
