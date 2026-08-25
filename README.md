@@ -83,4 +83,4 @@ mvn clean verify
 docker compose exec -T agent python -m compileall app
 ```
 
-详见：[Agent 主架构与学习路线](docs/langgraph-agent-main.md)、[传统推荐工具后端](docs/architecture.md)、[测试说明](docs/testing.md)。
+详见：[Agent 主架构与学习路线](docs/langgraph-agent-main.md)、[新手快速入门与秋招面试手册](docs/interview-quickstart.md)、[传统推荐工具后端](docs/architecture.md)、[测试说明](docs/testing.md)。
