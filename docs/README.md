@@ -10,6 +10,7 @@
 6. [性能压测](performance.md)：复现串行和并行召回对照。
 7. [生产化边界](production-readiness.md)：区分已实现能力和外部平台能力。
 8. [智能推荐 Agent](agent-guide.md)：理解自然语言意图、工具调用、推荐解释与诊断 Agent。
+9. [Agent 新手入门与面试手册](agent-learning-guide.md)：按学习路线理解代码、记忆、Tools、LLM 和高频面试问答。
 
 应用入口是 `MiniRecoApplication`，提供：
 
