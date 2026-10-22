@@ -1,0 +1,736 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-22T02:18:12.202005+00:00",
+  "runId": "e7b11967aca9",
+  "datasetVersion": "synthetic-campus-v1",
+  "scope": "Hand-authored regression cases, not a held-out natural-language benchmark",
+  "cases": 36,
+  "requests": 45,
+  "passed": 45,
+  "requestSuccessRate": 1.0,
+  "returnedItems": 33,
+  "constraintSatisfiedItems": 33,
+  "constraintSatisfactionRate": 1.0,
+  "latencyMs": {
+    "p50": 15.25,
+    "p95": 28.2
+  },
+  "llmCalls": 0,
+  "modelCostUsd": 0,
+  "results": [
+    {
+      "case": "delivered-price",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 27.13,
+      "status": "completed",
+      "returnedItems": 2,
+      "metrics": {
+        "elapsedMs": 12.59,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "budget-equal",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 25.02,
+      "status": "completed",
+      "returnedItems": 1,
+      "metrics": {
+        "elapsedMs": 14.45,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "budget-one-cent-less",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 19.12,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 10.4,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "faster-more-expensive",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 12.42,
+      "status": "completed",
+      "returnedItems": 1,
+      "metrics": {
+        "elapsedMs": 7.54,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "joint-conflict",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 17.42,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 10.92,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "east-coffee",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 16.74,
+      "status": "completed",
+      "returnedItems": 1,
+      "metrics": {
+        "elapsedMs": 12.28,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "south-delivery-fee",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 25.43,
+      "status": "completed",
+      "returnedItems": 1,
+      "metrics": {
+        "elapsedMs": 17.4,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "south-time-conflict",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 30.18,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 17.6,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "east-meal",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 32.16,
+      "status": "completed",
+      "returnedItems": 2,
+      "metrics": {
+        "elapsedMs": 17.68,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "east-meal-too-slow",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 22.8,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 16.54,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "minimum-order",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 12.63,
+      "status": "completed",
+      "returnedItems": 1,
+      "metrics": {
+        "elapsedMs": 7.34,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "quantity-meets-minimum",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 11.55,
+      "status": "completed",
+      "returnedItems": 1,
+      "metrics": {
+        "elapsedMs": 6.77,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "coupon-qualified",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 13.0,
+      "status": "completed",
+      "returnedItems": 2,
+      "metrics": {
+        "elapsedMs": 7.84,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "free-delivery-and-coupon",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 19.74,
+      "status": "completed",
+      "returnedItems": 2,
+      "metrics": {
+        "elapsedMs": 9.31,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "ten-cups",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 15.25,
+      "status": "completed",
+      "returnedItems": 1,
+      "metrics": {
+        "elapsedMs": 10.47,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "unsupported-quantity",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 11.25,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 4.63,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "unknown-zone",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 13.36,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 6.02,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "unsupported-sugar",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 12.45,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 7.35,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "missing-zone",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 7.85,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 3.08,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "missing-category",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 10.2,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 5.07,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "unsupported-category",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 7.31,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 2.87,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "negative-budget",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 7.4,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 2.93,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "zero-budget",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 14.26,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 10.31,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "sub-cent-budget",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 7.36,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 3.04,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "multi-turn-budget",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 16.42,
+      "status": "completed",
+      "returnedItems": 2,
+      "metrics": {
+        "elapsedMs": 11.4,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "multi-turn-budget",
+      "turn": 2,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 12.42,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 7.52,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "multi-turn-budget",
+      "turn": 3,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 28.2,
+      "status": "completed",
+      "returnedItems": 1,
+      "metrics": {
+        "elapsedMs": 19.5,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "multi-turn-category",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 19.04,
+      "status": "completed",
+      "returnedItems": 2,
+      "metrics": {
+        "elapsedMs": 10.54,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "multi-turn-category",
+      "turn": 2,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 16.08,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 8.53,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "multi-turn-category",
+      "turn": 3,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 14.34,
+      "status": "completed",
+      "returnedItems": 2,
+      "metrics": {
+        "elapsedMs": 8.45,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "clear-budget",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 18.68,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 13.35,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "clear-budget",
+      "turn": 2,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 24.95,
+      "status": "completed",
+      "returnedItems": 3,
+      "metrics": {
+        "elapsedMs": 14.48,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "idempotent-replay",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 24.98,
+      "status": "completed",
+      "returnedItems": 2,
+      "metrics": {
+        "elapsedMs": 15.71,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "idempotent-replay",
+      "turn": 2,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 10.9,
+      "status": "completed",
+      "returnedItems": 2,
+      "metrics": {
+        "llmCalls": 0,
+        "elapsedMs": 15.71,
+        "inputTokens": 0,
+        "modelCostUsd": 0,
+        "outputTokens": 0
+      }
+    },
+    {
+      "case": "idempotent-replay",
+      "turn": 3,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 5.19,
+      "status": null,
+      "returnedItems": 0,
+      "metrics": null
+    },
+    {
+      "case": "named-latte-not-cheapest-coffee",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 16.67,
+      "status": "completed",
+      "returnedItems": 1,
+      "metrics": {
+        "elapsedMs": 8.48,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "named-latte-not-cheapest-coffee",
+      "turn": 2,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 12.88,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 7.34,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "named-latte-not-cheapest-coffee",
+      "turn": 3,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 16.3,
+      "status": "completed",
+      "returnedItems": 2,
+      "metrics": {
+        "elapsedMs": 9.74,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "chinese-quantity-price-time",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 16.31,
+      "status": "completed",
+      "returnedItems": 1,
+      "metrics": {
+        "elapsedMs": 8.65,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "clarify-vague-budget",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 11.63,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 3.93,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "clarify-unknown-hours",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 7.52,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 3.73,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "no-latte-in-south",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 21.41,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 11.15,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "sold-out-cold-brew",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 18.24,
+      "status": "no_match",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 11.57,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "clarify-multiple-zones",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 13.6,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 7.65,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    },
+    {
+      "case": "clarify-fractional-quantity",
+      "turn": 1,
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 12.12,
+      "status": "clarification",
+      "returnedItems": 0,
+      "metrics": {
+        "elapsedMs": 6.31,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "modelCostUsd": 0
+      }
+    }
+  ]
+}

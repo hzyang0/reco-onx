@@ -1,0 +1,106 @@
+{
+  "createdAt": "2026-10-21T09:03:40.345472+00:00",
+  "scope": "Graceful process restart after commit; not mid-transaction crash or automatic graph resumption",
+  "request": {
+    "user_id": 789,
+    "session_id": "recovery-16e15cbe565e",
+    "request_id": "restart-proof-001",
+    "message": "北区咖啡预算20元，30分钟内送达"
+  },
+  "beforeTaskId": "5b06a578-b4b0-46b1-8f0c-7a16846765ae",
+  "replayedTaskId": "5b06a578-b4b0-46b1-8f0c-7a16846765ae",
+  "replayed": true,
+  "replayStatus": "completed",
+  "nextTurn": {
+    "agent": "local-life-agent",
+    "mode": "local_life",
+    "planner": "local-constraint-planner",
+    "status": "completed",
+    "taskId": "65217407-7af7-43b4-a5a5-9345fa29e24e",
+    "requestId": "restart-proof-002",
+    "sessionId": "recovery-16e15cbe565e",
+    "intent": {
+      "zone": "north",
+      "category": "coffee",
+      "max_total_cents": 1400,
+      "max_delivery_minutes": null,
+      "quantity": 1
+    },
+    "constraintSources": {
+      "zone": "session",
+      "category": "session",
+      "quantity": "session",
+      "max_total_cents": "current",
+      "max_delivery_minutes": "current"
+    },
+    "answer": "找到1个符合条件的演示方案。最低到手价是「校园便利演示店」的便利店美式，1件共¥14.00，预计25分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+    "items": [
+      {
+        "itemId": 201,
+        "title": "便利店美式",
+        "source": "local_life",
+        "category": "coffee",
+        "merchant": {
+          "id": 2,
+          "name": "校园便利演示店"
+        },
+        "quote": {
+          "quoteId": "b7886f9c-5d36-4d53-ac23-89e4de508f7a",
+          "quantity": 1,
+          "unitPriceCents": 1200,
+          "goodsSubtotalCents": 1200,
+          "packagingFeeCents": 0,
+          "deliveryFeeCents": 200,
+          "discountCents": 0,
+          "totalCents": 1400,
+          "etaMinutes": 25,
+          "zone": "north",
+          "currency": "CNY",
+          "validUntil": "2026-10-21T09:05:40.334406+00:00",
+          "quotedAt": "2026-10-21T09:03:40.334406+00:00",
+          "dataSource": "synthetic-campus-v1"
+        }
+      }
+    ],
+    "suggestions": [],
+    "rejectedConstraints": {
+      "budget": 2
+    },
+    "toolTrace": [
+      {
+        "tool": "search_merchants",
+        "status": "success",
+        "resultSummary": {
+          "count": 3
+        }
+      },
+      {
+        "tool": "search_products",
+        "status": "success",
+        "resultSummary": {
+          "count": 3,
+          "category": "coffee"
+        }
+      },
+      {
+        "tool": "quote_delivery",
+        "status": "success",
+        "resultSummary": {
+          "quoted": 3,
+          "rejected": {}
+        }
+      }
+    ],
+    "dataSource": "synthetic-campus-v1",
+    "memoryUpdated": [],
+    "replayed": false,
+    "metrics": {
+      "elapsedMs": 11.37,
+      "llmCalls": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "modelCostUsd": 0
+    }
+  },
+  "passed": true
+}

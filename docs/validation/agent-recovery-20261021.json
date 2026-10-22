@@ -1,0 +1,18 @@
+{
+  "createdAt": "2026-10-21T02:41:40.145661+00:00",
+  "scope": "Agent process restarted; only this test session Redis cache removed; follow-up restored from MySQL recent messages",
+  "previousEvaluationRun": "3c9afc7cabf4",
+  "passed": true,
+  "status": "no_match",
+  "intent": {
+    "scene": "mall",
+    "preferred_source": "goods",
+    "preferred_category": "digital",
+    "max_price": 0.0,
+    "exclude_ads": true,
+    "limit": 5,
+    "needs_clarification": false
+  },
+  "longTermMemoryUnchanged": true,
+  "automaticTaskResumeTested": false
+}

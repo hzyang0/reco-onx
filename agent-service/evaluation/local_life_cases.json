@@ -1,0 +1,520 @@
+{
+  "version": "synthetic-campus-v1",
+  "userId": 789,
+  "scope": "Hand-authored regression cases, not a held-out natural-language benchmark",
+  "cases": [
+    {
+      "id": "delivered-price",
+      "turns": [
+        {
+          "message": "北区咖啡预算20元，30分钟内送达",
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1400,
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "max_total_cents": 2000,
+            "max_delivery_minutes": 30
+          }
+        }
+      ]
+    },
+    {
+      "id": "budget-equal",
+      "turns": [
+        {
+          "message": "北区咖啡预算14元，不限时间",
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1400,
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "max_total_cents": 1400
+          }
+        }
+      ]
+    },
+    {
+      "id": "budget-one-cent-less",
+      "turns": [
+        {
+          "message": "北区咖啡预算13.99元，不限时间",
+          "status": "no_match",
+          "intent": {
+            "max_total_cents": 1399
+          }
+        }
+      ]
+    },
+    {
+      "id": "faster-more-expensive",
+      "turns": [
+        {
+          "message": "北区咖啡预算20元，20分钟内送达",
+          "status": "completed",
+          "firstId": 101,
+          "firstTotal": 1700,
+          "intent": {
+            "max_total_cents": 2000,
+            "max_delivery_minutes": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "joint-conflict",
+      "turns": [
+        {
+          "message": "北区咖啡预算16元，20分钟内送达",
+          "status": "no_match",
+          "intent": {
+            "max_total_cents": 1600,
+            "max_delivery_minutes": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "east-coffee",
+      "turns": [
+        {
+          "message": "东区咖啡预算20元，20分钟内送达",
+          "status": "completed",
+          "firstId": 401,
+          "firstTotal": 1700,
+          "intent": {
+            "zone": "east",
+            "category": "coffee",
+            "max_total_cents": 2000,
+            "max_delivery_minutes": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "south-delivery-fee",
+      "turns": [
+        {
+          "message": "南区咖啡预算20元，45分钟内送达",
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1600,
+          "intent": {
+            "zone": "south",
+            "max_total_cents": 2000,
+            "max_delivery_minutes": 45
+          }
+        }
+      ]
+    },
+    {
+      "id": "south-time-conflict",
+      "turns": [
+        {
+          "message": "南区咖啡预算20元，30分钟内送达",
+          "status": "no_match",
+          "intent": {
+            "zone": "south",
+            "max_delivery_minutes": 30
+          }
+        }
+      ]
+    },
+    {
+      "id": "east-meal",
+      "turns": [
+        {
+          "message": "东区简餐预算30元，60分钟内送达",
+          "status": "completed",
+          "firstId": 301,
+          "firstTotal": 2600,
+          "intent": {
+            "zone": "east",
+            "category": "meal",
+            "max_total_cents": 3000,
+            "max_delivery_minutes": 60
+          }
+        }
+      ]
+    },
+    {
+      "id": "east-meal-too-slow",
+      "turns": [
+        {
+          "message": "东区简餐预算30元，30分钟内送达",
+          "status": "no_match",
+          "intent": {
+            "max_delivery_minutes": 30
+          }
+        }
+      ]
+    },
+    {
+      "id": "minimum-order",
+      "turns": [
+        {
+          "message": "北区便利食品预算20元，不限时间",
+          "status": "completed",
+          "firstId": 203,
+          "firstTotal": 1850,
+          "intent": {
+            "category": "grocery",
+            "max_total_cents": 2000
+          }
+        }
+      ]
+    },
+    {
+      "id": "quantity-meets-minimum",
+      "turns": [
+        {
+          "message": "北区2件便利食品预算25元，不限时间",
+          "status": "completed",
+          "firstId": 202,
+          "firstTotal": 2100,
+          "intent": {
+            "quantity": 2,
+            "max_total_cents": 2500
+          }
+        }
+      ]
+    },
+    {
+      "id": "coupon-qualified",
+      "turns": [
+        {
+          "message": "北区2杯咖啡预算30元，不限时间",
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 2400,
+          "intent": {
+            "quantity": 2,
+            "max_total_cents": 3000
+          }
+        }
+      ]
+    },
+    {
+      "id": "free-delivery-and-coupon",
+      "turns": [
+        {
+          "message": "北区3杯咖啡预算35元，不限时间",
+          "status": "completed",
+          "firstId": 101,
+          "firstTotal": 3200,
+          "intent": {
+            "quantity": 3,
+            "max_total_cents": 3500
+          }
+        }
+      ]
+    },
+    {
+      "id": "ten-cups",
+      "turns": [
+        {
+          "message": "北区10杯咖啡预算90元，不限时间",
+          "status": "completed",
+          "firstId": 101,
+          "firstTotal": 8700,
+          "intent": {
+            "quantity": 10,
+            "max_total_cents": 9000
+          }
+        }
+      ]
+    },
+    {
+      "id": "unsupported-quantity",
+      "turns": [
+        {
+          "message": "北区11杯咖啡预算100元",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "unknown-zone",
+      "turns": [
+        {
+          "message": "西区咖啡预算20元",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "unsupported-sugar",
+      "turns": [
+        {
+          "message": "北区无糖咖啡预算20元",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "missing-zone",
+      "turns": [
+        {
+          "message": "本地生活咖啡预算20元",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "missing-category",
+      "turns": [
+        {
+          "message": "北区预算20元",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "unsupported-category",
+      "turns": [
+        {
+          "message": "北区手机预算2000元",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "negative-budget",
+      "turns": [
+        {
+          "message": "北区咖啡预算-1元",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "zero-budget",
+      "turns": [
+        {
+          "message": "北区咖啡预算0元，不限时间",
+          "status": "no_match",
+          "intent": {
+            "max_total_cents": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "sub-cent-budget",
+      "turns": [
+        {
+          "message": "北区咖啡预算14.001元",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "multi-turn-budget",
+      "turns": [
+        {
+          "message": "北区咖啡预算20元，30分钟内送达",
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1400
+        },
+        {
+          "message": "预算改为13.99",
+          "status": "no_match",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "max_total_cents": 1399,
+            "max_delivery_minutes": 30
+          }
+        },
+        {
+          "message": "预算改为14",
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1400,
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "max_total_cents": 1400,
+            "max_delivery_minutes": 30
+          }
+        }
+      ]
+    },
+    {
+      "id": "multi-turn-category",
+      "turns": [
+        {
+          "message": "北区咖啡预算20元，30分钟内送达",
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1400
+        },
+        {
+          "message": "换成简餐",
+          "status": "no_match",
+          "intent": {
+            "zone": "north",
+            "category": "meal",
+            "max_total_cents": 2000
+          }
+        },
+        {
+          "message": "预算改为25",
+          "status": "completed",
+          "firstId": 301,
+          "firstTotal": 2300,
+          "intent": {
+            "category": "meal",
+            "max_total_cents": 2500
+          }
+        }
+      ]
+    },
+    {
+      "id": "clear-budget",
+      "turns": [
+        {
+          "message": "北区咖啡预算0元，30分钟内送达",
+          "status": "no_match"
+        },
+        {
+          "message": "取消预算",
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1400,
+          "intent": {
+            "max_total_cents": null,
+            "max_delivery_minutes": 30
+          }
+        }
+      ]
+    },
+    {
+      "id": "idempotent-replay",
+      "turns": [
+        {
+          "message": "北区咖啡预算20元，30分钟内送达",
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1400
+        },
+        {
+          "replayOf": 0,
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1400
+        },
+        {
+          "replayOf": 0,
+          "message": "预算改为30",
+          "httpStatus": 409
+        }
+      ]
+    },
+    {
+      "id": "named-latte-not-cheapest-coffee",
+      "turns": [
+        {
+          "message": "北区拿铁预算30元",
+          "status": "completed",
+          "firstId": 102,
+          "firstTotal": 2300,
+          "intent": {
+            "product_query": "拿铁"
+          }
+        },
+        {
+          "message": "预算改为20元",
+          "status": "no_match",
+          "intent": {
+            "product_query": "拿铁"
+          }
+        },
+        {
+          "message": "不限款式",
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1400
+        }
+      ]
+    },
+    {
+      "id": "chinese-quantity-price-time",
+      "turns": [
+        {
+          "message": "北区两杯拿铁，预算三十五元，二十分钟内送达",
+          "status": "completed",
+          "firstId": 102,
+          "firstTotal": 3500,
+          "intent": {
+            "quantity": 2,
+            "max_total_cents": 3500,
+            "max_delivery_minutes": 20,
+            "product_query": "拿铁"
+          }
+        }
+      ]
+    },
+    {
+      "id": "clarify-vague-budget",
+      "turns": [
+        {
+          "message": "北区咖啡预算便宜点",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "clarify-unknown-hours",
+      "turns": [
+        {
+          "message": "北区咖啡预算20元，1小时内送达",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "no-latte-in-south",
+      "turns": [
+        {
+          "message": "南区拿铁预算50元",
+          "status": "no_match",
+          "intent": {
+            "product_query": "拿铁"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sold-out-cold-brew",
+      "turns": [
+        {
+          "message": "北区冷萃预算50元",
+          "status": "no_match"
+        }
+      ]
+    },
+    {
+      "id": "clarify-multiple-zones",
+      "turns": [
+        {
+          "message": "北区或南区咖啡预算20元",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "clarify-fractional-quantity",
+      "turns": [
+        {
+          "message": "北区1.5杯咖啡预算20元",
+          "status": "clarification"
+        }
+      ]
+    }
+  ]
+}

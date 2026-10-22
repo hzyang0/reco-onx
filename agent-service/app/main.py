@@ -1,10 +1,10 @@
 import asyncio
 import json
 import os
-import re
 import time
 import uuid
-from typing import Any, AsyncIterator, Literal, TypedDict
+from contextvars import ContextVar
+from typing import Any, Literal, TypedDict
 
 import httpx
 import pymysql
@@ -12,24 +12,39 @@ import redis
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from openai import AsyncOpenAI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
+from app.constraints import Intent, durable_updates, explicit_constraints, filter_candidates, local_intent
+from app.local_life import LocalConstraints, is_local_request
+from app import local_life_store
 
 BACKEND_URL = os.getenv("RECO_BACKEND_URL", "http://app:8080")
 MYSQL = dict(host=os.getenv("MYSQL_HOST", "db"), port=int(os.getenv("MYSQL_PORT", "3306")),
              user=os.getenv("MYSQL_USER", "mini_reco"), password=os.getenv("MYSQL_PASSWORD", "mini_reco"),
-             database=os.getenv("MYSQL_DATABASE", "mini_reco"), charset="utf8mb4", autocommit=True)
+             database=os.getenv("MYSQL_DATABASE", "mini_reco"), charset="utf8mb4", autocommit=True,
+             init_command="SET time_zone = '+00:00'",
+             connect_timeout=3, read_timeout=3, write_timeout=3)
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 PLANNER_MODE = os.getenv("AGENT_PLANNER", "local")
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
 SHORT_TTL = int(os.getenv("AGENT_SHORT_MEMORY_TTL_SECONDS", "86400"))
-MAX_RETRY = 1
 
-redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True, socket_timeout=3, socket_connect_timeout=3)
+llm_usage: ContextVar[dict[str, int] | None] = ContextVar("llm_usage", default=None)
+
+
+def record_model_call(response=None):
+    usage = llm_usage.get()
+    if usage is None:
+        return
+    if response is None:
+        usage["llmCalls"] += 1
+    elif response.usage:
+        usage["inputTokens"] += response.usage.prompt_tokens
+        usage["outputTokens"] += response.usage.completion_tokens
 
 TOOL_DEFINITIONS = [
     {"name": "get_user_profile", "description": "Read user profile from Java recommendation backend", "requiredArguments": ["userId"]},
@@ -44,6 +59,9 @@ class ChatRequest(BaseModel):
     user_id: int = Field(gt=0)
     message: str = Field(min_length=1, max_length=1000)
     session_id: str | None = Field(default=None, max_length=64)
+    request_id: str | None = Field(default=None, min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+    workflow: Literal["auto", "local_life", "recommendation"] = "auto"
+    constraints: LocalConstraints | None = None
 
 
 class LoginRequest(BaseModel):
@@ -64,9 +82,10 @@ class AgentState(TypedDict, total=False):
     request_id: str
     answer: str
     tool_trace: list[dict[str, Any]]
-    retry_count: int
+    rejected_constraints: dict[str, int]
     planner: str
     request_mode: str
+    plan_error: str
 
 
 def db_connection():
@@ -79,44 +98,54 @@ def long_memory(user_id: int) -> dict[str, str]:
         return {key: value for key, value in cur.fetchall()}
 
 
-def persist_preferences(user_id: int, intent: dict[str, Any]):
+def persist_preferences(user_id: int, updates: dict[str, Any]):
     with db_connection() as conn, conn.cursor() as cur:
-        pairs = {"last_scene": intent.get("scene"), "preferred_category": intent.get("preferred_category"),
-                 "preferred_source": intent.get("preferred_source"), "max_price": str(intent["max_price"]) if intent.get("max_price") else None,
-                 "exclude_ads": "true" if intent.get("exclude_ads") else None}
-        for memory_key, memory_value in pairs.items():
-            if memory_value:
-                cur.execute("INSERT INTO agent_long_term_memories (user_id,memory_key,memory_value,confidence,source_name) VALUES (%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE memory_value=VALUES(memory_value), confidence=VALUES(confidence), source_name=VALUES(source_name), updated_at=CURRENT_TIMESTAMP", (user_id, memory_key, memory_value, 0.8, "langgraph_agent"))
+        for key, value in updates.items():
+            memory_key = "last_scene" if key == "scene" else key
+            if value is None:
+                cur.execute("DELETE FROM agent_long_term_memories WHERE user_id=%s AND memory_key=%s", (user_id, memory_key))
+            else:
+                memory_value = str(value).lower() if isinstance(value, bool) else str(value)
+                cur.execute("INSERT INTO agent_long_term_memories (user_id,memory_key,memory_value,confidence,source_name) VALUES (%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE memory_value=VALUES(memory_value), confidence=VALUES(confidence), source_name=VALUES(source_name), expires_at=NULL, updated_at=CURRENT_TIMESTAMP", (user_id, memory_key, memory_value, 1.0, "explicit_user_preference"))
 
 
 def persist_memory(user_id: int, session_id: str, role: str, text: str):
-    key = f"agent:session:{session_id}"
-    redis_client.rpush(key, json.dumps({"role": role, "content": text}, ensure_ascii=False))
-    redis_client.expire(key, SHORT_TTL)
+    key = f"agent:session:{user_id}:{session_id}"
+    # Commit the durable record first. Append only to an existing cache: creating
+    # a one-message cache after eviction would hide the older durable context.
     with db_connection() as conn, conn.cursor() as cur:
         cur.execute("INSERT INTO agent_conversations (session_id,user_id,role_name,content,expires_at) VALUES (%s,%s,%s,%s,TIMESTAMPADD(SECOND,%s,CURRENT_TIMESTAMP))", (session_id, user_id, role, text, SHORT_TTL))
+    if redis_client.exists(key):
+        with redis_client.pipeline() as pipe:
+            pipe.rpush(key, json.dumps({"role": role, "content": text}, ensure_ascii=False))
+            pipe.ltrim(key, -8, -1)
+            pipe.expire(key, SHORT_TTL)
+            pipe.execute()
 
 
-def short_memory(session_id: str) -> list[dict[str, str]]:
-    values = redis_client.lrange(f"agent:session:{session_id}", -8, -1)
+def short_memory(user_id: int, session_id: str) -> list[dict[str, str]]:
+    key = f"agent:session:{user_id}:{session_id}"
+    values = redis_client.lrange(key, -8, -1)
     if values:
         return [json.loads(value) for value in values]
     # Redis is the hot session store. If it was restarted/evicted, restore the
     # recent context from the durable MySQL audit log and warm Redis again.
     with db_connection() as conn, conn.cursor() as cur:
-        cur.execute("SELECT role_name, content FROM agent_conversations WHERE session_id=%s AND expires_at > CURRENT_TIMESTAMP ORDER BY message_id DESC LIMIT 8", (session_id,))
+        cur.execute("SELECT role_name, content FROM agent_conversations WHERE session_id=%s AND user_id=%s AND expires_at > CURRENT_TIMESTAMP ORDER BY message_id DESC LIMIT 8", (session_id, user_id))
         restored = [{"role": role, "content": content} for role, content in reversed(cur.fetchall())]
     if restored:
-        key = f"agent:session:{session_id}"
-        redis_client.rpush(key, *[json.dumps(message, ensure_ascii=False) for message in restored])
-        redis_client.expire(key, SHORT_TTL)
+        with redis_client.pipeline() as pipe:
+            pipe.delete(key)
+            pipe.rpush(key, *[json.dumps(message, ensure_ascii=False) for message in restored])
+            pipe.expire(key, SHORT_TTL)
+            pipe.execute()
     return restored
 
 
 def conversation_history(session_id: str, user_id: int) -> list[dict[str, str]]:
     with db_connection() as conn, conn.cursor() as cur:
-        cur.execute("SELECT role_name, content, created_at FROM agent_conversations WHERE session_id=%s AND user_id=%s AND expires_at > CURRENT_TIMESTAMP ORDER BY message_id ASC LIMIT 50", (session_id, user_id))
-        return [{"role": role, "content": content, "createdAt": created.isoformat()} for role, content, created in cur.fetchall()]
+        cur.execute("SELECT role_name, content, created_at FROM agent_conversations WHERE session_id=%s AND user_id=%s AND expires_at > CURRENT_TIMESTAMP ORDER BY message_id DESC LIMIT 50", (session_id, user_id))
+        return [{"role": role, "content": content, "createdAt": created.isoformat()} for role, content, created in reversed(cur.fetchall())]
 
 
 async def available_users() -> list[dict[str, Any]]:
@@ -146,31 +175,18 @@ def resolve_demo_session(token: str | None) -> dict[str, Any]:
     return json.loads(payload)
 
 
-def local_intent(message: str, remembered: dict[str, str]) -> dict[str, Any]:
-    text = message.lower().strip()
-    categories = {"数码": "digital", "电脑": "digital", "耳机": "digital", "家居": "home", "收纳": "home", "美食": "food", "咖啡": "food", "穿搭": "fashion", "运动": "sports", "跑步": "sports", "露营": "sports", "美妆": "beauty", "护肤": "beauty"}
-    category = next((value for key, value in categories.items() if key in text), remembered.get("preferred_category"))
-    scene = "video_feed" if "直播" in text or "视频" in text else "buy_first" if "首页" in text or "综合" in text else "mall"
-    source = "live" if "直播" in text or "视频" in text else "goods" if "商品" in text or "买" in text else remembered.get("preferred_source")
-    budget = re.search(r"(?:预算|不超过|以内|低于)\s*(\d{1,5})", text)
-    max_price = int(budget.group(1)) if budget else int(remembered["max_price"]) if remembered.get("max_price") else None
-    exclude_ads = any(x in text for x in ["不要广告", "无广告", "不看广告"]) or remembered.get("exclude_ads") == "true"
-    vague = text in {"推荐", "推荐一下", "帮我推荐", "给我推荐", "来点推荐"} or len(text) < 3
-    return {"scene": scene, "preferred_source": source, "preferred_category": category, "max_price": max_price,
-            "exclude_ads": exclude_ads, "limit": 5, "needs_clarification": vague}
-
-
 async def llm_intent(message: str, memory: dict[str, str], short: list[dict[str, str]]) -> dict[str, Any]:
-    client = AsyncOpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
-    tool = {"type": "function", "function": {"name": "plan_recommendation", "description": "Plan a safe recommendation request only.", "parameters": {"type": "object", "properties": {
-        "scene": {"type": "string", "enum": ["mall", "video_feed", "buy_first"]}, "preferred_source": {"type": "string", "enum": ["goods", "live", "ad"]},
-        "preferred_category": {"type": "string"}, "max_price": {"type": "integer"}, "exclude_ads": {"type": "boolean"}, "limit": {"type": "integer"}, "needs_clarification": {"type": "boolean"}}, "required": ["scene", "exclude_ads", "limit", "needs_clarification"]}}}
-    response = await client.chat.completions.create(model=LLM_MODEL, temperature=0, tools=[tool], tool_choice={"type": "function", "function": {"name": "plan_recommendation"}}, messages=[
-        {"role": "system", "content": "Only plan. Never invent products, SQL, URLs or actions. Backend tools execute separately."},
-        {"role": "user", "content": json.dumps({"request": message, "long_memory": memory, "short_memory": short}, ensure_ascii=False)}])
+    tool = {"type": "function", "function": {"name": "plan_recommendation", "description": "Extract explicitly stated recommendation constraints. Omit fields not stated; null clears a prior optional constraint.", "parameters": Intent.model_json_schema()}}
+    async with AsyncOpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL, timeout=8, max_retries=0) as client:
+        record_model_call()
+        response = await client.chat.completions.create(model=LLM_MODEL, temperature=0, tools=[tool], tool_choice={"type": "function", "function": {"name": "plan_recommendation"}}, messages=[
+            {"role": "system", "content": "Only extract constraints stated in this request. Omit unstated fields. Never relax a constraint to get results. Never invent products, SQL, URLs or actions. Backend tools execute separately."},
+            {"role": "user", "content": json.dumps({"request": message, "long_memory": memory, "short_memory": short}, ensure_ascii=False)}])
+        record_model_call(response)
     calls = response.choices[0].message.tool_calls or []
-    if not calls: raise RuntimeError("model did not return a function call")
-    return json.loads(calls[0].function.arguments)
+    if len(calls) != 1 or calls[0].function.name != "plan_recommendation":
+        raise ValueError("model did not return the expected function call")
+    return Intent.model_validate_json(calls[0].function.arguments).model_dump(exclude_unset=True)
 
 
 def request_mode(message: str) -> Literal["recommendation", "general"]:
@@ -189,7 +205,7 @@ def local_general_answer(message: str) -> str:
     if any(word in text for word in ["agent", "智能体", "作用", "怎么工作", "你是谁"]):
         return "这个 Agent 将自然语言需求路由到不同工作流：推荐问题会调用画像、召回、过滤等 Tool；非推荐问题进入常规问答分支。LangGraph 负责记忆、分支和持久化，Java 推荐服务负责真实候选。"
     if any(word in text for word in ["记忆", "上下文", "恢复"]):
-        return "短期上下文保存在 Redis，并在键丢失时由 MySQL 对话审计恢复；长期记忆只保存明确的品类、预算、去广告等偏好。页面刷新可恢复已完成对话。"
+        return "短期上下文保存在 Redis，并在键丢失时由 MySQL 对话审计恢复；只有明确说‘记住’或‘以后’才更新长期偏好，本次预算不会自动写入长期记忆。页面刷新可恢复已完成对话。"
     if "召回" in text:
         return "召回是推荐的第一轮粗筛：系统从商品、直播和广告等多个候选库中，快速找出一批可能感兴趣的内容。这里三路召回会并行执行，目的是在较短耗时内扩大候选覆盖；后面的混排和过滤再决定最终展示哪些内容。"
     if "混排" in text:
@@ -204,14 +220,16 @@ def local_general_answer(message: str) -> str:
 
 
 async def llm_general_answer(message: str, short: list[dict[str, str]]) -> str:
-    client = AsyncOpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
-    response = await client.chat.completions.create(
-        model=LLM_MODEL, temperature=0.3,
-        messages=[
-            {"role": "system", "content": "You are a helpful general assistant. Answer the user directly and concisely. Do not claim access to private data, databases, tools, browsing, or real-time facts unless supplied in context."},
-            *[{"role": item["role"], "content": item["content"]} for item in short[-6:]],
-            {"role": "user", "content": message},
-        ])
+    async with AsyncOpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL, timeout=8, max_retries=0) as client:
+        record_model_call()
+        response = await client.chat.completions.create(
+            model=LLM_MODEL, temperature=0.3,
+            messages=[
+                {"role": "system", "content": "You are a helpful general assistant. Answer the user directly and concisely. Do not claim access to private data, databases, tools, browsing, or real-time facts unless supplied in context."},
+                *[{"role": item["role"], "content": item["content"]} for item in short[-6:]],
+                {"role": "user", "content": message},
+            ])
+        record_model_call(response)
     answer = response.choices[0].message.content
     if not answer:
         raise RuntimeError("model returned empty general answer")
@@ -219,11 +237,22 @@ async def llm_general_answer(message: str, short: list[dict[str, str]]) -> str:
 
 
 async def load_memory_node(state: AgentState):
-    return {"short_memory": short_memory(state["session_id"]), "long_memory": long_memory(state["user_id"]), "tool_trace": [], "retry_count": 0}
+    history = await asyncio.to_thread(short_memory, state["user_id"], state["session_id"])
+    # execute() already durably appended this request; do not send it twice to the model.
+    if history and history[-1] == {"role": "user", "content": state["message"]}:
+        history = history[:-1]
+    return {"short_memory": history, "long_memory": await asyncio.to_thread(long_memory, state["user_id"]),
+            "tool_trace": [], "items": [], "raw_items": [], "intent": {}, "request_id": None,
+            "rejected_constraints": {}}
 
 
 async def route_request_node(state: AgentState):
-    return {"request_mode": request_mode(state["message"])}
+    mode = request_mode(state["message"])
+    if mode == "general" and explicit_constraints(state["message"]) and any(
+        turn["role"] == "user" and request_mode(turn["content"]) == "recommendation" for turn in state["short_memory"]
+    ):
+        mode = "recommendation"
+    return {"request_mode": mode}
 
 
 def route_request(state: AgentState) -> Literal["recommendation", "general"]:
@@ -231,16 +260,25 @@ def route_request(state: AgentState) -> Literal["recommendation", "general"]:
 
 
 async def plan_node(state: AgentState):
+    history = [turn for turn in state["short_memory"]
+               if turn["role"] == "user" and request_mode(turn["content"]) == "recommendation"]
+    try:
+        baseline = local_intent(state["message"], state["long_memory"], history)
+    except ValidationError:
+        return {"intent": Intent(needs_clarification=True).model_dump(), "planner": "constraint-validation",
+                "plan_error": "预算须为 0～1000000 的有效金额，请修正条件后再推荐。"}
     if PLANNER_MODE == "openai" and LLM_API_KEY:
         try:
-            intent = await llm_intent(state["message"], state["long_memory"], state["short_memory"])
+            patch = await llm_intent(state["message"], state["long_memory"], state["short_memory"])
+            # Validate even if a different model adapter is injected. Explicit
+            # deterministic constraints cannot be weakened by model output.
+            patch = Intent(**patch).model_dump(exclude_unset=True)
+            intent = Intent(**(baseline | patch | explicit_constraints(state["message"]))).model_dump()
             planner = "openai-function-calling"
         except Exception:
-            intent, planner = local_intent(state["message"], state["long_memory"]), "local-fallback"
+            intent, planner = baseline, "local-fallback"
     else:
-        intent, planner = local_intent(state["message"], state["long_memory"]), "local-rule-planner"
-    intent["scene"] = intent["scene"] if intent.get("scene") in {"mall", "video_feed", "buy_first"} else "mall"
-    intent["limit"] = min(max(int(intent.get("limit", 5)), 1), 10)
+        intent, planner = baseline, "local-rule-planner"
     return {"intent": intent, "planner": planner}
 
 
@@ -249,7 +287,7 @@ def clarification_route(state: AgentState) -> Literal["clarify", "profile"]:
 
 
 async def clarification_node(state: AgentState):
-    return {"answer": "请补充品类、预算或内容类型，例如：预算 500 的数码商品，或想看运动直播。"}
+    return {"answer": state.get("plan_error") or "请补充品类、预算或内容类型，例如：预算 500 的数码商品，或想看运动直播。", "items": [], "request_id": None}
 
 
 async def general_answer_node(state: AgentState):
@@ -261,14 +299,15 @@ async def general_answer_node(state: AgentState):
     else:
         answer, planner = local_general_answer(state["message"]), "local-general-knowledge"
     trace = state["tool_trace"] + [{"tool": "answer_general_question", "status": "success", "resultSummary": {"mode": planner}}]
-    # Explicitly clear recommendation-only state that may exist in the in-memory
-    # LangGraph checkpoint of an earlier turn in the same conversation.
+    # General answers never carry recommendation-only output.
     return {"answer": answer, "planner": planner, "tool_trace": trace, "items": [], "intent": {}, "request_id": None}
 
 
 async def profile_node(state: AgentState):
     async with httpx.AsyncClient(timeout=3) as client:
-        data = (await client.get(f"{BACKEND_URL}/api/console-data")).json()
+        response = await client.get(f"{BACKEND_URL}/api/console-data")
+        response.raise_for_status()
+        data = response.json()
     profile = next((user for user in data.get("users", []) if int(user["userId"]) == state["user_id"]), None)
     if not profile: raise HTTPException(404, "user not found")
     trace = state["tool_trace"] + [{"tool": "get_user_profile", "status": "success", "resultSummary": {"preferredCategory": profile["preferredCategory"]}}]
@@ -285,30 +324,17 @@ async def recommend_node(state: AgentState):
 
 
 async def filter_node(state: AgentState):
-    intent = state["intent"]
-    def valid(item):
-        if intent.get("exclude_ads") and item["source"] == "ad": return False
-        if intent.get("preferred_source") and item["source"] != intent["preferred_source"]: return False
-        if intent.get("preferred_category") and item["category"] != intent["preferred_category"]: return False
-        price = int(item.get("attrs", {}).get("price", 0))
-        return not (intent.get("max_price") and item["source"] == "goods" and price > int(intent["max_price"]))
-    items = [item for item in state["raw_items"] if valid(item)][:intent["limit"]]
-    trace = state["tool_trace"] + [{"tool": "filter_candidates", "status": "success", "resultSummary": {"returnedCount": len(items)}}]
-    return {"items": items, "tool_trace": trace}
-
-
-def filter_route(state: AgentState) -> Literal["answer", "relax"]:
-    return "answer" if state["items"] or state["retry_count"] >= MAX_RETRY else "relax"
-
-
-async def relax_node(state: AgentState):
-    relaxed = dict(state["intent"]); relaxed["preferred_source"] = None
-    return {"intent": relaxed, "retry_count": state["retry_count"] + 1}
+    items, rejected = filter_candidates(state["raw_items"], state["intent"])
+    trace = state["tool_trace"] + [{"tool": "filter_candidates", "status": "success", "resultSummary": {"returnedCount": len(items), "rejectedConstraints": rejected}}]
+    return {"items": items, "tool_trace": trace, "rejected_constraints": rejected}
 
 
 async def answer_node(state: AgentState):
     items = state.get("items", [])
-    if not items: answer = "真实推荐链路没有返回满足当前条件的候选；可以放宽预算、换一个品类或允许其他内容类型。"
+    if not items:
+        names = {"max_price": "预算", "unknown_price": "价格未知", "preferred_source": "内容类型", "preferred_category": "品类", "exclude_ads": "去广告"}
+        conflicts = "、".join(names[key] for key in state.get("rejected_constraints", {})) or "候选不足"
+        answer = f"本次召回候选未满足条件（{conflicts}），不代表全库无货。已保留你的约束；你愿意调整预算、品类或内容类型中的哪一项？"
     else:
         top = items[0]; answer = f"已通过真实用户画像、推荐 DAG 与候选过滤得到 {len(items)} 条结果。首选是「{top['title']}」，来源为 {top['source']}，品类为 {top['category']}。"
     trace = state["tool_trace"] + [{"tool": "generate_grounded_answer", "status": "success", "resultSummary": {"grounded": True}}]
@@ -316,36 +342,84 @@ async def answer_node(state: AgentState):
 
 
 async def persist_node(state: AgentState):
-    # Do not turn a vague request into a durable preference such as "mall".
-    durable_intent = state.get("intent") if state.get("request_mode") == "recommendation" and not state.get("intent", {}).get("needs_clarification") else None
-    if durable_intent:
-        persist_preferences(state["user_id"], durable_intent)
-    persist_memory(state["user_id"], state["session_id"], "assistant", state["answer"])
+    updates = durable_updates(state["message"]) if state.get("request_mode") == "recommendation" and not state.get("intent", {}).get("needs_clarification") else {}
+    if updates:
+        await asyncio.to_thread(persist_preferences, state["user_id"], updates)
+    await asyncio.to_thread(persist_memory, state["user_id"], state["session_id"], "assistant", state["answer"])
     return {}
 
 
 workflow = StateGraph(AgentState)
 workflow.add_node("load_memory", load_memory_node); workflow.add_node("route_request", route_request_node); workflow.add_node("plan", plan_node); workflow.add_node("clarify", clarification_node)
 workflow.add_node("load_profile", profile_node); workflow.add_node("run_recommendation", recommend_node); workflow.add_node("filter_candidates", filter_node)
-workflow.add_node("relax", relax_node); workflow.add_node("build_answer", answer_node); workflow.add_node("answer_general", general_answer_node); workflow.add_node("persist", persist_node)
+workflow.add_node("build_answer", answer_node); workflow.add_node("answer_general", general_answer_node); workflow.add_node("persist", persist_node)
 workflow.add_edge(START, "load_memory"); workflow.add_edge("load_memory", "route_request")
 workflow.add_conditional_edges("route_request", route_request, {"recommendation": "plan", "general": "answer_general"})
 workflow.add_conditional_edges("plan", clarification_route, {"clarify": "clarify", "profile": "load_profile"})
 workflow.add_edge("load_profile", "run_recommendation"); workflow.add_edge("run_recommendation", "filter_candidates")
-workflow.add_conditional_edges("filter_candidates", filter_route, {"answer": "build_answer", "relax": "relax"}); workflow.add_edge("relax", "run_recommendation")
+workflow.add_edge("filter_candidates", "build_answer")
 workflow.add_edge("clarify", "persist"); workflow.add_edge("build_answer", "persist"); workflow.add_edge("answer_general", "persist"); workflow.add_edge("persist", END)
-graph = workflow.compile(checkpointer=MemorySaver())
+# Each invocation starts fresh. Conversation recovery uses user-scoped durable
+# messages; an in-process checkpoint must not leak an earlier turn's results.
+graph = workflow.compile()
 
 app = FastAPI(title="Mini Reco LangGraph Agent")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+def local_session_active(user_id, session_id):
+    return local_life_store.session_active(db_connection, user_id, session_id)
+
+
 async def execute(request: ChatRequest) -> dict[str, Any]:
     session_id = request.session_id or f"web-{request.user_id}"
-    # The incoming message is durable before orchestration starts. If a worker
-    # dies mid-run, the next login can restore this question and let the user retry.
-    persist_memory(request.user_id, session_id, "user", request.message)
-    state = await graph.ainvoke({"user_id": request.user_id, "message": request.message, "session_id": session_id}, config={"configurable": {"thread_id": session_id}})
-    return {"agent": "langgraph-reco-agent", "mode": state.get("request_mode"), "planner": state.get("planner"), "sessionId": session_id, "intent": state.get("intent", {}), "answer": state.get("answer"), "items": state.get("items", []), "tools": TOOL_DEFINITIONS, "toolTrace": state.get("tool_trace", []), "recommendationRequestId": state.get("request_id")}
+    try:
+        use_local = request.workflow == "local_life" or (request.workflow == "auto" and (
+            request.constraints is not None or is_local_request(request.message)
+            or ((request_mode(request.message) != "general" or any(word in request.message for word in ["杯", "份", "件", "改为", "改成", "不限时间", "时间不限", "取消送达限制"]))
+                and await asyncio.to_thread(local_session_active, request.user_id, session_id))))
+        if not use_local:
+            return await execute_legacy(request)
+        result = await asyncio.to_thread(local_life_store.execute_local, db_connection, request.user_id, session_id,
+                                         request.request_id or uuid.uuid4().hex, request.message,
+                                         request.constraints.model_dump(exclude_unset=True) if request.constraints is not None else None, SHORT_TTL)
+        try:
+            await asyncio.to_thread(redis_client.delete, f"agent:session:{request.user_id}:{session_id}")
+        except redis.RedisError:
+            pass  # The local workflow recovers from its MySQL snapshot, not Redis.
+        return result
+    except (pymysql.MySQLError, local_life_store.CatalogLimitError):
+        return {"agent": "local-life-agent", "mode": "local_life", "status": "tool_error", "sessionId": session_id,
+                "answer": "本次任务因数据服务不可用或查询范围超出上限而结束，未返回方案。请保留同一请求标识重试；已提交的结果可重放。",
+                "items": [], "toolTrace": [{"tool": "local_data_tools", "status": "error"}]}
+
+
+async def execute_legacy(request: ChatRequest) -> dict[str, Any]:
+    session_id = request.session_id or f"web-{request.user_id}"
+    began = time.perf_counter()
+    usage = {"llmCalls": 0, "inputTokens": 0, "outputTokens": 0}
+    usage_token = llm_usage.set(usage)
+    try:
+        # The incoming message is durable before orchestration starts. Recovery
+        # restores the conversation, not an automatically resumed graph task.
+        await asyncio.to_thread(persist_memory, request.user_id, session_id, "user", request.message)
+        state = await graph.ainvoke({"user_id": request.user_id, "message": request.message, "session_id": session_id})
+        status = "clarification" if state.get("intent", {}).get("needs_clarification") else (
+            "no_match" if state.get("request_mode") == "recommendation" and not state.get("items") else "completed")
+        result = {"agent": "langgraph-reco-agent", "status": status, "mode": state.get("request_mode"), "planner": state.get("planner"), "sessionId": session_id, "intent": state.get("intent", {}), "answer": state.get("answer"), "items": state.get("items", []), "tools": TOOL_DEFINITIONS, "toolTrace": state.get("tool_trace", []), "recommendationRequestId": state.get("request_id")}
+    except (httpx.HTTPError, pymysql.MySQLError, redis.RedisError, TimeoutError):
+        answer = "本次任务因工具或存储暂时不可用而结束，未返回推荐。请稍后重试；已保存的对话可恢复，但不会自动续跑中断节点。"
+        try:
+            await asyncio.to_thread(persist_memory, request.user_id, session_id, "assistant", answer)
+        except (pymysql.MySQLError, redis.RedisError):
+            pass
+        result = {"agent": "langgraph-reco-agent", "status": "tool_error", "sessionId": session_id,
+                  "answer": answer, "items": [], "intent": {}, "recommendationRequestId": None,
+                  "toolTrace": [{"tool": "workflow_dependency", "status": "error"}]}
+    finally:
+        llm_usage.reset(usage_token)
+    result["metrics"] = {"elapsedMs": round((time.perf_counter() - began) * 1000, 2), **usage,
+                         "modelCostUsd": 0 if usage["llmCalls"] == 0 else None}
+    return result
 
 @app.get("/")
 async def console(): return FileResponse("app/static/index.html")
@@ -360,6 +434,15 @@ async def health():
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest): return await execute(request)
+
+@app.post("/api/local-life/recommend")
+async def local_recommend(request: ChatRequest):
+    return await execute(request.model_copy(update={"workflow": "local_life"}))
+
+@app.get("/api/local-life/tasks/{task_id}")
+async def local_task(task_id: str, token: str):
+    current = resolve_demo_session(token)
+    return await asyncio.to_thread(local_life_store.read_task, db_connection, int(current["user_id"]), task_id)
 
 @app.get("/api/memory/{user_id}")
 async def memory(user_id: int): return {"userId": user_id, "longTermMemory": long_memory(user_id)}
@@ -400,9 +483,17 @@ async def chat_ws(websocket: WebSocket):
             except HTTPException as exc:
                 await websocket.send_json({"event": "agent_error", "message": exc.detail})
                 continue
-            request = ChatRequest(user_id=int(current["user_id"]), message=payload.get("message", ""), session_id=current["session_id"])
-            await websocket.send_json({"event": "agent_started", "sessionId": request.session_id})
-            result = await execute(request)
+            try:
+                request = ChatRequest(user_id=int(current["user_id"]), message=payload.get("message", ""), session_id=current["session_id"],
+                                      workflow=payload.get("workflow", "auto"), request_id=payload.get("request_id"))
+                await websocket.send_json({"event": "agent_started", "sessionId": request.session_id})
+                result = await execute(request)
+            except ValidationError:
+                await websocket.send_json({"event": "agent_error", "message": "请求格式无效，请检查消息和请求标识。"})
+                continue
+            except HTTPException as exc:
+                await websocket.send_json({"event": "agent_error", "message": exc.detail})
+                continue
             for trace in result["toolTrace"]:
                 await websocket.send_json({"event": "tool_completed", "data": trace})
             await websocket.send_json({"event": "agent_completed", "data": result})

@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "runId": "3c9afc7cabf4",
+  "createdAt": "2026-10-21T02:41:07.717237+00:00",
+  "scope": "6 live demo regression requests; seeded catalog; not a held-out model evaluation or load test",
+  "total": 6,
+  "passed": 6,
+  "taskSuccessRate": 1.0,
+  "returnedItems": 20,
+  "constraintSatisfiedItems": 20,
+  "constraintSatisfactionRate": 1.0,
+  "latencyMs": {
+    "p50": 87.00999999999999,
+    "p95": 185.86
+  },
+  "llmCalls": 0,
+  "modelCostUsd": 0,
+  "results": [
+    {
+      "case": "home-goods",
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 185.86,
+      "status": "completed",
+      "planner": "local-rule-planner",
+      "returnedItems": 5
+    },
+    {
+      "case": "tighten-budget",
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 88.25,
+      "status": "no_match",
+      "planner": "local-rule-planner",
+      "returnedItems": 0
+    },
+    {
+      "case": "explicitly-clear-budget",
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 82.97,
+      "status": "completed",
+      "planner": "local-rule-planner",
+      "returnedItems": 5
+    },
+    {
+      "case": "digital-budget",
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 89.83,
+      "status": "completed",
+      "planner": "local-rule-planner",
+      "returnedItems": 5
+    },
+    {
+      "case": "live-source",
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 85.77,
+      "status": "completed",
+      "planner": "local-rule-planner",
+      "returnedItems": 5
+    },
+    {
+      "case": "general-after-recommendation",
+      "passed": true,
+      "errors": [],
+      "elapsedMs": 20.53,
+      "status": "completed",
+      "planner": "local-general-knowledge",
+      "returnedItems": 0
+    }
+  ]
+}
