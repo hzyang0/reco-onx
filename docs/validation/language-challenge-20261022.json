@@ -1,0 +1,3837 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-22T02:29:44.109494+00:00",
+  "runId": "2c4fb91f34a8",
+  "sourceRevision": "5f3e41aa6a4188527fdc59d25e52ae5e4cdc4d31",
+  "datasetVersion": "language-challenge-v1",
+  "datasetSha256": "cf21488ac642d32be62a67ea86e29f3edc611cde6fab6001966dca8610a7f0ec",
+  "scope": "Independent agent-authored challenge set; not real-user validation",
+  "summary": {
+    "cases": 24,
+    "successfulCases": 3,
+    "taskSuccessRate": 0.125,
+    "requests": 33,
+    "passedRequests": 4,
+    "requestSuccessRate": 0.12121212121212122,
+    "returnedItems": 42,
+    "validItemsAgainstLabels": 21,
+    "constraintSatisfactionRateAgainstLabels": 0.5,
+    "clarificationCases": 6,
+    "correctClarifications": 2,
+    "latencyMs": {
+      "p50": 14.1,
+      "p95": 20.59
+    },
+    "llmCalls": 0,
+    "modelCostUsd": 0,
+    "modelCostScope": "local rule path; excludes evaluation authoring and infrastructure"
+  },
+  "categories": {
+    "budget": {
+      "requests": 4,
+      "passed": 0
+    },
+    "time": {
+      "requests": 3,
+      "passed": 1
+    },
+    "product": {
+      "requests": 3,
+      "passed": 1
+    },
+    "quantity": {
+      "requests": 3,
+      "passed": 0
+    },
+    "clarification": {
+      "requests": 5,
+      "passed": 1
+    },
+    "multiturn": {
+      "requests": 15,
+      "passed": 1
+    }
+  },
+  "results": [
+    {
+      "case": "arrival_price_includes_fees",
+      "category": "budget",
+      "turn": 1,
+      "expected": {
+        "message": "北区这边来杯咖啡，连杯子和跑腿钱一共不能超过十四块。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "max_total_cents": 1400
+        },
+        "firstId": 201,
+        "firstTotal": 1400
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "4054949b-766f-4471-b671-f238e2ded9c7",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-0",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current"
+        },
+        "answer": "找到3个符合条件的演示方案。最低到手价是「校园便利演示店」的便利店美式，1件共¥14.00，预计25分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 201,
+            "title": "便利店美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 2,
+              "name": "校园便利演示店"
+            },
+            "quote": {
+              "quoteId": "33f09b27-fbb0-4339-8c83-32c26aee1af5",
+              "quantity": 1,
+              "unitPriceCents": 1200,
+              "goodsSubtotalCents": 1200,
+              "packagingFeeCents": 0,
+              "deliveryFeeCents": 200,
+              "discountCents": 0,
+              "totalCents": 1400,
+              "etaMinutes": 25,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.635861+00:00",
+              "quotedAt": "2026-10-22T02:29:43.635861+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 101,
+            "title": "经典美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "98f1d562-b51b-41bc-a1ad-d1f2df5d3ec8",
+              "quantity": 1,
+              "unitPriceCents": 800,
+              "goodsSubtotalCents": 800,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.635861+00:00",
+              "quotedAt": "2026-10-22T02:29:43.635861+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "26abe61e-d7dd-4296-ac14-9d27bdc044dc",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.635861+00:00",
+              "quotedAt": "2026-10-22T02:29:43.635861+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 3,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 3,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 11.19,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "offer:budget"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 20.59
+    },
+    {
+      "case": "meal_total_cap_at_boundary",
+      "category": "budget",
+      "turn": 1,
+      "expected": {
+        "message": "送到南区的一份简餐，总共封顶二十四元，饭盒和配送都要算进去。",
+        "status": "completed",
+        "intent": {
+          "zone": "south",
+          "category": "meal",
+          "quantity": 1,
+          "max_total_cents": 2400
+        },
+        "firstId": 301,
+        "firstTotal": 2400
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "ad5524b3-372e-4312-9f57-297a930b33fd",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-1",
+        "intent": {
+          "zone": "south",
+          "category": "meal",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到2个符合条件的演示方案。最低到手价是「食堂轻食演示店」的鸡肉米饭套餐，1件共¥24.00，预计35分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 301,
+            "title": "鸡肉米饭套餐",
+            "source": "local_life",
+            "category": "meal",
+            "merchant": {
+              "id": 3,
+              "name": "食堂轻食演示店"
+            },
+            "quote": {
+              "quoteId": "58f9fd69-535c-4f7c-9cb4-c2c8b0d28f47",
+              "quantity": 1,
+              "unitPriceCents": 1800,
+              "goodsSubtotalCents": 1800,
+              "packagingFeeCents": 200,
+              "deliveryFeeCents": 400,
+              "discountCents": 0,
+              "totalCents": 2400,
+              "etaMinutes": 35,
+              "zone": "south",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.652621+00:00",
+              "quotedAt": "2026-10-22T02:29:43.652621+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 302,
+            "title": "时蔬米饭套餐",
+            "source": "local_life",
+            "category": "meal",
+            "merchant": {
+              "id": 3,
+              "name": "食堂轻食演示店"
+            },
+            "quote": {
+              "quoteId": "a9742f65-c841-4159-ba50-cb980cf22277",
+              "quantity": 1,
+              "unitPriceCents": 2000,
+              "goodsSubtotalCents": 2000,
+              "packagingFeeCents": 200,
+              "deliveryFeeCents": 400,
+              "discountCents": 0,
+              "totalCents": 2600,
+              "etaMinutes": 35,
+              "zone": "south",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.652621+00:00",
+              "quotedAt": "2026-10-22T02:29:43.652621+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 2
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 2,
+              "category": "meal"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 2,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 11.89,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "offer:budget"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 17.41
+    },
+    {
+      "case": "colloquial_decimal_budget",
+      "category": "budget",
+      "turn": 1,
+      "expected": {
+        "message": "东区想喝一杯咖啡，我手里只有十六块九，所有费用都从这里出。",
+        "status": "no_match",
+        "intent": {
+          "zone": "east",
+          "category": "coffee",
+          "quantity": 1,
+          "max_total_cents": 1690
+        }
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "50a27123-9faf-4fcd-b521-afa4f3ca8f23",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-2",
+        "intent": {
+          "zone": "east",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到1个符合条件的演示方案。最低到手价是「东区咖啡演示店」的东区拿铁，1件共¥17.00，预计15分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 401,
+            "title": "东区拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 4,
+              "name": "东区咖啡演示店"
+            },
+            "quote": {
+              "quoteId": "7abce501-9886-4362-b0d6-fac3265188ac",
+              "quantity": 1,
+              "unitPriceCents": 1100,
+              "goodsSubtotalCents": 1100,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 500,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 15,
+              "zone": "east",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.670024+00:00",
+              "quotedAt": "2026-10-22T02:29:43.670024+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 2
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 1,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 1,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 9.34,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "offer:budget",
+        "offer:offers_without_satisfied_request",
+        "wrong_status"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 14.05
+    },
+    {
+      "case": "yuan_and_jiao_boundary",
+      "category": "budget",
+      "turn": 1,
+      "expected": {
+        "message": "北区找一份便利食品，结账十八元五角以内。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "grocery",
+          "quantity": 1,
+          "max_total_cents": 1850
+        },
+        "firstId": 203,
+        "firstTotal": 1850
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "ba96a777-8427-40a9-bf47-3f6db669bfcf",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-3",
+        "intent": {
+          "zone": "north",
+          "category": "grocery",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到1个符合条件的演示方案。最低到手价是「校园便利演示店」的坚果零食组合，1件共¥18.50，预计25分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 203,
+            "title": "坚果零食组合",
+            "source": "local_life",
+            "category": "grocery",
+            "merchant": {
+              "id": 2,
+              "name": "校园便利演示店"
+            },
+            "quote": {
+              "quoteId": "363f30fe-c6a9-459c-b293-0dc44e998c29",
+              "quantity": 1,
+              "unitPriceCents": 1600,
+              "goodsSubtotalCents": 1600,
+              "packagingFeeCents": 50,
+              "deliveryFeeCents": 200,
+              "discountCents": 0,
+              "totalCents": 1850,
+              "etaMinutes": 25,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.682383+00:00",
+              "quotedAt": "2026-10-22T02:29:43.682383+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {
+          "minimum_order": 1
+        },
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 2,
+              "category": "grocery"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 1,
+              "rejected": {
+                "minimum_order": 1
+              }
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 6.93,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 13.73
+    },
+    {
+      "case": "quarter_hour_deadline",
+      "category": "time",
+      "turn": 1,
+      "expected": {
+        "message": "北区要一杯咖啡，给你一刻钟送到。",
+        "status": "no_match",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "max_delivery_minutes": 15
+        }
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "6b852963-b046-4fd5-a6ba-8ba0e51abd7b",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-4",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到3个符合条件的演示方案。最低到手价是「校园便利演示店」的便利店美式，1件共¥14.00，预计25分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 201,
+            "title": "便利店美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 2,
+              "name": "校园便利演示店"
+            },
+            "quote": {
+              "quoteId": "b9954e40-b044-4467-bb4d-66d185984b14",
+              "quantity": 1,
+              "unitPriceCents": 1200,
+              "goodsSubtotalCents": 1200,
+              "packagingFeeCents": 0,
+              "deliveryFeeCents": 200,
+              "discountCents": 0,
+              "totalCents": 1400,
+              "etaMinutes": 25,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.698828+00:00",
+              "quotedAt": "2026-10-22T02:29:43.698828+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 101,
+            "title": "经典美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "76a7e726-5130-4538-bc75-6f459de603eb",
+              "quantity": 1,
+              "unitPriceCents": 800,
+              "goodsSubtotalCents": 800,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.698828+00:00",
+              "quotedAt": "2026-10-22T02:29:43.698828+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "3ad2e597-934f-460f-adcf-ab3e9b6ae7a0",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.698828+00:00",
+              "quotedAt": "2026-10-22T02:29:43.698828+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 3,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 3,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 11.12,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_delivery_minutes",
+        "offer:delivery_time",
+        "offer:offers_without_satisfied_request",
+        "wrong_status"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 19.0
+    },
+    {
+      "case": "one_clock_hour_deadline",
+      "category": "time",
+      "turn": 1,
+      "expected": {
+        "message": "东区来一份简餐，最迟一个钟头送达就行。",
+        "status": "completed",
+        "intent": {
+          "zone": "east",
+          "category": "meal",
+          "quantity": 1,
+          "max_delivery_minutes": 60
+        },
+        "firstId": 301,
+        "firstTotal": 2600
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "751c586b-556b-42fd-b98c-2eadf3e26a27",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-5",
+        "intent": {
+          "zone": "east",
+          "category": "meal",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到2个符合条件的演示方案。最低到手价是「食堂轻食演示店」的鸡肉米饭套餐，1件共¥26.00，预计60分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 301,
+            "title": "鸡肉米饭套餐",
+            "source": "local_life",
+            "category": "meal",
+            "merchant": {
+              "id": 3,
+              "name": "食堂轻食演示店"
+            },
+            "quote": {
+              "quoteId": "40ecf512-c973-4a70-bbf4-314a46d82cb8",
+              "quantity": 1,
+              "unitPriceCents": 1800,
+              "goodsSubtotalCents": 1800,
+              "packagingFeeCents": 200,
+              "deliveryFeeCents": 600,
+              "discountCents": 0,
+              "totalCents": 2600,
+              "etaMinutes": 60,
+              "zone": "east",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.715115+00:00",
+              "quotedAt": "2026-10-22T02:29:43.715115+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 302,
+            "title": "时蔬米饭套餐",
+            "source": "local_life",
+            "category": "meal",
+            "merchant": {
+              "id": 3,
+              "name": "食堂轻食演示店"
+            },
+            "quote": {
+              "quoteId": "31d097f2-e6ae-40b0-8ca3-066c94b97063",
+              "quantity": 1,
+              "unitPriceCents": 2000,
+              "goodsSubtotalCents": 2000,
+              "packagingFeeCents": 200,
+              "deliveryFeeCents": 600,
+              "discountCents": 0,
+              "totalCents": 2800,
+              "etaMinutes": 60,
+              "zone": "east",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.715115+00:00",
+              "quotedAt": "2026-10-22T02:29:43.715115+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 2
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 2,
+              "category": "meal"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 2,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 7.95,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_delivery_minutes"
+      ],
+      "validItemsAgainstLabels": 2,
+      "elapsedMs": 13.22
+    },
+    {
+      "case": "maximum_wait_spoken",
+      "category": "time",
+      "turn": 1,
+      "expected": {
+        "message": "南区要一份简餐，三十五分钟是我能等的极限。",
+        "status": "completed",
+        "intent": {
+          "zone": "south",
+          "category": "meal",
+          "quantity": 1,
+          "max_delivery_minutes": 35
+        },
+        "firstId": 301,
+        "firstTotal": 2400
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "f74519ff-21e2-4c22-a226-9402e9030932",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-6",
+        "intent": {
+          "zone": "south",
+          "category": "meal",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": 35,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "max_delivery_minutes": "current",
+          "quantity": "current"
+        },
+        "answer": "找到2个符合条件的演示方案。最低到手价是「食堂轻食演示店」的鸡肉米饭套餐，1件共¥24.00，预计35分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 301,
+            "title": "鸡肉米饭套餐",
+            "source": "local_life",
+            "category": "meal",
+            "merchant": {
+              "id": 3,
+              "name": "食堂轻食演示店"
+            },
+            "quote": {
+              "quoteId": "32392cfc-cc3d-4477-b9f8-795259ec0736",
+              "quantity": 1,
+              "unitPriceCents": 1800,
+              "goodsSubtotalCents": 1800,
+              "packagingFeeCents": 200,
+              "deliveryFeeCents": 400,
+              "discountCents": 0,
+              "totalCents": 2400,
+              "etaMinutes": 35,
+              "zone": "south",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.729475+00:00",
+              "quotedAt": "2026-10-22T02:29:43.729475+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 302,
+            "title": "时蔬米饭套餐",
+            "source": "local_life",
+            "category": "meal",
+            "merchant": {
+              "id": 3,
+              "name": "食堂轻食演示店"
+            },
+            "quote": {
+              "quoteId": "76aa09b3-d9a4-4f36-a5f4-a3c8ae272df3",
+              "quantity": 1,
+              "unitPriceCents": 2000,
+              "goodsSubtotalCents": 2000,
+              "packagingFeeCents": 200,
+              "deliveryFeeCents": 400,
+              "discountCents": 0,
+              "totalCents": 2600,
+              "etaMinutes": 35,
+              "zone": "south",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.729475+00:00",
+              "quotedAt": "2026-10-22T02:29:43.729475+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 2
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 2,
+              "category": "meal"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 2,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 8.66,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": true,
+      "errors": [],
+      "validItemsAgainstLabels": 2,
+      "elapsedMs": 13.9
+    },
+    {
+      "case": "specific_oat_latte",
+      "category": "product",
+      "turn": 1,
+      "expected": {
+        "message": "北区要喝燕麦拿铁，一杯，别给我别的款。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "product_query": "燕麦拿铁"
+        },
+        "firstId": 102,
+        "firstTotal": 2300
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "b27a3516-e36e-40b5-88e9-f191cbaef7f0",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-7",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": "拿铁",
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到1个符合条件的演示方案。最低到手价是「北门咖啡实验店」的燕麦拿铁，1件共¥23.00，预计18分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "f309b3f2-977d-4956-85ae-52f5000088b1",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.745083+00:00",
+              "quotedAt": "2026-10-22T02:29:43.745083+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 1,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 1,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 10.87,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:product_query"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 17.46
+    },
+    {
+      "case": "specific_nut_snack",
+      "category": "product",
+      "turn": 1,
+      "expected": {
+        "message": "帮我送一份坚果零食组合到南区。",
+        "status": "completed",
+        "intent": {
+          "zone": "south",
+          "category": "grocery",
+          "quantity": 1,
+          "product_query": "坚果零食组合"
+        },
+        "firstId": 203,
+        "firstTotal": 2050
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "d46aa056-e1b3-4cdc-bfac-d553179dd77c",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-8",
+        "intent": {
+          "zone": "south",
+          "category": "grocery",
+          "product_query": "坚果",
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到1个符合条件的演示方案。最低到手价是「校园便利演示店」的坚果零食组合，1件共¥20.50，预计40分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 203,
+            "title": "坚果零食组合",
+            "source": "local_life",
+            "category": "grocery",
+            "merchant": {
+              "id": 2,
+              "name": "校园便利演示店"
+            },
+            "quote": {
+              "quoteId": "671656df-9683-4b6e-a227-bba3d0e82ebc",
+              "quantity": 1,
+              "unitPriceCents": 1600,
+              "goodsSubtotalCents": 1600,
+              "packagingFeeCents": 50,
+              "deliveryFeeCents": 400,
+              "discountCents": 0,
+              "totalCents": 2050,
+              "etaMinutes": 40,
+              "zone": "south",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.760565+00:00",
+              "quotedAt": "2026-10-22T02:29:43.760565+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 2
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 1,
+              "category": "grocery"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 1,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 8.55,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:product_query"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 18.58
+    },
+    {
+      "case": "unavailable_cold_brew",
+      "category": "product",
+      "turn": 1,
+      "expected": {
+        "message": "北区有冷萃吗？要一杯，只找冷萃。",
+        "status": "no_match",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "product_query": "冷萃"
+        }
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "no_match",
+        "taskId": "09e9bb30-48e6-4aad-a762-419e5cc6a2e9",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-9",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": "冷萃",
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "当前演示数据中没有满足全部条件的方案：该区域没有满足商品名称、品类和数量要求的可配送商品。未自动放宽条件。可修改区域、品类或数量后再查询；这不代表现实商家无货。",
+        "items": [],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 0,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 0,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 8.32,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": true,
+      "errors": [],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 13.88
+    },
+    {
+      "case": "three_named_americanos",
+      "category": "quantity",
+      "turn": 1,
+      "expected": {
+        "message": "北区的经典美式给我三杯，总账别过三十二元。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 3,
+          "product_query": "经典美式",
+          "max_total_cents": 3200
+        },
+        "firstId": 101,
+        "firstTotal": 3200
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "66039edf-54c1-453f-a45c-fa9f973adc6c",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-10",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": "美式",
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 3
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到2个符合条件的演示方案。最低到手价是「北门咖啡实验店」的经典美式，3件共¥32.00，预计18分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 101,
+            "title": "经典美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "35fa05f2-862f-45b3-8cb5-f46df8e40438",
+              "quantity": 3,
+              "unitPriceCents": 800,
+              "goodsSubtotalCents": 2400,
+              "packagingFeeCents": 300,
+              "deliveryFeeCents": 800,
+              "discountCents": 300,
+              "totalCents": 3200,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.792855+00:00",
+              "quotedAt": "2026-10-22T02:29:43.792855+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 201,
+            "title": "便利店美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 2,
+              "name": "校园便利演示店"
+            },
+            "quote": {
+              "quoteId": "fc4049dd-9d08-4169-936c-119e04e12d8e",
+              "quantity": 3,
+              "unitPriceCents": 1200,
+              "goodsSubtotalCents": 3600,
+              "packagingFeeCents": 0,
+              "deliveryFeeCents": 0,
+              "discountCents": 200,
+              "totalCents": 3400,
+              "etaMinutes": 25,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.792855+00:00",
+              "quotedAt": "2026-10-22T02:29:43.792855+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 2,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 2,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 9.34,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "intent:product_query",
+        "offer:budget",
+        "offer:product_query"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 14.1
+    },
+    {
+      "case": "two_milk_bread_sets",
+      "category": "quantity",
+      "turn": 1,
+      "expected": {
+        "message": "送到南区，牛奶面包组合拿两份。",
+        "status": "completed",
+        "intent": {
+          "zone": "south",
+          "category": "grocery",
+          "quantity": 2,
+          "product_query": "牛奶面包组合"
+        },
+        "firstId": 202,
+        "firstTotal": 2300
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "clarification",
+        "taskId": "8f00192c-453b-458b-bdeb-01d16b2b41bf",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-11",
+        "intent": {
+          "zone": "south",
+          "category": "grocery",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 2
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "一次只支持一种具体商品，请分别查询或使用明确的商品名称参数",
+        "items": [],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 4.03,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:product_query",
+        "missing_offers",
+        "wrong_status",
+        "wrong_total",
+        "wrong_winner"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 10.62
+    },
+    {
+      "case": "ten_lattes_large_chinese_budget",
+      "category": "quantity",
+      "turn": 1,
+      "expected": {
+        "message": "东区拿铁要十杯，合计最多一百二十元。",
+        "status": "completed",
+        "intent": {
+          "zone": "east",
+          "category": "coffee",
+          "quantity": 10,
+          "product_query": "东区拿铁",
+          "max_total_cents": 12000
+        },
+        "firstId": 401,
+        "firstTotal": 12000
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "3365f177-774b-47e1-beb1-a3798c983843",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-12",
+        "intent": {
+          "zone": "east",
+          "category": "coffee",
+          "product_query": "拿铁",
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 10
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到1个符合条件的演示方案。最低到手价是「东区咖啡演示店」的东区拿铁，10件共¥120.00，预计15分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 401,
+            "title": "东区拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 4,
+              "name": "东区咖啡演示店"
+            },
+            "quote": {
+              "quoteId": "24457c06-2634-4566-a429-e71bcad47c91",
+              "quantity": 10,
+              "unitPriceCents": 1100,
+              "goodsSubtotalCents": 11000,
+              "packagingFeeCents": 1000,
+              "deliveryFeeCents": 0,
+              "discountCents": 0,
+              "totalCents": 12000,
+              "etaMinutes": 15,
+              "zone": "east",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.818506+00:00",
+              "quotedAt": "2026-10-22T02:29:43.818506+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 2
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 1,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 1,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 9.49,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "intent:product_query"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 14.65
+    },
+    {
+      "case": "ambiguous_between_zones",
+      "category": "clarification",
+      "turn": 1,
+      "expected": {
+        "message": "我在北区和东区之间，帮我找一杯咖啡。",
+        "status": "clarification"
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "clarification",
+        "taskId": "9049763b-c56f-4c12-bea5-ceaccdce3cb1",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-13",
+        "intent": {
+          "zone": "east",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "一次查询只支持一个区域和一种品类，请明确选择",
+        "items": [],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 3.67,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": true,
+      "errors": [],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 8.49
+    },
+    {
+      "case": "ambiguous_alternative_quantity",
+      "category": "clarification",
+      "turn": 1,
+      "expected": {
+        "message": "北区咖啡，一杯或两杯都行，先给我算算。",
+        "status": "clarification"
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "584a764d-a6af-41f7-946a-ae461cd17b73",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-14",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到3个符合条件的演示方案。最低到手价是「校园便利演示店」的便利店美式，1件共¥14.00，预计25分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 201,
+            "title": "便利店美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 2,
+              "name": "校园便利演示店"
+            },
+            "quote": {
+              "quoteId": "82bbb1da-3aaf-4ae5-9348-c97e0ae7de5d",
+              "quantity": 1,
+              "unitPriceCents": 1200,
+              "goodsSubtotalCents": 1200,
+              "packagingFeeCents": 0,
+              "deliveryFeeCents": 200,
+              "discountCents": 0,
+              "totalCents": 1400,
+              "etaMinutes": 25,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.840927+00:00",
+              "quotedAt": "2026-10-22T02:29:43.840927+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 101,
+            "title": "经典美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "06e044af-63fc-45a3-8612-052236d49a15",
+              "quantity": 1,
+              "unitPriceCents": 800,
+              "goodsSubtotalCents": 800,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.840927+00:00",
+              "quotedAt": "2026-10-22T02:29:43.840927+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "579ebc27-799d-4b7b-90e6-6f8f00ce1e2b",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.840927+00:00",
+              "quotedAt": "2026-10-22T02:29:43.840927+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 3,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 3,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 9.54,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "offer:offers_without_satisfied_request",
+        "wrong_status"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 15.37
+    },
+    {
+      "case": "unsupported_lactose_requirement",
+      "category": "clarification",
+      "turn": 1,
+      "expected": {
+        "message": "北区要一杯拿铁，必须零乳糖。",
+        "status": "clarification"
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "83a5c332-5690-442c-96ae-23243fa12360",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-15",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": "拿铁",
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到1个符合条件的演示方案。最低到手价是「北门咖啡实验店」的燕麦拿铁，1件共¥23.00，预计18分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "c85d77ef-ea25-4c58-be3b-0ee21006f22c",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.856720+00:00",
+              "quotedAt": "2026-10-22T02:29:43.856720+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 1,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 1,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 8.31,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "offer:offers_without_satisfied_request",
+        "wrong_status"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 14.24
+    },
+    {
+      "case": "unsupported_spiciness_requirement",
+      "category": "clarification",
+      "turn": 1,
+      "expected": {
+        "message": "南区要一份鸡肉米饭套餐，但一点辣都不能有。",
+        "status": "clarification"
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "d6333fd9-7dc2-4ba5-93bc-1cf1345b5603",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-16",
+        "intent": {
+          "zone": "south",
+          "category": "meal",
+          "product_query": "鸡肉",
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "找到1个符合条件的演示方案。最低到手价是「食堂轻食演示店」的鸡肉米饭套餐，1件共¥24.00，预计35分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 301,
+            "title": "鸡肉米饭套餐",
+            "source": "local_life",
+            "category": "meal",
+            "merchant": {
+              "id": 3,
+              "name": "食堂轻食演示店"
+            },
+            "quote": {
+              "quoteId": "60678e3c-40b8-4ec4-90f9-cfb0ceb4e935",
+              "quantity": 1,
+              "unitPriceCents": 1800,
+              "goodsSubtotalCents": 1800,
+              "packagingFeeCents": 200,
+              "deliveryFeeCents": 400,
+              "discountCents": 0,
+              "totalCents": 2400,
+              "etaMinutes": 35,
+              "zone": "south",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.870219+00:00",
+              "quotedAt": "2026-10-22T02:29:43.870219+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 2
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 1,
+              "category": "meal"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 1,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 7.91,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "offer:offers_without_satisfied_request",
+        "wrong_status"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 13.41
+    },
+    {
+      "case": "unsupported_scheduled_arrival",
+      "category": "clarification",
+      "turn": 1,
+      "expected": {
+        "message": "东区来杯咖啡，下午三点整送到，别提前。",
+        "status": "clarification"
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "abaa45a6-f4ae-413a-9203-aa37f9ef3a2c",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-17",
+        "intent": {
+          "zone": "east",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current"
+        },
+        "answer": "找到1个符合条件的演示方案。最低到手价是「东区咖啡演示店」的东区拿铁，1件共¥17.00，预计15分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 401,
+            "title": "东区拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 4,
+              "name": "东区咖啡演示店"
+            },
+            "quote": {
+              "quoteId": "bddf94b3-3db4-4737-9028-05a8799eb132",
+              "quantity": 1,
+              "unitPriceCents": 1100,
+              "goodsSubtotalCents": 1100,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 500,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 15,
+              "zone": "east",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.884026+00:00",
+              "quotedAt": "2026-10-22T02:29:43.884026+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 2
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 1,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 1,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 8.08,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "offer:offers_without_satisfied_request",
+        "wrong_status"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 12.07
+    },
+    {
+      "case": "retain_product_change_quantity_budget",
+      "category": "multiturn",
+      "turn": 1,
+      "expected": {
+        "message": "送北区，燕麦拿铁一杯，总共二十三元以内。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "product_query": "燕麦拿铁",
+          "max_total_cents": 2300
+        },
+        "firstId": 102,
+        "firstTotal": 2300
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "cca42f35-30e3-4caf-b998-39ee9e3048b1",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-18",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": "拿铁",
+          "max_total_cents": 2300,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "max_total_cents": "current",
+          "quantity": "current"
+        },
+        "answer": "找到1个符合条件的演示方案。最低到手价是「北门咖啡实验店」的燕麦拿铁，1件共¥23.00，预计18分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "41949da2-352b-4a15-a9fd-701cd0978c50",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.896058+00:00",
+              "quotedAt": "2026-10-22T02:29:43.896058+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 1,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 1,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 9.12,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:product_query"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 14.55
+    },
+    {
+      "case": "retain_product_change_quantity_budget",
+      "category": "multiturn",
+      "turn": 2,
+      "expected": {
+        "message": "那就两杯，三十五元封顶，别的照旧。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 2,
+          "product_query": "燕麦拿铁",
+          "max_total_cents": 3500
+        },
+        "firstId": 102,
+        "firstTotal": 3500
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "no_match",
+        "taskId": "596145a1-edb9-4590-addf-14f4c7f1388e",
+        "requestId": "lang-2c4fb91f34a8-1",
+        "sessionId": "lang-2c4fb91f34a8-18",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": "拿铁",
+          "max_total_cents": 2300,
+          "max_delivery_minutes": null,
+          "quantity": 2
+        },
+        "constraintSources": {
+          "zone": "session",
+          "category": "session",
+          "quantity": "current",
+          "product_query": "session",
+          "max_total_cents": "session",
+          "max_delivery_minutes": "session"
+        },
+        "answer": "当前演示数据中没有满足全部条件的方案：到手价超预算。未自动放宽条件。你是否愿意预算提高到¥35.00？请明确修改条件后重新查询。",
+        "items": [],
+        "suggestions": [
+          {
+            "changes": {
+              "max_total_cents": 3500
+            },
+            "requiresConfirmation": true,
+            "exampleProductId": 102
+          }
+        ],
+        "rejectedConstraints": {
+          "budget": 1
+        },
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 1,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 1,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 10.48,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "intent:product_query",
+        "missing_offers",
+        "wrong_status",
+        "wrong_total",
+        "wrong_winner"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 15.02
+    },
+    {
+      "case": "clear_time_retain_and_tighten_budget",
+      "category": "multiturn",
+      "turn": 1,
+      "expected": {
+        "message": "北区买咖啡，一杯，十八分钟之内送到，最多二十元。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "max_total_cents": 2000,
+          "max_delivery_minutes": 18
+        },
+        "firstId": 101,
+        "firstTotal": 1700
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "e3104568-53d9-4cc0-8ebf-5e3907ed5df6",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-19",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": 18,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "max_delivery_minutes": "current",
+          "quantity": "current"
+        },
+        "answer": "找到2个符合条件的演示方案。最低到手价是「北门咖啡实验店」的经典美式，1件共¥17.00，预计18分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 101,
+            "title": "经典美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "bf9f205b-ce32-42bf-9cee-a473ab6b3a46",
+              "quantity": 1,
+              "unitPriceCents": 800,
+              "goodsSubtotalCents": 800,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.925798+00:00",
+              "quotedAt": "2026-10-22T02:29:43.925798+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "30a2e279-7914-4a26-859e-4123033065a7",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.925798+00:00",
+              "quotedAt": "2026-10-22T02:29:43.925798+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {
+          "delivery_time": 1
+        },
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 3,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 3,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 9.18,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "offer:budget"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 14.82
+    },
+    {
+      "case": "clear_time_retain_and_tighten_budget",
+      "category": "multiturn",
+      "turn": 2,
+      "expected": {
+        "message": "我已经不赶时间了，多久送都可以。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "max_total_cents": 2000,
+          "max_delivery_minutes": null
+        },
+        "firstId": 201,
+        "firstTotal": 1400
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "44d10318-6b40-4bc6-a38e-db007794bbd9",
+        "requestId": "lang-2c4fb91f34a8-1",
+        "sessionId": "lang-2c4fb91f34a8-19",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": 18,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "session",
+          "category": "session",
+          "quantity": "session",
+          "product_query": "session",
+          "max_total_cents": "session",
+          "max_delivery_minutes": "session"
+        },
+        "answer": "找到2个符合条件的演示方案。最低到手价是「北门咖啡实验店」的经典美式，1件共¥17.00，预计18分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 101,
+            "title": "经典美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "978af787-f3b9-49a2-a246-88fbb2e630dd",
+              "quantity": 1,
+              "unitPriceCents": 800,
+              "goodsSubtotalCents": 800,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.941100+00:00",
+              "quotedAt": "2026-10-22T02:29:43.941100+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "19e519ec-ae42-48c6-af94-856fbed00552",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.941100+00:00",
+              "quotedAt": "2026-10-22T02:29:43.941100+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {
+          "delivery_time": 1
+        },
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 3,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 3,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 9.59,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_delivery_minutes",
+        "intent:max_total_cents",
+        "offer:budget",
+        "wrong_total",
+        "wrong_winner"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 16.89
+    },
+    {
+      "case": "clear_time_retain_and_tighten_budget",
+      "category": "multiturn",
+      "turn": 3,
+      "expected": {
+        "message": "钱再少花一点，总价上限改成十四元。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "max_total_cents": 1400,
+          "max_delivery_minutes": null
+        },
+        "firstId": 201,
+        "firstTotal": 1400
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "6b171506-6276-49d2-95f0-c388f9d9fa07",
+        "requestId": "lang-2c4fb91f34a8-2",
+        "sessionId": "lang-2c4fb91f34a8-19",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": 18,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "session",
+          "category": "session",
+          "quantity": "session",
+          "product_query": "session",
+          "max_total_cents": "session",
+          "max_delivery_minutes": "session"
+        },
+        "answer": "找到2个符合条件的演示方案。最低到手价是「北门咖啡实验店」的经典美式，1件共¥17.00，预计18分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 101,
+            "title": "经典美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "29b51111-48e9-4b4f-a5e3-5ab9c2456f19",
+              "quantity": 1,
+              "unitPriceCents": 800,
+              "goodsSubtotalCents": 800,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.959935+00:00",
+              "quotedAt": "2026-10-22T02:29:43.959935+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "e2e8f5b2-9d71-4d6a-b33b-d7f45ba51490",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:43.959935+00:00",
+              "quotedAt": "2026-10-22T02:29:43.959935+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {
+          "delivery_time": 1
+        },
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 3,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 3,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 18.43,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_delivery_minutes",
+        "intent:max_total_cents",
+        "offer:budget",
+        "wrong_total",
+        "wrong_winner"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 30.09
+    },
+    {
+      "case": "clear_product_then_budget",
+      "category": "multiturn",
+      "turn": 1,
+      "expected": {
+        "message": "北区来杯燕麦拿铁，预算封顶二十元。",
+        "status": "no_match",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "product_query": "燕麦拿铁",
+          "max_total_cents": 2000
+        }
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "clarification",
+        "taskId": "daaefba2-8d84-4d13-b79d-e3951b71f08d",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-20",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": "拿铁",
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current"
+        },
+        "answer": "请用明确金额表达预算，例如预算20元；或明确说不限预算",
+        "items": [],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 6.64,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "intent:product_query",
+        "wrong_status"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 11.53
+    },
+    {
+      "case": "clear_product_then_budget",
+      "category": "multiturn",
+      "turn": 2,
+      "expected": {
+        "message": "那就去掉款式要求，任何咖啡都行。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "product_query": null,
+          "max_total_cents": 2000
+        },
+        "firstId": 201,
+        "firstTotal": 1400
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "clarification",
+        "taskId": "b30c8acb-92ac-45ec-bb33-9fa8107b9548",
+        "requestId": "lang-2c4fb91f34a8-1",
+        "sessionId": "lang-2c4fb91f34a8-20",
+        "intent": {
+          "zone": null,
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "category": "current",
+          "product_query": "current"
+        },
+        "answer": "请补充配送区域（北区/南区/东区）",
+        "items": [],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 7.17,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "intent:zone",
+        "missing_offers",
+        "wrong_status",
+        "wrong_total",
+        "wrong_winner"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 13.59
+    },
+    {
+      "case": "clear_product_then_budget",
+      "category": "multiturn",
+      "turn": 3,
+      "expected": {
+        "message": "价钱也不设上限了，还是一杯。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "product_query": null,
+          "max_total_cents": null
+        },
+        "firstId": 201,
+        "firstTotal": 1400
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "clarification",
+        "taskId": "37afcf42-a77d-41c9-962d-7916d29e451b",
+        "requestId": "lang-2c4fb91f34a8-2",
+        "sessionId": "lang-2c4fb91f34a8-20",
+        "intent": {
+          "zone": null,
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "session",
+          "category": "session",
+          "quantity": "current",
+          "product_query": "session",
+          "max_total_cents": "session",
+          "max_delivery_minutes": "session"
+        },
+        "answer": "请补充配送区域（北区/南区/东区）",
+        "items": [],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 8.6,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:zone",
+        "missing_offers",
+        "wrong_status",
+        "wrong_total",
+        "wrong_winner"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 15.59
+    },
+    {
+      "case": "change_category_clear_old_product",
+      "category": "multiturn",
+      "turn": 1,
+      "expected": {
+        "message": "北区来一杯经典美式，全部费用不超过二十五元，半小时内送到。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "product_query": "经典美式",
+          "max_total_cents": 2500,
+          "max_delivery_minutes": 30
+        },
+        "firstId": 101,
+        "firstTotal": 1700
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "50b3184b-e488-4e94-a027-5e09ae42ba57",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-21",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": "美式",
+          "max_total_cents": null,
+          "max_delivery_minutes": 30,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "max_delivery_minutes": "current",
+          "quantity": "current"
+        },
+        "answer": "找到2个符合条件的演示方案。最低到手价是「校园便利演示店」的便利店美式，1件共¥14.00，预计25分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 201,
+            "title": "便利店美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 2,
+              "name": "校园便利演示店"
+            },
+            "quote": {
+              "quoteId": "ed90bad2-d977-42b5-8d80-afb2cd97f2e4",
+              "quantity": 1,
+              "unitPriceCents": 1200,
+              "goodsSubtotalCents": 1200,
+              "packagingFeeCents": 0,
+              "deliveryFeeCents": 200,
+              "discountCents": 0,
+              "totalCents": 1400,
+              "etaMinutes": 25,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:44.030747+00:00",
+              "quotedAt": "2026-10-22T02:29:44.030747+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 101,
+            "title": "经典美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "ec863b8f-f897-46ad-835a-b8ef19d98426",
+              "quantity": 1,
+              "unitPriceCents": 800,
+              "goodsSubtotalCents": 800,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:44.030747+00:00",
+              "quotedAt": "2026-10-22T02:29:44.030747+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 2,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 2,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 14.28,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "intent:product_query",
+        "offer:product_query",
+        "wrong_total",
+        "wrong_winner"
+      ],
+      "validItemsAgainstLabels": 1,
+      "elapsedMs": 18.66
+    },
+    {
+      "case": "change_category_clear_old_product",
+      "category": "multiturn",
+      "turn": 2,
+      "expected": {
+        "message": "不喝了，换成一份简餐，钱和时间按刚才的。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "meal",
+          "quantity": 1,
+          "product_query": null,
+          "max_total_cents": 2500,
+          "max_delivery_minutes": 30
+        },
+        "firstId": 301,
+        "firstTotal": 2300
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "e4c8b44e-df0b-4958-9672-3528535d7597",
+        "requestId": "lang-2c4fb91f34a8-1",
+        "sessionId": "lang-2c4fb91f34a8-21",
+        "intent": {
+          "zone": "north",
+          "category": "meal",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": 30,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "session",
+          "category": "current",
+          "quantity": "current",
+          "product_query": "current",
+          "max_total_cents": "session",
+          "max_delivery_minutes": "session"
+        },
+        "answer": "找到2个符合条件的演示方案。最低到手价是「食堂轻食演示店」的鸡肉米饭套餐，1件共¥23.00，预计30分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 301,
+            "title": "鸡肉米饭套餐",
+            "source": "local_life",
+            "category": "meal",
+            "merchant": {
+              "id": 3,
+              "name": "食堂轻食演示店"
+            },
+            "quote": {
+              "quoteId": "c7602f63-7970-4cff-9c77-28158dcc767b",
+              "quantity": 1,
+              "unitPriceCents": 1800,
+              "goodsSubtotalCents": 1800,
+              "packagingFeeCents": 200,
+              "deliveryFeeCents": 300,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 30,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:44.046958+00:00",
+              "quotedAt": "2026-10-22T02:29:44.046958+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 302,
+            "title": "时蔬米饭套餐",
+            "source": "local_life",
+            "category": "meal",
+            "merchant": {
+              "id": 3,
+              "name": "食堂轻食演示店"
+            },
+            "quote": {
+              "quoteId": "e1cc7ae5-f6d2-49b1-817e-eaf39e54a584",
+              "quantity": 1,
+              "unitPriceCents": 2000,
+              "goodsSubtotalCents": 2000,
+              "packagingFeeCents": 200,
+              "deliveryFeeCents": 300,
+              "discountCents": 0,
+              "totalCents": 2500,
+              "etaMinutes": 30,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:44.046958+00:00",
+              "quotedAt": "2026-10-22T02:29:44.046958+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 2,
+              "category": "meal"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 2,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 9.97,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents"
+      ],
+      "validItemsAgainstLabels": 2,
+      "elapsedMs": 15.59
+    },
+    {
+      "case": "zone_with_address_then_relocation",
+      "category": "multiturn",
+      "turn": 1,
+      "expected": {
+        "message": "我在北区图书馆，要一份鸡肉米饭套餐，总共最多二十六元，一小时以内送到。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "meal",
+          "quantity": 1,
+          "product_query": "鸡肉米饭套餐",
+          "max_total_cents": 2600,
+          "max_delivery_minutes": 60
+        },
+        "firstId": 301,
+        "firstTotal": 2300
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "clarification",
+        "taskId": "819a3ae6-aa88-4840-ae53-82c42d3aa775",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-22",
+        "intent": {
+          "zone": "north",
+          "category": "meal",
+          "product_query": "鸡肉",
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "quantity": "current"
+        },
+        "answer": "请用分钟表达送达时限，例如30分钟内送达",
+        "items": [],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 3.72,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_delivery_minutes",
+        "intent:max_total_cents",
+        "intent:product_query",
+        "missing_offers",
+        "wrong_status",
+        "wrong_total",
+        "wrong_winner"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 7.96
+    },
+    {
+      "case": "zone_with_address_then_relocation",
+      "category": "multiturn",
+      "turn": 2,
+      "expected": {
+        "message": "改送东区宿舍楼，其他条件照旧。",
+        "status": "completed",
+        "intent": {
+          "zone": "east",
+          "category": "meal",
+          "quantity": 1,
+          "product_query": "鸡肉米饭套餐",
+          "max_total_cents": 2600,
+          "max_delivery_minutes": 60
+        },
+        "firstId": 301,
+        "firstTotal": 2600
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "clarification",
+        "taskId": "5865b307-45ea-45c2-a40b-fd4ce1bf9150",
+        "requestId": "lang-2c4fb91f34a8-1",
+        "sessionId": "lang-2c4fb91f34a8-22",
+        "intent": {
+          "zone": "east",
+          "category": null,
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": null,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current"
+        },
+        "answer": "请补充品类（咖啡/简餐/便利食品）",
+        "items": [],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 3.74,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:category",
+        "intent:max_delivery_minutes",
+        "intent:max_total_cents",
+        "intent:product_query",
+        "missing_offers",
+        "wrong_status",
+        "wrong_total",
+        "wrong_winner"
+      ],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 7.52
+    },
+    {
+      "case": "unsupported_turn_does_not_replace_state",
+      "category": "multiturn",
+      "turn": 1,
+      "expected": {
+        "message": "北区咖啡一杯，总共最多二十元，三十分钟之内送到。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "max_total_cents": 2000,
+          "max_delivery_minutes": 30
+        },
+        "firstId": 201,
+        "firstTotal": 1400
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "e4dfc684-d8fe-41ca-add9-3c97c910b8f8",
+        "requestId": "lang-2c4fb91f34a8-0",
+        "sessionId": "lang-2c4fb91f34a8-23",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": 30,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "current",
+          "category": "current",
+          "product_query": "current",
+          "max_delivery_minutes": "current",
+          "quantity": "current"
+        },
+        "answer": "找到3个符合条件的演示方案。最低到手价是「校园便利演示店」的便利店美式，1件共¥14.00，预计25分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 201,
+            "title": "便利店美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 2,
+              "name": "校园便利演示店"
+            },
+            "quote": {
+              "quoteId": "7766011c-5689-48f5-b7a5-ba2c7d35fcd7",
+              "quantity": 1,
+              "unitPriceCents": 1200,
+              "goodsSubtotalCents": 1200,
+              "packagingFeeCents": 0,
+              "deliveryFeeCents": 200,
+              "discountCents": 0,
+              "totalCents": 1400,
+              "etaMinutes": 25,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:44.077431+00:00",
+              "quotedAt": "2026-10-22T02:29:44.077431+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 101,
+            "title": "经典美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "aad604b2-a604-4d6e-b980-f1ffb2e1a132",
+              "quantity": 1,
+              "unitPriceCents": 800,
+              "goodsSubtotalCents": 800,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:44.077431+00:00",
+              "quotedAt": "2026-10-22T02:29:44.077431+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "1230fb28-f863-40ae-b5ee-543c3a8a84d5",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:44.077431+00:00",
+              "quotedAt": "2026-10-22T02:29:44.077431+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 3,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 3,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 8.17,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "offer:budget"
+      ],
+      "validItemsAgainstLabels": 2,
+      "elapsedMs": 13.01
+    },
+    {
+      "case": "unsupported_turn_does_not_replace_state",
+      "category": "multiturn",
+      "turn": 2,
+      "expected": {
+        "message": "换成拿铁，还得用无糖燕麦奶做。",
+        "status": "clarification"
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "clarification",
+        "taskId": "e57a2de7-3265-4516-936f-1f9242da4111",
+        "requestId": "lang-2c4fb91f34a8-1",
+        "sessionId": "lang-2c4fb91f34a8-23",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": "拿铁",
+          "max_total_cents": null,
+          "max_delivery_minutes": 30,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "session",
+          "category": "current",
+          "quantity": "session",
+          "product_query": "current",
+          "max_total_cents": "session",
+          "max_delivery_minutes": "session"
+        },
+        "answer": "暂不支持口味、过敏或指定免运费条件，不能确认这些要求已满足",
+        "items": [],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 3.29,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": true,
+      "errors": [],
+      "validItemsAgainstLabels": 0,
+      "elapsedMs": 7.92
+    },
+    {
+      "case": "unsupported_turn_does_not_replace_state",
+      "category": "multiturn",
+      "turn": 3,
+      "expected": {
+        "message": "刚才那条改口作废，沿用最开始的咖啡条件再查一次。",
+        "status": "completed",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "quantity": 1,
+          "product_query": null,
+          "max_total_cents": 2000,
+          "max_delivery_minutes": 30
+        },
+        "firstId": 201,
+        "firstTotal": 1400
+      },
+      "actual": {
+        "agent": "local-life-agent",
+        "mode": "local_life",
+        "planner": "local-constraint-planner",
+        "status": "completed",
+        "taskId": "433908ed-9fcf-40ed-ad7b-4bc6e375b4d2",
+        "requestId": "lang-2c4fb91f34a8-2",
+        "sessionId": "lang-2c4fb91f34a8-23",
+        "intent": {
+          "zone": "north",
+          "category": "coffee",
+          "product_query": null,
+          "max_total_cents": null,
+          "max_delivery_minutes": 30,
+          "quantity": 1
+        },
+        "constraintSources": {
+          "zone": "session",
+          "category": "current",
+          "quantity": "session",
+          "product_query": "current",
+          "max_total_cents": "session",
+          "max_delivery_minutes": "session"
+        },
+        "answer": "找到3个符合条件的演示方案。最低到手价是「校园便利演示店」的便利店美式，1件共¥14.00，预计25分钟送达。已计入包装、配送与适用优惠；有效期以卡片为准，库存未锁定。",
+        "items": [
+          {
+            "itemId": 201,
+            "title": "便利店美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 2,
+              "name": "校园便利演示店"
+            },
+            "quote": {
+              "quoteId": "c6975f49-3718-46cd-afe2-9d3a6f8652c4",
+              "quantity": 1,
+              "unitPriceCents": 1200,
+              "goodsSubtotalCents": 1200,
+              "packagingFeeCents": 0,
+              "deliveryFeeCents": 200,
+              "discountCents": 0,
+              "totalCents": 1400,
+              "etaMinutes": 25,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:44.098348+00:00",
+              "quotedAt": "2026-10-22T02:29:44.098348+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 101,
+            "title": "经典美式",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "67cc49fa-4753-4a5a-ba8f-1e02933e2a23",
+              "quantity": 1,
+              "unitPriceCents": 800,
+              "goodsSubtotalCents": 800,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 1700,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:44.098348+00:00",
+              "quotedAt": "2026-10-22T02:29:44.098348+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          },
+          {
+            "itemId": 102,
+            "title": "燕麦拿铁",
+            "source": "local_life",
+            "category": "coffee",
+            "merchant": {
+              "id": 1,
+              "name": "北门咖啡实验店"
+            },
+            "quote": {
+              "quoteId": "e1fe8f22-8d3b-494b-9182-895361b4a76a",
+              "quantity": 1,
+              "unitPriceCents": 1400,
+              "goodsSubtotalCents": 1400,
+              "packagingFeeCents": 100,
+              "deliveryFeeCents": 800,
+              "discountCents": 0,
+              "totalCents": 2300,
+              "etaMinutes": 18,
+              "zone": "north",
+              "currency": "CNY",
+              "validUntil": "2026-10-22T02:31:44.098348+00:00",
+              "quotedAt": "2026-10-22T02:29:44.098348+00:00",
+              "dataSource": "synthetic-campus-v1"
+            }
+          }
+        ],
+        "suggestions": [],
+        "rejectedConstraints": {},
+        "toolTrace": [
+          {
+            "tool": "search_merchants",
+            "status": "success",
+            "resultSummary": {
+              "count": 3
+            }
+          },
+          {
+            "tool": "search_products",
+            "status": "success",
+            "resultSummary": {
+              "count": 3,
+              "category": "coffee"
+            }
+          },
+          {
+            "tool": "quote_delivery",
+            "status": "success",
+            "resultSummary": {
+              "quoted": 3,
+              "rejected": {}
+            }
+          }
+        ],
+        "dataSource": "synthetic-campus-v1",
+        "memoryUpdated": [],
+        "replayed": false,
+        "metrics": {
+          "elapsedMs": 7.23,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "modelCostUsd": 0
+        }
+      },
+      "passed": false,
+      "errors": [
+        "intent:max_total_cents",
+        "offer:budget"
+      ],
+      "validItemsAgainstLabels": 2,
+      "elapsedMs": 12.22
+    }
+  ]
+}

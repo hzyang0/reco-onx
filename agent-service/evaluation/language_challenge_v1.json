@@ -1,0 +1,512 @@
+{
+  "version": "language-challenge-v1",
+  "userId": 789,
+  "scope": "Independent agent-authored challenge set; not real-user validation",
+  "cases": [
+    {
+      "id": "arrival_price_includes_fees",
+      "category": "budget",
+      "turns": [
+        {
+          "message": "北区这边来杯咖啡，连杯子和跑腿钱一共不能超过十四块。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "max_total_cents": 1400
+          },
+          "firstId": 201,
+          "firstTotal": 1400
+        }
+      ]
+    },
+    {
+      "id": "meal_total_cap_at_boundary",
+      "category": "budget",
+      "turns": [
+        {
+          "message": "送到南区的一份简餐，总共封顶二十四元，饭盒和配送都要算进去。",
+          "status": "completed",
+          "intent": {
+            "zone": "south",
+            "category": "meal",
+            "quantity": 1,
+            "max_total_cents": 2400
+          },
+          "firstId": 301,
+          "firstTotal": 2400
+        }
+      ]
+    },
+    {
+      "id": "colloquial_decimal_budget",
+      "category": "budget",
+      "turns": [
+        {
+          "message": "东区想喝一杯咖啡，我手里只有十六块九，所有费用都从这里出。",
+          "status": "no_match",
+          "intent": {
+            "zone": "east",
+            "category": "coffee",
+            "quantity": 1,
+            "max_total_cents": 1690
+          }
+        }
+      ]
+    },
+    {
+      "id": "yuan_and_jiao_boundary",
+      "category": "budget",
+      "turns": [
+        {
+          "message": "北区找一份便利食品，结账十八元五角以内。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "grocery",
+            "quantity": 1,
+            "max_total_cents": 1850
+          },
+          "firstId": 203,
+          "firstTotal": 1850
+        }
+      ]
+    },
+    {
+      "id": "quarter_hour_deadline",
+      "category": "time",
+      "turns": [
+        {
+          "message": "北区要一杯咖啡，给你一刻钟送到。",
+          "status": "no_match",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "max_delivery_minutes": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": "one_clock_hour_deadline",
+      "category": "time",
+      "turns": [
+        {
+          "message": "东区来一份简餐，最迟一个钟头送达就行。",
+          "status": "completed",
+          "intent": {
+            "zone": "east",
+            "category": "meal",
+            "quantity": 1,
+            "max_delivery_minutes": 60
+          },
+          "firstId": 301,
+          "firstTotal": 2600
+        }
+      ]
+    },
+    {
+      "id": "maximum_wait_spoken",
+      "category": "time",
+      "turns": [
+        {
+          "message": "南区要一份简餐，三十五分钟是我能等的极限。",
+          "status": "completed",
+          "intent": {
+            "zone": "south",
+            "category": "meal",
+            "quantity": 1,
+            "max_delivery_minutes": 35
+          },
+          "firstId": 301,
+          "firstTotal": 2400
+        }
+      ]
+    },
+    {
+      "id": "specific_oat_latte",
+      "category": "product",
+      "turns": [
+        {
+          "message": "北区要喝燕麦拿铁，一杯，别给我别的款。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "product_query": "燕麦拿铁"
+          },
+          "firstId": 102,
+          "firstTotal": 2300
+        }
+      ]
+    },
+    {
+      "id": "specific_nut_snack",
+      "category": "product",
+      "turns": [
+        {
+          "message": "帮我送一份坚果零食组合到南区。",
+          "status": "completed",
+          "intent": {
+            "zone": "south",
+            "category": "grocery",
+            "quantity": 1,
+            "product_query": "坚果零食组合"
+          },
+          "firstId": 203,
+          "firstTotal": 2050
+        }
+      ]
+    },
+    {
+      "id": "unavailable_cold_brew",
+      "category": "product",
+      "turns": [
+        {
+          "message": "北区有冷萃吗？要一杯，只找冷萃。",
+          "status": "no_match",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "product_query": "冷萃"
+          }
+        }
+      ]
+    },
+    {
+      "id": "three_named_americanos",
+      "category": "quantity",
+      "turns": [
+        {
+          "message": "北区的经典美式给我三杯，总账别过三十二元。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 3,
+            "product_query": "经典美式",
+            "max_total_cents": 3200
+          },
+          "firstId": 101,
+          "firstTotal": 3200
+        }
+      ]
+    },
+    {
+      "id": "two_milk_bread_sets",
+      "category": "quantity",
+      "turns": [
+        {
+          "message": "送到南区，牛奶面包组合拿两份。",
+          "status": "completed",
+          "intent": {
+            "zone": "south",
+            "category": "grocery",
+            "quantity": 2,
+            "product_query": "牛奶面包组合"
+          },
+          "firstId": 202,
+          "firstTotal": 2300
+        }
+      ]
+    },
+    {
+      "id": "ten_lattes_large_chinese_budget",
+      "category": "quantity",
+      "turns": [
+        {
+          "message": "东区拿铁要十杯，合计最多一百二十元。",
+          "status": "completed",
+          "intent": {
+            "zone": "east",
+            "category": "coffee",
+            "quantity": 10,
+            "product_query": "东区拿铁",
+            "max_total_cents": 12000
+          },
+          "firstId": 401,
+          "firstTotal": 12000
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_between_zones",
+      "category": "clarification",
+      "turns": [
+        {
+          "message": "我在北区和东区之间，帮我找一杯咖啡。",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_alternative_quantity",
+      "category": "clarification",
+      "turns": [
+        {
+          "message": "北区咖啡，一杯或两杯都行，先给我算算。",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_lactose_requirement",
+      "category": "clarification",
+      "turns": [
+        {
+          "message": "北区要一杯拿铁，必须零乳糖。",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_spiciness_requirement",
+      "category": "clarification",
+      "turns": [
+        {
+          "message": "南区要一份鸡肉米饭套餐，但一点辣都不能有。",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_scheduled_arrival",
+      "category": "clarification",
+      "turns": [
+        {
+          "message": "东区来杯咖啡，下午三点整送到，别提前。",
+          "status": "clarification"
+        }
+      ]
+    },
+    {
+      "id": "retain_product_change_quantity_budget",
+      "category": "multiturn",
+      "turns": [
+        {
+          "message": "送北区，燕麦拿铁一杯，总共二十三元以内。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "product_query": "燕麦拿铁",
+            "max_total_cents": 2300
+          },
+          "firstId": 102,
+          "firstTotal": 2300
+        },
+        {
+          "message": "那就两杯，三十五元封顶，别的照旧。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 2,
+            "product_query": "燕麦拿铁",
+            "max_total_cents": 3500
+          },
+          "firstId": 102,
+          "firstTotal": 3500
+        }
+      ]
+    },
+    {
+      "id": "clear_time_retain_and_tighten_budget",
+      "category": "multiturn",
+      "turns": [
+        {
+          "message": "北区买咖啡，一杯，十八分钟之内送到，最多二十元。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "max_total_cents": 2000,
+            "max_delivery_minutes": 18
+          },
+          "firstId": 101,
+          "firstTotal": 1700
+        },
+        {
+          "message": "我已经不赶时间了，多久送都可以。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "max_total_cents": 2000,
+            "max_delivery_minutes": null
+          },
+          "firstId": 201,
+          "firstTotal": 1400
+        },
+        {
+          "message": "钱再少花一点，总价上限改成十四元。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "max_total_cents": 1400,
+            "max_delivery_minutes": null
+          },
+          "firstId": 201,
+          "firstTotal": 1400
+        }
+      ]
+    },
+    {
+      "id": "clear_product_then_budget",
+      "category": "multiturn",
+      "turns": [
+        {
+          "message": "北区来杯燕麦拿铁，预算封顶二十元。",
+          "status": "no_match",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "product_query": "燕麦拿铁",
+            "max_total_cents": 2000
+          }
+        },
+        {
+          "message": "那就去掉款式要求，任何咖啡都行。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "product_query": null,
+            "max_total_cents": 2000
+          },
+          "firstId": 201,
+          "firstTotal": 1400
+        },
+        {
+          "message": "价钱也不设上限了，还是一杯。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "product_query": null,
+            "max_total_cents": null
+          },
+          "firstId": 201,
+          "firstTotal": 1400
+        }
+      ]
+    },
+    {
+      "id": "change_category_clear_old_product",
+      "category": "multiturn",
+      "turns": [
+        {
+          "message": "北区来一杯经典美式，全部费用不超过二十五元，半小时内送到。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "product_query": "经典美式",
+            "max_total_cents": 2500,
+            "max_delivery_minutes": 30
+          },
+          "firstId": 101,
+          "firstTotal": 1700
+        },
+        {
+          "message": "不喝了，换成一份简餐，钱和时间按刚才的。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "meal",
+            "quantity": 1,
+            "product_query": null,
+            "max_total_cents": 2500,
+            "max_delivery_minutes": 30
+          },
+          "firstId": 301,
+          "firstTotal": 2300
+        }
+      ]
+    },
+    {
+      "id": "zone_with_address_then_relocation",
+      "category": "multiturn",
+      "turns": [
+        {
+          "message": "我在北区图书馆，要一份鸡肉米饭套餐，总共最多二十六元，一小时以内送到。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "meal",
+            "quantity": 1,
+            "product_query": "鸡肉米饭套餐",
+            "max_total_cents": 2600,
+            "max_delivery_minutes": 60
+          },
+          "firstId": 301,
+          "firstTotal": 2300
+        },
+        {
+          "message": "改送东区宿舍楼，其他条件照旧。",
+          "status": "completed",
+          "intent": {
+            "zone": "east",
+            "category": "meal",
+            "quantity": 1,
+            "product_query": "鸡肉米饭套餐",
+            "max_total_cents": 2600,
+            "max_delivery_minutes": 60
+          },
+          "firstId": 301,
+          "firstTotal": 2600
+        }
+      ]
+    },
+    {
+      "id": "unsupported_turn_does_not_replace_state",
+      "category": "multiturn",
+      "turns": [
+        {
+          "message": "北区咖啡一杯，总共最多二十元，三十分钟之内送到。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "max_total_cents": 2000,
+            "max_delivery_minutes": 30
+          },
+          "firstId": 201,
+          "firstTotal": 1400
+        },
+        {
+          "message": "换成拿铁，还得用无糖燕麦奶做。",
+          "status": "clarification"
+        },
+        {
+          "message": "刚才那条改口作废，沿用最开始的咖啡条件再查一次。",
+          "status": "completed",
+          "intent": {
+            "zone": "north",
+            "category": "coffee",
+            "quantity": 1,
+            "product_query": null,
+            "max_total_cents": 2000,
+            "max_delivery_minutes": 30
+          },
+          "firstId": 201,
+          "firstTotal": 1400
+        }
+      ]
+    }
+  ]
+}
