@@ -12,7 +12,8 @@ import uuid
 import pymysql
 from fastapi import HTTPException
 
-from app.local_life import LocalConstraints, QuoteRejected, local_graph, merge_constraints, parse_constraints, remember_explicitly, unresolved_requirements, withdraws_requirements
+from app.local_language import retain_requirements
+from app.local_life import LocalConstraints, QuoteRejected, local_graph, merge_constraints, parse_constraints, remember_explicitly, unresolved_requirements
 
 
 class CatalogLimitError(RuntimeError):
@@ -128,8 +129,7 @@ def execute_local(connect, user_id, session_id, request_id, message, structured=
                         continue
                 constraints, sources, issues = merge_constraints(message, previous, preferences, structured)
                 new_requirements = unresolved_requirements(message)
-                if withdraws_requirements(message) and not new_requirements:
-                    pending = []
+                pending = retain_requirements(pending, message)
                 pending = list(dict.fromkeys(pending + new_requirements))
                 if pending:
                     issues = list(issues) + ["仍有未解决的饮食要求：" + "；".join(pending) + "。请明确撤回要求或结束查询。"]

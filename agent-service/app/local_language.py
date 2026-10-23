@@ -20,7 +20,37 @@ FOOD_ISSUE = "缺少可验证的成分、过敏原或口味数据，不能确认
 
 
 def withdraws_requirements(message):
+    # Negated withdrawal must never remove a safety-relevant condition.
+    if re.search(r"(?:不要|别|不能|不想|不可|不许|无需).{0,4}(?:取消|撤回|撤销|作废)|(?:取消|撤回|撤销).{0,3}(?:不了|不行)", message):
+        return False
     return bool(re.search(r"(?:刚才|上条|上一条|那条).*(?:作废|撤销|取消)|(?:取消|撤回|不再要求|不用).*(?:饮食|乳糖|过敏|无糖|低糖|配方|口味|成分|辣|要求)", message))
+
+
+_REQUIREMENT_TOPICS = ("乳糖", "坚果", "花生", "过敏", "无糖", "低糖", "零糖", "少糖",
+                       "麸质", "素食", "咖啡因", "奶", "辣", "冰", "热", "钠", "盐", "脂", "卡", "热量")
+
+
+def retain_requirements(pending, message):
+    """Remove only explicitly named requirements; ambiguous retractions fail closed.
+
+    A compound stored clause is retained unless all its topics are retracted.
+    This deliberately asks for a clearer withdrawal instead of losing an allergy.
+    """
+    remaining = list(pending)
+    for clause in re.split(r"[，,。；;]|但是|但|不过", message):
+        if not withdraws_requirements(clause):
+            continue
+        if re.search(r"(?:所有|全部).*(?:饮食|要求|条件)|(?:饮食|要求|条件).*(?:所有|全部)", clause):
+            remaining = []
+            continue
+        named = {topic for topic in _REQUIREMENT_TOPICS if topic in clause}
+        if named:
+            remaining = [item for item in remaining
+                         if not (topics := {t for t in _REQUIREMENT_TOPICS if t in item})
+                         or not topics.issubset(named)]
+        elif len(remaining) == 1 and re.search(r"刚才|上条|上一条|那条", clause):
+            remaining = []
+    return remaining
 
 
 def unresolved_requirements(message):
@@ -38,6 +68,8 @@ def number(text):
         return Decimal(text)
     except Exception:
         pass
+    if text.startswith("-"):
+        return -number(text[1:])
     if "点" in text:
         left, right = text.split("点", 1)
         digits = "零一二三四五六七八九"
@@ -47,6 +79,13 @@ def number(text):
     sign = -1 if text.startswith("-") else 1
     text = text.lstrip("-")
     digits, units = "零一二三四五六七八九", {"十": 10, "百": 100, "千": 1000, "万": 10000}
+    # Reject colloquial missing units (一百二), repeated units (十十), and
+    # adjacent non-zero Chinese digits (一二). Guessing can change a hard budget.
+    if re.search(r"[一二三四五六七八九]{2}|[百千万][一二三四五六七八九]$", text):
+        raise ValueError("ambiguous Chinese number; use explicit units or digits")
+    unit_values = [units[c] for c in text if c in units]
+    if any(a <= b for a, b in zip(unit_values, unit_values[1:])):
+        raise ValueError("invalid unit order")
     total = current = 0
     if not text:
         raise ValueError("empty number")
@@ -75,6 +114,10 @@ def _select(values, message, label, issues):
 
 def parse_request(message):
     patch, issues = {}, []
+    if re.search(r"(?:不要|别|不能|不想|不可|不许).{0,4}(?:取消|清除|去掉).{0,6}(?:预算|时间|送达|商品|款式)", message):
+        # A negated clearing command must never be interpreted as an actual
+        # relaxation. Preserve the last valid snapshot and request clarification.
+        return {}, ["检测到否定的条件撤销表达，已保留原条件；请明确要修改的预算、时限或商品"]
     # A full withdrawal of the previous turn is not a new product request.
     text = re.sub(r"(?:刚才|上条|上一条|那条)[^，,。；;]*(?:作废|撤销)", "", message)
     zone_hits = sorted((m.start(), value) for word, value in ZONES.items() for m in re.finditer(word, text))

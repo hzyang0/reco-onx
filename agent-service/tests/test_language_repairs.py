@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import unittest
 
 from app.local_life import LocalConstraints, local_graph, merge_constraints, parse_constraints
-from app.local_language import unresolved_requirements, withdraws_requirements
+from app.local_language import unresolved_requirements, withdraws_requirements, retain_requirements
 from test_local_life import PRODUCT, FixtureTools
 
 
@@ -78,3 +78,26 @@ class NaturalLanguageRepairTests(unittest.TestCase):
         self.assertEqual([i['itemId'] for i in result['alternative_items']],[1])
         self.assertTrue(result['alternative_items'][0]['requiresConfirmation'])
         self.assertEqual(run('exact')['alternative_items'],[])
+
+    def test_withdrawal_preserves_unrelated_and_negated_requirements(self):
+        pending = ['必须零乳糖', '坚果过敏']
+        self.assertEqual(retain_requirements(pending, '取消零乳糖要求'), ['坚果过敏'])
+        self.assertEqual(retain_requirements(pending, '刚才的要求不要取消'), pending)
+        self.assertEqual(retain_requirements(pending, '刚才那条要求作废'), pending)
+        self.assertEqual(retain_requirements(pending, '取消所有饮食要求'), [])
+        self.assertEqual(retain_requirements(['零乳糖且坚果过敏'], '取消零乳糖要求'), ['零乳糖且坚果过敏'])
+        self.assertEqual(retain_requirements(pending, '取消零乳糖要求，但必须无糖'), ['坚果过敏'])
+
+    def test_ambiguous_chinese_amounts_ask_instead_of_guessing(self):
+        for message in ['预算一百二元', '预算十十元', '预算一二元']:
+            self.assertTrue(parse_constraints(message)[1], message)
+        self.assertEqual(parse_constraints('预算一百零二元')[0]['max_total_cents'], 10200)
+        self.assertEqual(parse_constraints('预算一百二十元')[0]['max_total_cents'], 12000)
+
+    def test_negated_clearing_never_relaxes_hard_constraints(self):
+        previous = {'max_total_cents': 1690, 'max_delivery_minutes': 15, 'product_query': '燕麦拿铁'}
+        for message in ['不要取消预算', '别取消送达限制', '不能取消商品限制']:
+            c, _, issues = merge_constraints(message, previous, {})
+            self.assertTrue(issues)
+            for key, value in previous.items():
+                self.assertEqual(c[key], value)

@@ -100,3 +100,7 @@ python scripts/evaluate-agent.py
 本轮完成度判断、验证范围与下一步优先级见 [项目初步评审](docs/PROJECT-REVIEW-20261021.md)。当前仍是商品／直播／广告推荐原型，尚未实现本地生活商家、位置、配送报价和完整到手价。
 
 详见：[Agent 主架构与学习路线](docs/langgraph-agent-main.md)、[新手快速入门与秋招面试手册](docs/interview-quickstart.md)、[传统推荐工具后端](docs/architecture.md)、[测试说明](docs/testing.md)。
+
+## 从零学习与面试准备
+
+请按 [完整学习与面试手册](docs/LEARNING-AND-INTERVIEW-HANDBOOK.md) 运行演示、跟踪请求、学习约束／事务／恢复，再做模拟用户与独立语言评测。最新补充见 [复查记录](docs/REVIEW-20261023.md)。

@@ -1,4 +1,6 @@
-# 开始运行
+# 开始运行（历史 Java 推荐控制台）
+
+当前本地生活主流程请先看 [完整学习手册](LEARNING-AND-INTERVIEW-HANDBOOK.md)。Compose 中 Agent 在 18081，Java 控制台在 18082；以下 goods/live/ad 介绍对应 Java 控制台。
 
 ## 1. 一键体验
 
@@ -9,9 +11,9 @@ mvn -DskipTests package
 docker compose up --build -d
 ```
 
-Compose 会先启动 MySQL 8.4；应用启动时由 Flyway 执行 `db/migration/V1__schema_and_seed.sql` 建表和写入示例数据。数据库 readiness 通过后应用才对外可用。MySQL 映射到本机 `3307`，应用映射到 `18081`。
+Compose 会先启动 MySQL 8.4；应用启动时由 Flyway 执行 `db/migration/V1__schema_and_seed.sql` 建表和写入示例数据。数据库 readiness 通过后应用才对外可用。MySQL 映射到本机 `3307`，Java 应用映射到 `18082`。
 
-浏览器打开 <http://localhost:18081/>，从 5 个差异化用户画像中选择一个。页面会自动填入该用户的默认场景；设置返回数量后点击运行推荐。
+浏览器打开 <http://localhost:18082/>，从 5 个差异化用户画像中选择一个。页面会自动填入该用户的默认场景；设置返回数量后点击运行推荐。
 
 切换场景时重点观察最终 Item 的 `source`：商城是 goods 为主，视频流是 live 为主，买家首页混合 goods 与 live；三种场景都会在第 4、9 位穿插 ad。召回面板仍显示三路 `20/20/20`，因为“并行取候选”和“按场景组织最终页面”是两个阶段。
 
@@ -22,11 +24,11 @@ Compose 会先启动 MySQL 8.4；应用启动时由 Flyway 执行 `db/migration/
 ## 2. 接口验证
 
 ```powershell
-Invoke-RestMethod "http://localhost:18081/health"
-Invoke-RestMethod "http://localhost:18081/api/console-data"
-Invoke-RestMethod "http://localhost:18081/recommend?userId=123&scene=mall&limit=5"
-Invoke-RestMethod "http://localhost:18081/metrics"
-Invoke-WebRequest "http://localhost:18081/metrics/prometheus"
+Invoke-RestMethod "http://localhost:18082/health"
+Invoke-RestMethod "http://localhost:18082/api/console-data"
+Invoke-RestMethod "http://localhost:18082/recommend?userId=123&scene=mall&limit=5"
+Invoke-RestMethod "http://localhost:18082/metrics"
+Invoke-WebRequest "http://localhost:18082/metrics/prometheus"
 ```
 
 `/recommend` 返回 JSON。重点看：

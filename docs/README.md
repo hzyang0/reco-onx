@@ -24,3 +24,6 @@
 - `POST /api/events`：上报曝光、点击、加购和购买行为。
 - `POST /api/agent/chat`：对话式推荐 Agent。
 - `GET /api/agent/diagnose`：推荐诊断 Agent。
+
+- [本地生活主线：完整入门、源码与面试手册](LEARNING-AND-INTERVIEW-HANDBOOK.md)
+- [最新复查、修复与验证边界](REVIEW-20261023.md)

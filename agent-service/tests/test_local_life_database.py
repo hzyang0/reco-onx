@@ -200,3 +200,17 @@ class LocalDatabaseTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_selective_withdrawal_survives_database_roundtrip(self):
+        self.ask()
+        self.ask(message="必须零乳糖，坚果过敏", key="two-diets")
+        result = self.ask(message="取消零乳糖要求", key="one-diet")
+        self.assertEqual(result["status"], "clarification")
+        self.assertEqual(result["pendingRequirements"], ["坚果过敏"])
+        result = self.ask(message="刚才的要求不要取消", key="keep-diet")
+        self.assertEqual(result["status"], "clarification")
+        self.assertIn("坚果过敏", result["pendingRequirements"])
+        result = self.ask(message="继续查询", key="still-blocked")
+        self.assertFalse(result["items"])
+        result = self.ask(message="取消所有饮食要求", key="clear-all-diets")
+        self.assertEqual(result["status"], "completed")
