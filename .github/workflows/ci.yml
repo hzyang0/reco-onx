@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.11"
           cache: pip
@@ -84,7 +84,7 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: maven
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.11"
           cache: pip
@@ -113,9 +113,21 @@ jobs:
           done
           if [ "$ready" != true ]; then cat /tmp/agent.log; exit 1; fi
           python scripts/evaluate-local-life.py --output output/local-life-evaluation.json
-      - uses: actions/upload-artifact@v4
+          python scripts/evaluate-language.py --cases agent-service/evaluation/language_challenge_v1.json --output output/language-regression.json
+      - name: Preserve application logs for failed integration runs
+        if: always()
+        run: |
+          mkdir -p output
+          for logfile in /tmp/reco.log /tmp/agent.log; do
+            if [ -f "$logfile" ]; then cp "$logfile" output/; fi
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: local-life-evaluation
-          path: output/local-life-evaluation.json
+          name: local-life-verification
+          path: |
+            output/local-life-evaluation.json
+            output/language-regression.json
+            output/reco.log
+            output/agent.log
           if-no-files-found: ignore

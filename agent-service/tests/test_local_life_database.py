@@ -135,6 +135,57 @@ class LocalDatabaseTests(unittest.TestCase):
             read_task(db_connection, self.user + 1, result["taskId"])
         self.assertEqual(error.exception.status_code, 404)
 
+    def test_unverified_diet_survives_followups_and_blocks_old_result_replay(self):
+        baseline = self.ask()
+        result = self.ask(message="必须零乳糖", key="diet-request")
+        self.assertEqual(result["status"], "clarification")
+        self.assertTrue(result["pendingRequirements"])
+        followup = self.ask(message="继续查询", key="after-diet")
+        self.assertEqual(followup["status"], "clarification")
+        self.assertEqual(followup["items"], [])
+        self.assertEqual(self.ask()["status"], "clarification")
+        self.assertEqual(read_task(db_connection, self.user, baseline["taskId"])["items"], [])
+        result = self.ask(message="刚才那条乳糖要求作废", key="withdraw-diet")
+        self.assertEqual(result["status"], "completed")
+        self.assertFalse(result["pendingRequirements"])
+
+    def test_pending_requirement_is_scoped_and_new_requirement_cannot_clear_it(self):
+        self.ask()
+        self.ask(message="必须零乳糖", key="need-lactose-free")
+        result = self.ask(message="取消零乳糖要求，但必须无糖", key="new-dietary-need")
+        self.assertEqual(result["status"], "clarification")
+        self.assertTrue(result["pendingRequirements"])
+        other = self.ask(session="independent-session")
+        self.assertEqual(other["status"], "completed")
+        self.assertEqual(other["pendingRequirements"], [])
+
+    def test_full_name_is_preserved_and_alternatives_are_explicit(self):
+        result = self.ask(message="东区想喝燕麦拿铁预算30元")
+        self.assertEqual(result["intent"]["product_query"], "燕麦拿铁")
+        self.assertEqual(result["items"], [])
+        self.assertEqual(result["status"], "no_match")
+        self.assertEqual(result["alternativeItems"][0]["itemId"], 401)
+        self.assertTrue(result["alternativeItems"][0]["requiresConfirmation"])
+        strict = self.ask(message="只要燕麦拿铁", key="strict-product")
+        self.assertEqual(strict["alternativeItems"], [])
+
+    def test_same_category_quantity_change_keeps_full_name(self):
+        self.ask(message="北区燕麦拿铁预算50元")
+        result = self.ask(message="咖啡改成两杯，其他照旧", key="keep-full-name")
+        self.assertEqual(result["intent"]["product_query"], "燕麦拿铁")
+        self.assertEqual([i["itemId"] for i in result["items"]], [102])
+        self.assertEqual(result["items"][0]["quote"]["totalCents"], 3500)
+
+    def test_expired_alternative_is_not_returned_on_replay(self):
+        message = "东区燕麦拿铁预算30元"
+        result = self.ask(message=message)
+        result["alternativeItems"][0]["quote"]["validUntil"] = (datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat()
+        with db_connection() as conn, conn.cursor() as cur:
+            cur.execute("UPDATE local_agent_tasks SET result_json=%s WHERE task_id=%s", (json.dumps(result), result["taskId"]))
+        replay = self.ask(message=message)
+        self.assertEqual(replay["status"], "quote_expired")
+        self.assertEqual(replay["alternativeItems"], [])
+
     def test_expired_completed_quote_is_not_recommended_on_replay(self):
         result = self.ask()
         for item in result["items"]:

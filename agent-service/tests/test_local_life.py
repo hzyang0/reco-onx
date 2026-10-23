@@ -90,7 +90,7 @@ class LocalPlanTests(unittest.TestCase):
     def test_parse_full_request_and_exact_decimal(self):
         patch, issues = parse_constraints("北区2杯咖啡，预算29.99元，30分钟内送达")
         self.assertEqual(issues, [])
-        self.assertEqual(patch, {"zone": "north", "category": "coffee", "product_query": None, "quantity": 2, "max_total_cents": 2999, "max_delivery_minutes": 30})
+        self.assertEqual(patch, {"zone": "north", "category": "coffee", "quantity": 2, "max_total_cents": 2999, "max_delivery_minutes": 30})
 
     def test_chinese_numbers_and_product_name_are_hard_constraints(self):
         patch, issues = parse_constraints("北区两杯拿铁，预算二十九元，三十分钟内送达")
@@ -98,7 +98,7 @@ class LocalPlanTests(unittest.TestCase):
         self.assertEqual((patch["quantity"], patch["max_total_cents"], patch["max_delivery_minutes"], patch["product_query"]), (2, 2900, 30, "拿铁"))
 
     def test_unparsed_or_ambiguous_requirements_clarify(self):
-        for text in ["预算便宜点", "预算二百元", "1小时送达", "北区南区咖啡", "咖啡和简餐",
+        for text in ["预算便宜点", "北区南区咖啡", "咖啡和简餐",
                      "不要拿铁", "几杯咖啡", "1.5杯咖啡", "-2杯咖啡", "-5分钟送达", "预算20到30元"]:
             with self.subTest(text=text):
                 self.assertTrue(parse_constraints(text)[1])

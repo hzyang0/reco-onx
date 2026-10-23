@@ -12,7 +12,7 @@ import uuid
 import pymysql
 from fastapi import HTTPException
 
-from app.local_life import LocalConstraints, QuoteRejected, local_graph, merge_constraints, parse_constraints, remember_explicitly
+from app.local_life import LocalConstraints, QuoteRejected, local_graph, merge_constraints, parse_constraints, remember_explicitly, unresolved_requirements, withdraws_requirements
 
 
 class CatalogLimitError(RuntimeError):
@@ -53,10 +53,18 @@ class LocalTools:
 
 def expire_quotes(result, now=None):
     now = now or datetime.now(timezone.utc)
-    if any(datetime.fromisoformat(item["quote"]["validUntil"]) <= now for item in result.get("items", [])):
-        return result | {"status": "quote_expired", "originalStatus": result["status"], "items": [],
+    if any(datetime.fromisoformat(item["quote"]["validUntil"]) <= now for item in result.get("items", []) + result.get("alternativeItems", [])):
+        return result | {"status": "quote_expired", "originalStatus": result["status"], "items": [], "alternativeItems": [],
                          "answer": "该任务的报价已过期，请使用新的请求标识重新询价；旧报价不会作为当前可购买方案返回。"}
     return result
+
+
+def guard_pending(result, pending):
+    if not pending:
+        return result
+    return result | {"status": "clarification", "originalStatus": result["status"], "items": [],
+                     "alternativeItems": [], "suggestions": [], "pendingRequirements": pending,
+                     "answer": "仍有未解决的要求：" + "；".join(pending) + "。数据不足以确认，不能推荐；请明确撤回这些要求或结束查询。"}
 
 
 def session_active(connect, user_id, session_id):
@@ -67,11 +75,13 @@ def session_active(connect, user_id, session_id):
 
 def read_task(connect, user_id, task_id):
     with connect() as conn, conn.cursor() as cursor:
-        cursor.execute("SELECT result_json FROM local_agent_tasks WHERE user_id=%s AND task_id=%s", (user_id, task_id))
+        cursor.execute("SELECT t.result_json,s.pending_requirements,s.expires_at>UTC_TIMESTAMP() FROM local_agent_tasks t "
+                       "JOIN local_agent_sessions s ON s.user_id=t.user_id AND s.session_id=t.session_id "
+                       "WHERE t.user_id=%s AND t.task_id=%s", (user_id, task_id))
         row = cursor.fetchone()
         if not row:
             raise HTTPException(404, "task not found")
-        return expire_quotes(json.loads(row[0]))
+        return guard_pending(expire_quotes(json.loads(row[0])), json.loads(row[1]) if row[1] and row[2] else [])
 
 
 def execute_local(connect, user_id, session_id, request_id, message, structured=None, ttl=86400):
@@ -91,16 +101,17 @@ def execute_local(connect, user_id, session_id, request_id, message, structured=
                 cur.execute("INSERT INTO local_agent_sessions(user_id,session_id,constraints_json,expires_at) "
                             "VALUES(%s,%s,'{}',TIMESTAMPADD(SECOND,%s,UTC_TIMESTAMP())) "
                             "ON DUPLICATE KEY UPDATE user_id=VALUES(user_id)", (user_id, session_id, ttl))
-                cur.execute("SELECT constraints_json,expires_at>UTC_TIMESTAMP() AS fresh FROM local_agent_sessions "
+                cur.execute("SELECT constraints_json,pending_requirements,expires_at>UTC_TIMESTAMP() AS fresh FROM local_agent_sessions "
                             "WHERE user_id=%s AND session_id=%s FOR UPDATE", (user_id, session_id))
                 session = cur.fetchone()
+                pending = json.loads(session["pending_requirements"]) if session["pending_requirements"] and session["fresh"] else []
                 cur.execute("SELECT payload_hash,result_json FROM local_agent_tasks WHERE user_id=%s AND session_id=%s AND request_id=%s",
                             (user_id, session_id, request_id))
                 existing = cur.fetchone()
                 if existing:
                     if existing["payload_hash"] != fingerprint:
                         raise HTTPException(409, "同一请求标识不能更改内容或条件")
-                    result = expire_quotes(json.loads(existing["result_json"]))
+                    result = guard_pending(expire_quotes(json.loads(existing["result_json"])), pending)
                     conn.commit()
                     return result | {"replayed": True}
                 previous = json.loads(session["constraints_json"]) if session["fresh"] else {}
@@ -116,6 +127,17 @@ def execute_local(connect, user_id, session_id, request_id, message, structured=
                     except ValueError:
                         continue
                 constraints, sources, issues = merge_constraints(message, previous, preferences, structured)
+                new_requirements = unresolved_requirements(message)
+                if withdraws_requirements(message) and not new_requirements:
+                    pending = []
+                pending = list(dict.fromkeys(pending + new_requirements))
+                if pending:
+                    issues = list(issues) + ["仍有未解决的饮食要求：" + "；".join(pending) + "。请明确撤回要求或结束查询。"]
+                cur.execute("UPDATE local_agent_sessions SET pending_requirements=%s WHERE user_id=%s AND session_id=%s",
+                            (json.dumps(pending, ensure_ascii=False) if pending else None, user_id, session_id))
+                if pending:
+                    cur.execute("UPDATE local_agent_sessions SET expires_at=TIMESTAMPADD(SECOND,%s,UTC_TIMESTAMP()) WHERE user_id=%s AND session_id=%s",
+                                (ttl, user_id, session_id))
                 missing = [label for key, label in [("zone", "配送区域（北区/南区/东区）"), ("category", "品类（咖啡/简餐/便利食品）")] if constraints[key] is None]
                 if issues or missing:
                     state = {"status": "clarification", "answer": "；".join(issues or ["请补充" + "、".join(missing)]),
@@ -127,10 +149,7 @@ def execute_local(connect, user_id, session_id, request_id, message, structured=
                     cur.execute("UPDATE local_agent_sessions SET constraints_json=%s,expires_at=TIMESTAMPADD(SECOND,%s,UTC_TIMESTAMP()) "
                                 "WHERE user_id=%s AND session_id=%s", (json.dumps(constraints), ttl, user_id, session_id))
                     if remember_explicitly(message):
-                        patch, _ = parse_constraints(message)
-                        patch.update(structured or {})
-                        if structured and "category" in structured and "product_query" not in structured:
-                            patch["product_query"] = None
+                        patch = {key: constraints[key] for key, source in sources.items() if source == "current"}
                         for key, value in patch.items():
                             memory_updated.append(key)
                             if value is None:
@@ -143,6 +162,7 @@ def execute_local(connect, user_id, session_id, request_id, message, structured=
                 result = {"agent": "local-life-agent", "mode": "local_life", "planner": "local-constraint-planner",
                           "status": state["status"], "taskId": str(uuid.uuid4()), "requestId": request_id, "sessionId": session_id,
                           "intent": constraints, "constraintSources": sources, "answer": state["answer"], "items": state["items"],
+                          "alternativeItems": state.get("alternative_items", []), "pendingRequirements": pending,
                           "suggestions": state["suggestions"], "rejectedConstraints": state["rejected"], "toolTrace": state["tool_trace"],
                           "dataSource": "synthetic-campus-v1", "memoryUpdated": memory_updated, "replayed": False,
                           "metrics": {"elapsedMs": round((time.perf_counter() - began) * 1000, 2), "llmCalls": 0,

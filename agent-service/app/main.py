@@ -16,7 +16,7 @@ from langgraph.graph import END, START, StateGraph
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field, ValidationError
 from app.constraints import Intent, durable_updates, explicit_constraints, filter_candidates, local_intent
-from app.local_life import LocalConstraints, is_local_request
+from app.local_life import LocalConstraints, is_local_request, is_local_followup
 from app import local_life_store
 
 BACKEND_URL = os.getenv("RECO_BACKEND_URL", "http://app:8080")
@@ -375,7 +375,7 @@ async def execute(request: ChatRequest) -> dict[str, Any]:
     try:
         use_local = request.workflow == "local_life" or (request.workflow == "auto" and (
             request.constraints is not None or is_local_request(request.message)
-            or ((request_mode(request.message) != "general" or any(word in request.message for word in ["杯", "份", "件", "改为", "改成", "不限时间", "时间不限", "取消送达限制"]))
+            or ((request_mode(request.message) != "general" or is_local_followup(request.message))
                 and await asyncio.to_thread(local_session_active, request.user_id, session_id))))
         if not use_local:
             return await execute_legacy(request)

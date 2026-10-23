@@ -1,5 +1,5 @@
 {
-  "version": "synthetic-campus-v1",
+  "version": "local-life-regressions-v2",
   "userId": 789,
   "scope": "Hand-authored regression cases, not a held-out natural-language benchmark",
   "cases": [
@@ -469,11 +469,16 @@
       ]
     },
     {
-      "id": "clarify-unknown-hours",
+      "id": "one-hour-duration",
       "turns": [
         {
           "message": "北区咖啡预算20元，1小时内送达",
-          "status": "clarification"
+          "status": "completed",
+          "firstId": 201,
+          "firstTotal": 1400,
+          "intent": {
+            "max_delivery_minutes": 60
+          }
         }
       ]
     },

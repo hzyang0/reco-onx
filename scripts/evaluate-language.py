@@ -111,6 +111,10 @@ def main():
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
     except subprocess.CalledProcessError:
         revision = 'unknown'
+    root = Path(__file__).resolve().parents[1]
+    source_files = sorted((root / 'agent-service/app').glob('*.py')) + sorted((root / 'db/migration').glob('*.sql'))
+    source_hash = hashlib.sha256(b''.join(str(path.relative_to(root)).encode() + b'\0' + path.read_bytes() for path in source_files)).hexdigest()
+    source_dirty = bool(subprocess.check_output(['git', 'status', '--porcelain', '--', 'agent-service/app', 'db/migration'], cwd=root, text=True).strip())
     summary = {'cases': len(suite['cases']), 'successfulCases': successful_cases,
                'taskSuccessRate': successful_cases / len(suite['cases']),
                'requests': len(rows), 'passedRequests': sum(r['passed'] for r in rows),
@@ -129,6 +133,7 @@ def main():
         counter['passed'] += row['passed']
     report = {'schemaVersion': 1, 'createdAt': datetime.now(timezone.utc).isoformat(), 'runId': run_id,
               'sourceRevision': revision, 'datasetVersion': suite['version'],
+              'applicationSourceSha256': source_hash, 'applicationWorkingTreeDirty': source_dirty,
               'datasetSha256': hashlib.sha256(raw).hexdigest(), 'scope': suite['scope'],
               'summary': summary, 'categories': categories, 'results': rows}
     args.output.parent.mkdir(parents=True, exist_ok=True)

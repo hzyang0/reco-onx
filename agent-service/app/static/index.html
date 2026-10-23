@@ -45,19 +45,19 @@
     async function loadMemory(){const d=await api('/api/memory/'+auth.userId);const values=Object.entries(d.longTermMemory||{});$('memory').innerHTML=values.length?values.map(([k,v])=>`<span>${esc(memoryText(k,v))}</span>`).join(''):'<span class="empty">只有明确要求记住时才保存</span>'}
     function addMessage(role,content){const el=document.createElement('div');el.className='message '+(role==='user'?'user':'assistant');el.innerHTML=`<div class="role">${role==='user'?'我':'AI'}</div><div class="bubble">${esc(content)}</div>`;$('messages').append(el)}
     const yuan=cents=>'¥'+(cents/100).toFixed(2);
-    function addItems(items){
+    function addItems(items, alternative=false){
       if(!items?.length)return;
-      const box=document.createElement('div');box.className='recommendations';
+      const box=document.createElement('div');box.className='recommendations';if(alternative){const title=document.createElement('p');title.className='empty';title.textContent='同类替代：未满足原商品名称，需你明确选择；预算与时限仍符合。';$('messages').append(title)}
       box.innerHTML=items.map(i=>{
         if(!i.quote)return `<article class="item"><span class="source">${esc(i.source)}</span><h4>${esc(i.title)}</h4><small>${esc(i.category)}${i.attrs?.price?' · ¥'+esc(i.attrs.price):''}</small></article>`;
         const q=i.quote;
-        return `<article class="item"><span class="source">演示报价 · ${esc(i.merchant.name)}</span><h4>${esc(i.title)} × ${q.quantity}</h4><div class="quote-total">到手 ${yuan(q.totalCents)}</div><div class="quote-lines">商品 ${yuan(q.goodsSubtotalCents)}<br>包装 ${yuan(q.packagingFeeCents)} + 配送 ${yuan(q.deliveryFeeCents)}<br>优惠 −${yuan(q.discountCents)}<br>预计 ${q.etaMinutes} 分钟 · 未锁库存</div><small data-quote-expiry="${esc(q.validUntil)}">有效至 ${esc(new Date(q.validUntil).toLocaleTimeString())}</small></article>`;
+        return `<article class="item"><span class="source">${alternative?'待确认替代 · ':'演示报价 · '}${esc(i.merchant.name)}</span><h4>${esc(i.title)} × ${q.quantity}</h4><div class="quote-total">到手 ${yuan(q.totalCents)}</div><div class="quote-lines">商品 ${yuan(q.goodsSubtotalCents)}<br>包装 ${yuan(q.packagingFeeCents)} + 配送 ${yuan(q.deliveryFeeCents)}<br>优惠 −${yuan(q.discountCents)}<br>预计 ${q.etaMinutes} 分钟 · 未锁库存</div><small data-quote-expiry="${esc(q.validUntil)}">有效至 ${esc(new Date(q.validUntil).toLocaleTimeString())}</small></article>`;
       }).join('');$('messages').append(box);
     }
     function showConstraints(intent){
       if(!intent||!('zone' in intent)){$('constraints').innerHTML='<span class="empty">当前为普通推荐 / 问答</span>';return}
       const parts=[({north:'北区',south:'南区',east:'东区'}[intent.zone]||'待选择区域'),({coffee:'咖啡',meal:'简餐',grocery:'便利食品'}[intent.category]||'待选择品类'),intent.quantity+'件',intent.max_total_cents===null?'预算不限':'到手 ≤ '+yuan(intent.max_total_cents),intent.max_delivery_minutes===null?'时间不限':intent.max_delivery_minutes+'分钟内'];
-      if(intent.product_query)parts.push('商品：'+intent.product_query);
+      if(intent.product_query){parts.push('商品：'+intent.product_query);parts.push(intent.product_match_mode==='exact'?'只要指定商品':'指定商品优先，替代需确认')}
       $('constraints').innerHTML=parts.map(x=>`<span>${esc(x)}</span>`).join('');
     }
     setInterval(()=>document.querySelectorAll('[data-quote-expiry]').forEach(el=>{if(Date.parse(el.dataset.quoteExpiry)<=Date.now()){el.textContent='报价已过期，请重新查询';el.classList.add('quote-expired')}}),1000);
@@ -81,7 +81,7 @@
       ws.onmessage=e=>{
         if(!isCurrent()){ws.close();return}const m=JSON.parse(e.data);
         if(m.event==='agent_completed'){
-          finished=true;addMessage('assistant',m.data.answer);addItems(m.data.items);setTrace(m.data.toolTrace);showConstraints(m.data.intent);loadMemory().catch(()=>{});api('/api/conversations/'+auth.sessionId+'?token='+encodeURIComponent(auth.token)).then(d=>{if(isCurrent())refreshContext(d.messages)}).catch(()=>{});
+          finished=true;addMessage('assistant',m.data.answer);addItems(m.data.items);addItems(m.data.alternativeItems,true);setTrace(m.data.toolTrace);showConstraints(m.data.intent);loadMemory().catch(()=>{});api('/api/conversations/'+auth.sessionId+'?token='+encodeURIComponent(auth.token)).then(d=>{if(isCurrent())refreshContext(d.messages)}).catch(()=>{});
           if(m.data.status!=='tool_error')localStorage.removeItem(pendingKey);
           $('status').textContent=m.data.replayed?'已恢复上次任务结果':'';$('send').disabled=false;showPendingRetry();scroll();ws.close();
         }

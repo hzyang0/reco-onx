@@ -19,6 +19,14 @@ const assert = require('node:assert/strict');
     assert.match(await page.locator('.quote-total').first().innerText(), /23\.00/);
     assert.match(await page.locator('#constraints').innerText(), /商品：拿铁/);
     assert.doesNotMatch(await page.locator('.recommendations').innerText(), /美式/);
+    await page.getByRole('button', {name: '＋ 新建对话'}).click();
+    await page.waitForFunction(() => document.getElementById('messages').innerText === '');
+    await page.locator('#input').fill('东区想喝燕麦拿铁预算30元');
+    await page.locator('#send').click();
+    await page.locator('.source').filter({hasText:'待确认替代'}).waitFor();
+    assert.match(await page.locator('#constraints').innerText(), /商品：燕麦拿铁/);
+    assert.match(await page.locator('#messages').innerText(), /未满足原商品名称/);
+    assert.match(await page.locator('.quote-total').innerText(), /17\.00/);
     // Keep one response pending while the user creates a new conversation.
     await page.evaluate(() => {
       window.WebSocket = class {
@@ -38,7 +46,7 @@ const assert = require('node:assert/strict');
     assert.equal(await page.locator('#messages').innerText(), '');
     assert.equal(await page.locator('#send').isEnabled(), true);
     assert.deepEqual(errors, []);
-    console.log('PASS: named-product quote, cost card, constraint display, delayed response isolation');
+    console.log('PASS: named-product quote, cost card, constraint display, explicit alternatives, delayed response isolation');
   } finally {
     await browser.close();
   }
