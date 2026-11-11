@@ -1,5 +1,7 @@
 # reco-onx：从第一次运行到独立讲清设计
 
+> 如果无法在本机部署，请优先阅读 [完整离线源码与面试精读](OFFLINE-CODE-AND-INTERVIEW-GUIDE.md) 或直接打开 [独立 HTML 版](OFFLINE-CODE-AND-INTERVIEW-GUIDE.html)。新文档无需启动项目，关键代码与解释均在正文。
+
 > 阅读对象：能写基础 Java/Python，但还不能把项目完整讲清的人。先操作，再跟踪一次请求，最后回答设计取舍。文档描述当前代码，不把演示能力包装成生产经历。
 
 ## 1. 用一分钟说明项目

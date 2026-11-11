@@ -1,5 +1,7 @@
 # Mini Reco：本地生活推荐 Agent
 
+> 无需部署的学习入口：[完整离线学习文档（HTML）](docs/OFFLINE-CODE-AND-INTERVIEW-GUIDE.html) · [Markdown 原文](docs/OFFLINE-CODE-AND-INTERVIEW-GUIDE.md)。包含当前实现、真实源码逐段解释、设计取舍和面试追问，不含启动步骤。
+
 当前主线是校园本地生活推荐：查询商家、商品和配送报价，按完整到手价与时效筛选，支持结构化会话条件、明确偏好记忆和幂等任务重放。使用来源明确的自建演示数据，无需模型密钥。
 
 **先读 [本地生活使用与实现指南](docs/LOCAL-LIFE-GUIDE.md)**，包含演示步骤、费用规则、API、恢复边界、评测结果和后续目标。
