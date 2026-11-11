@@ -1,0 +1,1 @@
+PASS: named-product quote, cost card, constraint display, explicit alternatives, delayed response isolation

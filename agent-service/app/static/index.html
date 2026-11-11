@@ -38,21 +38,22 @@
 <button id="apply-constraints" type="submit">确认条件并重新查询</button></form></div><div class="panel"><h3>长期偏好</h3><div id="memory" class="memory"><span class="empty">加载中…</span></div></div><div class="panel" style="margin-top:18px"><h3>本轮执行轨迹</h3><div id="trace" class="trace"><span class="empty">发起对话后展示 Tool 调用</span></div></div></aside>
     </div></main>
   <script>
-    const storeKey='mini-reco-agent-session', pendingKey='mini-reco-local-pending'; let auth=null;
+    const storeKey='mini-reco-agent-session', pendingKey='mini-reco-local-pending'; let auth=null, authGeneration=0;
+    const isCurrentAuth=snapshot=>auth?.token===snapshot?.token&&auth?.sessionId===snapshot?.sessionId;
     const $=id=>document.getElementById(id); const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const labels={preferred_category:'偏好：',preferred_source:'内容：',max_price:'预算 ≤ ¥',exclude_ads:'去广告',last_scene:'最近场景：'};
     async function api(url, options={}){const r=await fetch(url,options);if(!r.ok)throw new Error((await r.json().catch(()=>({detail:r.statusText}))).detail);return r.json()}
     async function loadProfiles(){const data=await api('/api/users');$('profiles').innerHTML=data.users.map(u=>`<button class="profile" onclick="login(${u.userId})"><div class="avatar">${esc((u.personaName||'U')[0])}</div><b>${esc(u.personaName||'用户 '+u.userId)}</b><span>${esc(u.preferredCategory||'探索型')} · ${u.newUser?'新用户':'老用户'}</span></button>`).join('')}
-    async function login(userId){try{const old=JSON.parse(localStorage.getItem(storeKey)||'null');auth=await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,resume_session_id:old?.userId===userId?old.sessionId:null})});localStorage.setItem(storeKey,JSON.stringify(auth));await enter()}catch(e){alert('登录失败：'+e.message)}}
-    async function restore(){const old=JSON.parse(localStorage.getItem(storeKey)||'null');if(!old)return;try{const s=await api('/api/auth/session?token='+encodeURIComponent(old.token));auth={token:old.token,sessionId:s.session_id,userId:s.user_id,displayName:s.display_name};await enter()}catch{localStorage.removeItem(storeKey)}}
+    async function login(userId){const generation=++authGeneration;try{const old=JSON.parse(localStorage.getItem(storeKey)||'null');const next=await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,resume_session_id:old?.userId===userId?old.sessionId:null})});if(generation!==authGeneration)return;auth=next;localStorage.setItem(storeKey,JSON.stringify(auth));await enter()}catch(e){alert('登录失败：'+e.message)}}
+    async function restore(){const generation=authGeneration;const old=JSON.parse(localStorage.getItem(storeKey)||'null');if(!old)return;try{const s=await api('/api/auth/session?token='+encodeURIComponent(old.token));if(generation!==authGeneration)return;auth={token:old.token,sessionId:s.session_id,userId:s.user_id,displayName:s.display_name};await enter()}catch{if(generation===authGeneration)localStorage.removeItem(storeKey)}}
     async function enter(){showConstraints(null);$('login').style.display='none';$('app').style.display='block';$('who').textContent=auth.displayName||('用户 '+auth.userId);$('session').textContent='会话 '+auth.sessionId.slice(-8)+'\nRedis 保存短期上下文；MySQL 用于审计与恢复。';await Promise.all([loadHistory(),loadMemory()]);showPendingRetry()}
-    async function loadHistory(){const d=await api('/api/conversations/'+auth.sessionId+'?token='+encodeURIComponent(auth.token));$('messages').replaceChildren();d.messages.forEach(m=>addMessage(m.role,m.content));refreshContext(d.messages);scroll()}
+    async function loadHistory(){const snapshot={...auth};const d=await api('/api/conversations/'+snapshot.sessionId+'?token='+encodeURIComponent(snapshot.token));if(!isCurrentAuth(snapshot))return;$('messages').replaceChildren();d.messages.forEach(m=>addMessage(m.role,m.content));refreshContext(d.messages);scroll()}
     function memoryText(k,v){
       if(k==='exclude_ads')return '去广告：'+(v==='true'?'已开启':'已关闭');
       if(k.startsWith('local.')){let x;try{x=JSON.parse(v)}catch{x=v}const name=k.slice(6);if(name==='zone')return '区域：'+({north:'北区',south:'南区',east:'东区'}[x]||x);if(name==='max_total_cents')return '到手预算：¥'+(x/100).toFixed(2);return ({product_query:'商品：',category:'品类：',quantity:'数量：',max_delivery_minutes:'送达分钟：'}[name]||name+'：')+x}
       return (labels[k]||k+'：')+v;
     }
-    async function loadMemory(){const d=await api('/api/memory/'+auth.userId);const values=Object.entries(d.longTermMemory||{});$('memory').innerHTML=values.length?values.map(([k,v])=>`<span>${esc(memoryText(k,v))}</span>`).join(''):'<span class="empty">只有明确要求记住时才保存</span>'}
+    async function loadMemory(){const snapshot={...auth};const d=await api('/api/memory/'+snapshot.userId);if(!isCurrentAuth(snapshot))return;const values=Object.entries(d.longTermMemory||{});$('memory').innerHTML=values.length?values.map(([k,v])=>`<span>${esc(memoryText(k,v))}</span>`).join(''):'<span class="empty">只有明确要求记住时才保存</span>'}
     function addMessage(role,content){const el=document.createElement('div');el.className='message '+(role==='user'?'user':'assistant');el.innerHTML=`<div class="role">${role==='user'?'我':'AI'}</div><div class="bubble">${esc(content)}</div>`;$('messages').append(el)}
     const yuan=cents=>'¥'+(cents/100).toFixed(2);
     function addItems(items, alternative=false){
@@ -79,7 +80,8 @@
     function setTrace(trace){$('trace').innerHTML=trace?.length?trace.map(t=>`<div class="${t.status==='success'?'success':''}"><b>${esc(t.tool)}</b><br>${t.status==='success'?'执行完成':'执行异常'}</div>`).join(''):'<span class="empty">无需调用工具</span>'}
     function refreshContext(messages){const last=messages.slice(-4);$('context').innerHTML=last.length?last.map(m=>`<div><b>${m.role==='user'?'你':'Agent'}：</b>${esc(m.content).slice(0,42)}</div>`).join(''):'<span class="empty">暂无对话记录</span>'}
     function scroll(){$('messages').scrollTop=$('messages').scrollHeight}
-    function pending(){try{return JSON.parse(localStorage.getItem(pendingKey)||'null')}catch{return null}}
+    function pendingStorageKey(){return pendingKey+':'+auth?.userId+':'+auth?.sessionId}
+    function pending(){try{return JSON.parse(localStorage.getItem(pendingStorageKey())||'null')}catch{return null}}
     function showPendingRetry(){const p=pending();$('retry').style.display=p&&auth&&p.sessionId===auth.sessionId&&p.workflow==='local_life'?'inline-block':'none'}
     function applyConstraints(){
       if($('send').disabled || !$('constraint-editor').reportValidity())return;
@@ -94,7 +96,7 @@
       const message=old?.message||$('input').value.trim();if(!message)return;
       const payload=old||{message,workflow:$('workflow').value,request_id:crypto.randomUUID(),sessionId:auth.sessionId,...(constraints?{constraints}:{})};
       if(!retry){$('input').value='';addMessage('user',message)}
-      if(payload.workflow==='local_life')localStorage.setItem(pendingKey,JSON.stringify(payload));
+      if(payload.workflow==='local_life')localStorage.setItem(pendingStorageKey(),JSON.stringify(payload));
       $('send').disabled=true;$('retry').style.display='none';$('status').textContent='正在查询与比较…';$('trace').innerHTML='<span class="empty">执行中…</span>';scroll();
       let finished=false;const requestAuth={...auth};const isCurrent=()=>auth?.token===requestAuth.token&&auth?.sessionId===requestAuth.sessionId;
       const ws=new WebSocket((location.protocol==='https:'?'wss':'ws')+'://'+location.host+'/ws/chat');
@@ -103,7 +105,7 @@
         if(!isCurrent()){ws.close();return}const m=JSON.parse(e.data);
         if(m.event==='agent_completed'){
           finished=true;addMessage('assistant',m.data.answer);addItems(m.data.items);addItems(m.data.alternativeItems,true);setTrace(m.data.toolTrace);showConstraints(m.data.intent,m.data.pendingRequirements||[]);loadMemory().catch(()=>{});api('/api/conversations/'+auth.sessionId+'?token='+encodeURIComponent(auth.token)).then(d=>{if(isCurrent())refreshContext(d.messages)}).catch(()=>{});
-          if(m.data.status!=='tool_error')localStorage.removeItem(pendingKey);
+          if(m.data.status!=='tool_error')localStorage.removeItem(pendingStorageKey());
           $('status').textContent=m.data.replayed?'已恢复上次任务结果':'';$('send').disabled=false;showPendingRetry();scroll();ws.close();
         }
         if(m.event==='agent_error'){finished=true;addMessage('assistant',m.message||'请求失败，请检查输入后重试。');$('status').textContent='';$('send').disabled=false;showPendingRetry();ws.close()}
@@ -111,8 +113,10 @@
       ws.onclose=()=>{if(isCurrent()&&!finished){$('status').textContent='连接中断，可重试上次本地生活请求';$('send').disabled=false;showPendingRetry()}};
       ws.onerror=()=>{if(!isCurrent())return;$('status').textContent='连接失败，请稍后重试';$('send').disabled=false;showPendingRetry()};
     }
-    async function newConversation(){try{auth=await api('/api/auth/new-conversation?token='+encodeURIComponent(auth.token),{method:'POST'});localStorage.setItem(storeKey,JSON.stringify(auth));$('send').disabled=false;$('status').textContent='';$('session').textContent='会话 '+auth.sessionId.slice(-8)+'\n一个新的上下文已创建。';$('messages').replaceChildren();showConstraints(null);$('constraints').innerHTML='<span class="empty">发起查询后展示</span>';showPendingRetry();$('context').innerHTML='<span class="empty">暂无对话记录</span>';$('trace').innerHTML='<span class="empty">发起对话后展示 Tool 调用</span>'}catch(e){alert(e.message)}}
-    function logout(){localStorage.removeItem(storeKey);auth=null;$('send').disabled=false;$('status').textContent='';$('app').style.display='none';$('login').style.display='grid'}
+    async function newConversation(){const snapshot={...auth};try{const next=await api('/api/auth/new-conversation?token='+encodeURIComponent(snapshot.token),{method:'POST'});if(!isCurrentAuth(snapshot))return;auth=next;localStorage.setItem(storeKey,JSON.stringify(auth));$('send').disabled=false;$('status').textContent='';$('session').textContent='会话 '+auth.sessionId.slice(-8)+'\n一个新的上下文已创建。';$('messages').replaceChildren();showConstraints(null);$('constraints').innerHTML='<span class="empty">发起查询后展示</span>';showPendingRetry();$('context').innerHTML='<span class="empty">暂无对话记录</span>';$('trace').innerHTML='<span class="empty">发起对话后展示 Tool 调用</span>'}catch(e){alert(e.message)}}
+    function logout(){authGeneration++;localStorage.removeItem(storeKey);auth=null;$('send').disabled=false;$('status').textContent='';$('app').style.display='none';$('login').style.display='grid'}
+    // Other tabs may switch the shared account; stale responses must not render.
+    window.addEventListener('storage',event=>{if(event.key===storeKey&&event.oldValue!==event.newValue){authGeneration++;auth=null;$('messages').replaceChildren();showConstraints(null);$('memory').replaceChildren();$('app').style.display='none';$('login').style.display='grid';$('send').disabled=false;}});
     loadProfiles().then(restore).catch(e=>{$('profiles').innerHTML='<span class="empty">无法加载用户：'+esc(e.message)+'</span>'});
   </script>
 </body></html>
