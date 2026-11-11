@@ -104,3 +104,5 @@ python scripts/evaluate-agent.py
 ## 从零学习与面试准备
 
 请按 [完整学习与面试手册](docs/LEARNING-AND-INTERVIEW-HANDBOOK.md) 运行演示、跟踪请求、学习约束／事务／恢复，再做模拟用户与独立语言评测。最新补充见 [复查记录](docs/REVIEW-20261023.md)。
+
+最新：[可编辑约束与模拟用户测试记录](docs/SIMULATION-20261111.md)。

@@ -114,6 +114,7 @@ jobs:
           if [ "$ready" != true ]; then cat /tmp/agent.log; exit 1; fi
           python scripts/evaluate-local-life.py --output output/local-life-evaluation.json
           python scripts/evaluate-language.py --cases agent-service/evaluation/language_challenge_v1.json --output output/language-regression.json
+          python scripts/evaluate-language.py --cases agent-service/evaluation/language_simulation_v2.json --output output/language-simulation-v2.json
       - name: Preserve application logs for failed integration runs
         if: always()
         run: |

@@ -27,6 +27,33 @@ const assert = require('node:assert/strict');
     assert.match(await page.locator('#constraints').innerText(), /商品：燕麦拿铁/);
     assert.match(await page.locator('#messages').innerText(), /未满足原商品名称/);
     assert.match(await page.locator('.quote-total').innerText(), /17\.00/);
+    // Edit the displayed constraints through the real WebSocket transport.
+    await page.locator('#edit-product').fill('焦糖拿铁');
+    await page.locator('#edit-match').selectOption('exact');
+    await page.locator('#edit-budget').fill('16.90');
+    await page.locator('#edit-time').fill('');
+    const edited = page.waitForEvent('websocket');
+    await page.locator('#apply-constraints').click();
+    await edited;
+    await page.waitForFunction(() => document.getElementById('send').disabled === false);
+    assert.equal(await page.locator('#edit-product').inputValue(), '焦糖拿铁');
+    assert.equal(await page.locator('#edit-budget').inputValue(), '16.90');
+    assert.equal(await page.locator('#edit-time').inputValue(), '');
+    assert.match(await page.locator('#constraints').innerText(), /只要指定商品/);
+    assert.match(await page.locator('#constraints').innerText(), /时间不限/);
+    await page.locator('#edit-product').fill('');
+    await page.locator('#edit-budget').fill('');
+    await page.locator('#apply-constraints').click();
+    await page.waitForFunction(() => document.getElementById('send').disabled === false);
+    assert.match(await page.locator('#constraints').innerText(), /预算不限/);
+    await page.locator('#input').fill('必须零乳糖');
+    await page.locator('#send').click();
+    await page.waitForFunction(() => document.getElementById('send').disabled === false);
+    assert.match(await page.locator('#pending-diet').innerText(), /零乳糖/);
+    await page.locator('#edit-budget').fill('100');
+    await page.locator('#apply-constraints').click();
+    await page.waitForFunction(() => document.getElementById('send').disabled === false);
+    assert.match(await page.locator('#pending-diet').innerText(), /零乳糖/);
     // Keep one response pending while the user creates a new conversation.
     await page.evaluate(() => {
       window.WebSocket = class {

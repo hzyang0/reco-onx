@@ -101,3 +101,10 @@ class NaturalLanguageRepairTests(unittest.TestCase):
             self.assertTrue(issues)
             for key, value in previous.items():
                 self.assertEqual(c[key], value)
+
+    def test_unseen_named_flavours_keep_full_query(self):
+        for text, title in [('北区只要焦糖拿铁，预算30元', '焦糖拿铁'), ('北区咖啡，只找“榛果拿铁”', '榛果拿铁')]:
+            patch, issues = parse_constraints(text)
+            self.assertFalse(issues)
+            self.assertEqual(patch['product_query'], title)
+            self.assertEqual(patch['product_match_mode'], 'exact')

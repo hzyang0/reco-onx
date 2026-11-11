@@ -12,7 +12,8 @@
     .layout{max-width:1380px;margin:auto;display:grid;grid-template-columns:260px minmax(0,1fr) 280px;gap:18px;padding:20px}.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}.panel h3{margin:0 0 12px;font-size:14px}.sidebar .session{padding:12px;background:#f4f7ff;border-radius:12px;color:#53647e;font-size:13px}.sidebar button,.outline{width:100%;border:1px solid #cfdaec;background:#fff;border-radius:10px;padding:9px;color:#31527d;cursor:pointer;margin-top:12px}.memory{display:flex;flex-wrap:wrap;gap:7px}.memory span{background:#edf7f3;color:#16775a;border-radius:99px;padding:5px 9px;font-size:12px}.context{margin-top:18px}.context div{font-size:12px;color:#65758c;padding:8px 0;border-bottom:1px solid #f0f3f8}.context b{color:#344766}
     .chat{min-height:calc(100vh - 108px);display:flex;flex-direction:column}.chat-head{padding:4px 0 16px}.chat-head h1{font-size:25px;margin:2px 0}.chat-head p{margin:0;color:var(--muted)}.messages{flex:1;min-height:440px;max-height:calc(100vh - 290px);overflow:auto;padding:8px 2px 24px}.message{display:flex;gap:10px;margin:16px 0;max-width:88%}.message.user{margin-left:auto;flex-direction:row-reverse}.bubble{padding:12px 15px;border-radius:4px 16px 16px;background:#f1f5fb;white-space:pre-wrap}.user .bubble{background:var(--blue);color:#fff;border-radius:16px 4px 16px 16px}.role{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e7efff;color:var(--blue);font-size:12px;font-weight:bold;flex:none}.user .role{background:#dce8ff}.recommendations{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:9px 0 4px 40px}.item{border:1px solid var(--line);border-radius:13px;padding:12px;background:white}.item .source{font-size:11px;color:#4870d8;background:#eaf0ff;border-radius:6px;padding:3px 6px;display:inline-block}.item h4{font-size:14px;margin:9px 0 4px}.item small{color:var(--muted)}
     .composer{border-top:1px solid var(--line);padding-top:14px;display:flex;gap:10px}.composer textarea{resize:none;min-height:48px;max-height:120px;flex:1;border:1px solid #d7e0ee;border-radius:13px;padding:12px;outline:none}.composer textarea:focus{border-color:var(--blue)}.send{border:0;border-radius:13px;background:var(--blue);color:white;padding:0 19px;font-weight:700;cursor:pointer}.send:disabled{opacity:.55}.workflow-choice{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.workflow-choice select{padding:6px;border:1px solid var(--line);border-radius:8px}.quote-lines{font-size:12px;color:#53647e;margin-top:8px}.quote-total{font-size:18px;font-weight:800;color:var(--green)}.quote-expired{color:#b14c31}.retry{border:1px solid #cfdaec;background:white;border-radius:10px;padding:8px;cursor:pointer}.trace{display:grid;gap:9px}.trace div{font-size:12px;border-left:3px solid #b9ccff;background:#f7f9ff;padding:8px;color:#5d6e85}.trace div.success{border-color:var(--green)}.empty{color:var(--muted);font-size:13px}.status{font-size:12px;color:var(--green);margin-left:5px}
-    @media(max-width:1020px){.layout{grid-template-columns:230px minmax(0,1fr)}.right{display:none}}@media(max-width:720px){.login-card{padding:30px 22px}.login h1{font-size:32px}.layout{display:block;padding:10px}.sidebar{display:none}.top{padding:0 14px}.chat{min-height:calc(100vh - 90px)}.messages{max-height:calc(100vh - 250px)}.message{max-width:96%}}
+    @media(max-width:1020px){.layout{grid-template-columns:230px minmax(0,1fr)}.right{display:block;grid-column:1/-1}}@media(max-width:720px){.login-card{padding:30px 22px}.login h1{font-size:32px}.layout{display:block;padding:10px}.sidebar{display:none}.top{padding:0 14px}.chat{min-height:calc(100vh - 90px)}.messages{max-height:calc(100vh - 250px)}.message{max-width:96%}}
+    #constraint-editor label{display:grid;gap:5px;font-size:13px}#constraint-editor input,#constraint-editor select{width:100%;min-width:0;box-sizing:border-box;padding:8px;border:1px solid var(--line);border-radius:8px}#constraint-editor p{font-size:12px;color:var(--muted)}
   </style>
 </head>
 <body>
@@ -25,7 +26,16 @@
   <main id="app"><header class="top"><div class="brand">Mini Reco <i>Agent</i></div><div class="user-chip"><span class="dot"></span><span id="who"></span><button onclick="logout()" style="border:0;background:none;color:#718198;cursor:pointer">退出</button></div></header>
     <div class="layout"><aside class="sidebar"><div class="panel"><h3>当前会话</h3><div id="session" class="session"></div><button onclick="newConversation()">＋ 新建对话</button><div class="context"><h3>短期上下文</h3><div id="context"><span class="empty">暂无对话记录</span></div></div></div></aside>
       <section class="panel chat"><div class="chat-head"><div class="eyebrow">RECOMMENDATION COPILOT</div><h1>今天想问点什么？</h1><p>演示区域：北区、南区、东区；支持咖啡、简餐、便利食品。<span id="status" class="status"></span></p><div class="workflow-choice"><label for="workflow">模式</label><select id="workflow"><option value="local_life">本地生活（演示）</option><option value="recommendation">商品推荐 / 项目问答</option></select><button class="retry" onclick="$('input').value='北区咖啡预算20元，30分钟内送达'">填入示例</button><button id="retry" class="retry" style="display:none" onclick="send(true)">重试上次请求</button></div></div><div id="messages" class="messages"></div><div class="composer"><textarea id="input" placeholder="例如：北区咖啡预算20元，30分钟内送达；下一轮可说：改成2杯" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea><button id="send" class="send" onclick="send()">发送</button></div></section>
-      <aside class="right"><div class="panel" style="margin-bottom:18px"><h3>当前需求</h3><div id="constraints" class="memory"><span class="empty">发起查询后展示</span></div></div><div class="panel"><h3>长期偏好</h3><div id="memory" class="memory"><span class="empty">加载中…</span></div></div><div class="panel" style="margin-top:18px"><h3>本轮执行轨迹</h3><div id="trace" class="trace"><span class="empty">发起对话后展示 Tool 调用</span></div></div></aside>
+      <aside class="right"><div class="panel" style="margin-bottom:18px"><h3>当前需求</h3><div id="constraints" class="memory"><span class="empty">发起查询后展示</span></div><form id="constraint-editor" hidden onsubmit="event.preventDefault();applyConstraints()" style="display:none;padding-top:12px">
+<label>区域 <select id="edit-zone" required><option value="">请选择</option><option value="north">北区</option><option value="south">南区</option><option value="east">东区</option></select></label>
+<label>品类 <select id="edit-category" required onchange="$('edit-product').value='' "><option value="">请选择</option><option value="coffee">咖啡</option><option value="meal">简餐</option><option value="grocery">便利食品</option></select></label>
+<label>完整商品名 <input id="edit-product" maxlength="40" placeholder="留空表示不限款式"></label>
+<label>匹配方式 <select id="edit-match"><option value="prefer">指定商品优先，替代需确认</option><option value="exact">只要指定商品</option></select></label>
+<label>到手总预算（元）<input id="edit-budget" type="number" min="0" max="10000" step="0.01" placeholder="留空表示不限预算"></label>
+<label>最长送达时间（分钟）<input id="edit-time" type="number" min="1" max="180" step="1" placeholder="留空表示不限时间"></label>
+<label>数量 <input id="edit-quantity" type="number" min="1" max="10" step="1" required></label>
+<p id="pending-diet" role="status"></p><p>修改上述字段不会撤回未解决的饮食要求。请在对话中明确说明需要撤回的要求。</p>
+<button id="apply-constraints" type="submit">确认条件并重新查询</button></form></div><div class="panel"><h3>长期偏好</h3><div id="memory" class="memory"><span class="empty">加载中…</span></div></div><div class="panel" style="margin-top:18px"><h3>本轮执行轨迹</h3><div id="trace" class="trace"><span class="empty">发起对话后展示 Tool 调用</span></div></div></aside>
     </div></main>
   <script>
     const storeKey='mini-reco-agent-session', pendingKey='mini-reco-local-pending'; let auth=null;
@@ -35,7 +45,7 @@
     async function loadProfiles(){const data=await api('/api/users');$('profiles').innerHTML=data.users.map(u=>`<button class="profile" onclick="login(${u.userId})"><div class="avatar">${esc((u.personaName||'U')[0])}</div><b>${esc(u.personaName||'用户 '+u.userId)}</b><span>${esc(u.preferredCategory||'探索型')} · ${u.newUser?'新用户':'老用户'}</span></button>`).join('')}
     async function login(userId){try{const old=JSON.parse(localStorage.getItem(storeKey)||'null');auth=await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,resume_session_id:old?.userId===userId?old.sessionId:null})});localStorage.setItem(storeKey,JSON.stringify(auth));await enter()}catch(e){alert('登录失败：'+e.message)}}
     async function restore(){const old=JSON.parse(localStorage.getItem(storeKey)||'null');if(!old)return;try{const s=await api('/api/auth/session?token='+encodeURIComponent(old.token));auth={token:old.token,sessionId:s.session_id,userId:s.user_id,displayName:s.display_name};await enter()}catch{localStorage.removeItem(storeKey)}}
-    async function enter(){$('login').style.display='none';$('app').style.display='block';$('who').textContent=auth.displayName||('用户 '+auth.userId);$('session').textContent='会话 '+auth.sessionId.slice(-8)+'\nRedis 保存短期上下文；MySQL 用于审计与恢复。';await Promise.all([loadHistory(),loadMemory()]);showPendingRetry()}
+    async function enter(){showConstraints(null);$('login').style.display='none';$('app').style.display='block';$('who').textContent=auth.displayName||('用户 '+auth.userId);$('session').textContent='会话 '+auth.sessionId.slice(-8)+'\nRedis 保存短期上下文；MySQL 用于审计与恢复。';await Promise.all([loadHistory(),loadMemory()]);showPendingRetry()}
     async function loadHistory(){const d=await api('/api/conversations/'+auth.sessionId+'?token='+encodeURIComponent(auth.token));$('messages').replaceChildren();d.messages.forEach(m=>addMessage(m.role,m.content));refreshContext(d.messages);scroll()}
     function memoryText(k,v){
       if(k==='exclude_ads')return '去广告：'+(v==='true'?'已开启':'已关闭');
@@ -54,10 +64,15 @@
         return `<article class="item"><span class="source">${alternative?'待确认替代 · ':'演示报价 · '}${esc(i.merchant.name)}</span><h4>${esc(i.title)} × ${q.quantity}</h4><div class="quote-total">到手 ${yuan(q.totalCents)}</div><div class="quote-lines">商品 ${yuan(q.goodsSubtotalCents)}<br>包装 ${yuan(q.packagingFeeCents)} + 配送 ${yuan(q.deliveryFeeCents)}<br>优惠 −${yuan(q.discountCents)}<br>预计 ${q.etaMinutes} 分钟 · 未锁库存</div><small data-quote-expiry="${esc(q.validUntil)}">有效至 ${esc(new Date(q.validUntil).toLocaleTimeString())}</small></article>`;
       }).join('');$('messages').append(box);
     }
-    function showConstraints(intent){
+    function showConstraints(intent, pendingRequirements=[]){
+      const editor=$('constraint-editor');editor.hidden=true;editor.style.display='none';
+
       if(!intent||!('zone' in intent)){$('constraints').innerHTML='<span class="empty">当前为普通推荐 / 问答</span>';return}
       const parts=[({north:'北区',south:'南区',east:'东区'}[intent.zone]||'待选择区域'),({coffee:'咖啡',meal:'简餐',grocery:'便利食品'}[intent.category]||'待选择品类'),intent.quantity+'件',intent.max_total_cents===null?'预算不限':'到手 ≤ '+yuan(intent.max_total_cents),intent.max_delivery_minutes===null?'时间不限':intent.max_delivery_minutes+'分钟内'];
       if(intent.product_query){parts.push('商品：'+intent.product_query);parts.push(intent.product_match_mode==='exact'?'只要指定商品':'指定商品优先，替代需确认')}
+      editor.hidden=false;editor.style.display='grid';editor.style.gap='10px';
+      for(const [field,value] of Object.entries({zone:intent.zone,category:intent.category,product:intent.product_query,match:intent.product_match_mode,budget:intent.max_total_cents===null?'':(intent.max_total_cents/100).toFixed(2),time:intent.max_delivery_minutes,quantity:intent.quantity})) $('edit-'+field).value=value??'';
+      $('pending-diet').textContent=pendingRequirements.length?'尚未解决：'+pendingRequirements.join('；'):'';
       $('constraints').innerHTML=parts.map(x=>`<span>${esc(x)}</span>`).join('');
     }
     setInterval(()=>document.querySelectorAll('[data-quote-expiry]').forEach(el=>{if(Date.parse(el.dataset.quoteExpiry)<=Date.now()){el.textContent='报价已过期，请重新查询';el.classList.add('quote-expired')}}),1000);
@@ -66,22 +81,28 @@
     function scroll(){$('messages').scrollTop=$('messages').scrollHeight}
     function pending(){try{return JSON.parse(localStorage.getItem(pendingKey)||'null')}catch{return null}}
     function showPendingRetry(){const p=pending();$('retry').style.display=p&&auth&&p.sessionId===auth.sessionId&&p.workflow==='local_life'?'inline-block':'none'}
-    function send(retry=false){
+    function applyConstraints(){
+      if($('send').disabled || !$('constraint-editor').reportValidity())return;
+      const budget=$('edit-budget').value;
+      const constraints={zone:$('edit-zone').value,category:$('edit-category').value,product_query:$('edit-product').value.trim()||null,product_match_mode:$('edit-match').value,max_total_cents:budget===''?null:Math.round(Number(budget)*100),max_delivery_minutes:$('edit-time').value===''?null:Number($('edit-time').value),quantity:Number($('edit-quantity').value)};
+      $('workflow').value='local_life';$('input').value='按已确认的条件重新查询';send(false,constraints);
+    }
+    function send(retry=false, constraints=null){
       if(!auth||$('send').disabled)return;
       const old=retry?pending():null;
       if(retry&&(!old||old.sessionId!==auth.sessionId))return;
       const message=old?.message||$('input').value.trim();if(!message)return;
-      const payload=old||{message,workflow:$('workflow').value,request_id:crypto.randomUUID(),sessionId:auth.sessionId};
+      const payload=old||{message,workflow:$('workflow').value,request_id:crypto.randomUUID(),sessionId:auth.sessionId,...(constraints?{constraints}:{})};
       if(!retry){$('input').value='';addMessage('user',message)}
       if(payload.workflow==='local_life')localStorage.setItem(pendingKey,JSON.stringify(payload));
       $('send').disabled=true;$('retry').style.display='none';$('status').textContent='正在查询与比较…';$('trace').innerHTML='<span class="empty">执行中…</span>';scroll();
       let finished=false;const requestAuth={...auth};const isCurrent=()=>auth?.token===requestAuth.token&&auth?.sessionId===requestAuth.sessionId;
       const ws=new WebSocket((location.protocol==='https:'?'wss':'ws')+'://'+location.host+'/ws/chat');
-      ws.onopen=()=>ws.send(JSON.stringify({token:requestAuth.token,message:payload.message,workflow:payload.workflow,request_id:payload.request_id}));
+      ws.onopen=()=>ws.send(JSON.stringify({token:requestAuth.token,message:payload.message,workflow:payload.workflow,request_id:payload.request_id,...(payload.constraints?{constraints:payload.constraints}:{})}));
       ws.onmessage=e=>{
         if(!isCurrent()){ws.close();return}const m=JSON.parse(e.data);
         if(m.event==='agent_completed'){
-          finished=true;addMessage('assistant',m.data.answer);addItems(m.data.items);addItems(m.data.alternativeItems,true);setTrace(m.data.toolTrace);showConstraints(m.data.intent);loadMemory().catch(()=>{});api('/api/conversations/'+auth.sessionId+'?token='+encodeURIComponent(auth.token)).then(d=>{if(isCurrent())refreshContext(d.messages)}).catch(()=>{});
+          finished=true;addMessage('assistant',m.data.answer);addItems(m.data.items);addItems(m.data.alternativeItems,true);setTrace(m.data.toolTrace);showConstraints(m.data.intent,m.data.pendingRequirements||[]);loadMemory().catch(()=>{});api('/api/conversations/'+auth.sessionId+'?token='+encodeURIComponent(auth.token)).then(d=>{if(isCurrent())refreshContext(d.messages)}).catch(()=>{});
           if(m.data.status!=='tool_error')localStorage.removeItem(pendingKey);
           $('status').textContent=m.data.replayed?'已恢复上次任务结果':'';$('send').disabled=false;showPendingRetry();scroll();ws.close();
         }
@@ -90,7 +111,7 @@
       ws.onclose=()=>{if(isCurrent()&&!finished){$('status').textContent='连接中断，可重试上次本地生活请求';$('send').disabled=false;showPendingRetry()}};
       ws.onerror=()=>{if(!isCurrent())return;$('status').textContent='连接失败，请稍后重试';$('send').disabled=false;showPendingRetry()};
     }
-    async function newConversation(){try{auth=await api('/api/auth/new-conversation?token='+encodeURIComponent(auth.token),{method:'POST'});localStorage.setItem(storeKey,JSON.stringify(auth));$('send').disabled=false;$('status').textContent='';$('session').textContent='会话 '+auth.sessionId.slice(-8)+'\n一个新的上下文已创建。';$('messages').replaceChildren();$('constraints').innerHTML='<span class="empty">发起查询后展示</span>';showPendingRetry();$('context').innerHTML='<span class="empty">暂无对话记录</span>';$('trace').innerHTML='<span class="empty">发起对话后展示 Tool 调用</span>'}catch(e){alert(e.message)}}
+    async function newConversation(){try{auth=await api('/api/auth/new-conversation?token='+encodeURIComponent(auth.token),{method:'POST'});localStorage.setItem(storeKey,JSON.stringify(auth));$('send').disabled=false;$('status').textContent='';$('session').textContent='会话 '+auth.sessionId.slice(-8)+'\n一个新的上下文已创建。';$('messages').replaceChildren();showConstraints(null);$('constraints').innerHTML='<span class="empty">发起查询后展示</span>';showPendingRetry();$('context').innerHTML='<span class="empty">暂无对话记录</span>';$('trace').innerHTML='<span class="empty">发起对话后展示 Tool 调用</span>'}catch(e){alert(e.message)}}
     function logout(){localStorage.removeItem(storeKey);auth=null;$('send').disabled=false;$('status').textContent='';$('app').style.display='none';$('login').style.display='grid'}
     loadProfiles().then(restore).catch(e=>{$('profiles').innerHTML='<span class="empty">无法加载用户：'+esc(e.message)+'</span>'});
   </script>

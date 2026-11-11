@@ -140,6 +140,14 @@ def parse_request(message):
     category = _select([v for _, v in category_hits], text, "品类", issues)
     if category:
         patch['category'] = category
+    # Preserve an explicitly named coffee SKU even when it is outside the seed
+    # dictionary. Do not silently downgrade a named flavour to its family.
+    named = re.search(r'[“「"]([^”」"]{1,40})[”」"]', text)
+    if not named:
+        named = re.search(r'(?:只要|只找|只喝|想喝|来一杯)([^，,。；;\s]{1,20}?(?:拿铁|美式|冷萃))', text)
+    if named and any(family in named[1] for family in ('拿铁', '美式', '冷萃')):
+        query = named[1]
+        patch['category'] = 'coffee'
     if query:
         patch['product_query'] = query
         if re.search(r"只要|只找|只喝|只买|只吃|仅限|必须|别给我别的|不能替换|不要其他", text):

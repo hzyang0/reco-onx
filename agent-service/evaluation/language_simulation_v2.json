@@ -1,0 +1,202 @@
+{
+  "version": "language-simulation-v2-20261111",
+  "userId": 789,
+  "scope": "New agent-authored expected labels frozen before first execution; synthetic users, not independent human evaluation",
+  "cases": [
+    {
+      "id": "unknown_flavour",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "北区只要焦糖拿铁，预算30元",
+          "status": "no_match",
+          "intent": {
+            "product_query": "焦糖拿铁"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quoted_unknown",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "北区咖啡，只找“榛果拿铁”，预算30元",
+          "status": "no_match",
+          "intent": {
+            "product_query": "榛果拿铁"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cap_rephrased",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "北区咖啡，全部算上顶多十四块钱",
+          "status": "completed",
+          "intent": {
+            "max_total_cents": 1400
+          }
+        }
+      ]
+    },
+    {
+      "id": "negative_withdrawal",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "北区咖啡预算20元",
+          "status": "completed",
+          "intent": {}
+        },
+        {
+          "message": "不要取消预算",
+          "status": "clarification",
+          "intent": {
+            "max_total_cents": 2000
+          }
+        }
+      ]
+    },
+    {
+      "id": "scoped_diet",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "北区咖啡预算30元",
+          "status": "completed",
+          "intent": {}
+        },
+        {
+          "message": "必须零乳糖，坚果过敏",
+          "status": "clarification",
+          "intent": {}
+        },
+        {
+          "message": "取消零乳糖要求",
+          "status": "clarification",
+          "intent": {}
+        },
+        {
+          "message": "继续找",
+          "status": "clarification",
+          "intent": {}
+        }
+      ]
+    },
+    {
+      "id": "small_budget",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "北区咖啡预算0.01元",
+          "status": "no_match",
+          "intent": {
+            "max_total_cents": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_amount",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "北区咖啡预算一百二元",
+          "status": "clarification",
+          "intent": {}
+        }
+      ]
+    },
+    {
+      "id": "clear_delivery",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "北区咖啡预算20元，一刻钟送到",
+          "status": "no_match",
+          "intent": {
+            "max_delivery_minutes": 15
+          }
+        },
+        {
+          "message": "多久送都可以",
+          "status": "completed",
+          "intent": {
+            "max_delivery_minutes": null,
+            "max_total_cents": 2000
+          }
+        }
+      ]
+    },
+    {
+      "id": "exact_unavailable",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "东区只要燕麦拿铁预算30元",
+          "status": "no_match",
+          "intent": {
+            "product_query": "燕麦拿铁",
+            "product_match_mode": "exact"
+          }
+        }
+      ]
+    },
+    {
+      "id": "unsupported_area",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "西区来杯咖啡，预算30元",
+          "status": "clarification",
+          "intent": {}
+        }
+      ]
+    },
+    {
+      "id": "quantity_followup",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "北区经典美式预算100元",
+          "status": "completed",
+          "intent": {
+            "product_query": "经典美式"
+          }
+        },
+        {
+          "message": "改成三杯",
+          "status": "completed",
+          "intent": {
+            "product_query": "经典美式",
+            "quantity": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "keep_allergy_on_retraction",
+      "category": "new-simulation",
+      "turns": [
+        {
+          "message": "北区咖啡预算20元",
+          "status": "completed",
+          "intent": {}
+        },
+        {
+          "message": "坚果过敏",
+          "status": "clarification",
+          "intent": {}
+        },
+        {
+          "message": "不要撤回过敏要求",
+          "status": "clarification",
+          "intent": {}
+        }
+      ]
+    }
+  ]
+}

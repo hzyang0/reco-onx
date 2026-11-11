@@ -477,7 +477,14 @@ async def chat_ws(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            payload = await websocket.receive_json()
+            try:
+                payload = await websocket.receive_json()
+            except ValueError:
+                await websocket.send_json({"event": "agent_error", "message": "请求必须为有效 JSON 对象。"})
+                continue
+            if not isinstance(payload, dict):
+                await websocket.send_json({"event": "agent_error", "message": "请求必须为 JSON 对象。"})
+                continue
             try:
                 current = resolve_demo_session(payload.get("token"))
             except HTTPException as exc:
@@ -485,7 +492,7 @@ async def chat_ws(websocket: WebSocket):
                 continue
             try:
                 request = ChatRequest(user_id=int(current["user_id"]), message=payload.get("message", ""), session_id=current["session_id"],
-                                      workflow=payload.get("workflow", "auto"), request_id=payload.get("request_id"))
+                                      workflow=payload.get("workflow", "auto"), request_id=payload.get("request_id"), constraints=payload.get("constraints"))
                 await websocket.send_json({"event": "agent_started", "sessionId": request.session_id})
                 result = await execute(request)
             except ValidationError:
